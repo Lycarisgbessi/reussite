@@ -84,3 +84,27 @@ Stage Summary:
 - Plateforme conforme au cahier des charges, vérifiée de bout en bout dans le navigateur : tous les parcours critiques passent (publication/modération, pub avec tracking, newsletter, recherche, médias riches, réglages).
 - Correctifs de cette phase : 7 images générées, bug CTR ×100 corrigé (API normalisée en ratio), tailles de génération 1440x704.
 - Accès démo : admin@businesshorizon.fr / admin123 (5 comptes avec rôles différenciés, voir worklog Task 2-d).
+
+---
+Task ID: 5
+Agent: Lead (Z.ai Code)
+Task: Refonte graphique « Réussite Magazine » — charte rouge/noir/blanc, logo officiel, images réelles, raffinement UI, menu hamburger, bannière pub compacte
+
+Work Log:
+- Logo officiel fourni (upload/1000109527.jpg) traité avec PIL : recadrage (694×227), version transparente PNG (démultiplication du noir : logo-reussite.png), favicon carré favicon-reussite.png (R rouge).
+- Thème globals.css refait : primaire rouge #C8102E (oklch 0.53 0.21 27), fond blanc pur en clair / quasi-noir en sombre, neutres sans teinte, utilitaires .text-brand-bright (roue vive sur surfaces noires), sélection/scrollbar/progression/CTA passés au rouge.
+- Header entièrement repensé : topbar fine noire permanente (date, réseaux, thème, annonceurs, Pro), masthead noir avec logo PNG + tagline « Trimestriel des décideurs africains », recherche + abonnement + bascule thème + MENU HAMBURGER SUR TOUS LES ÉCRANS (Sheet latéral, accordéon catégories, favoris, annonceurs, réseaux). L'ancien menu horizontal débordant est supprimé (plus aucun overflow).
+- FlashInfoBar : noir permanent + puce « FLASH » rouge (texte blanc, point pulsant).
+- Bannières pub compactes : SIZE_CLASSES réellement appliquées au conteneur AdSlot (bug corrigé : classes jamais consommées) → HEADER/FOOTER_BANNER = leaderboard centré max-w-3xl h-16/20 arrondi bordé ; suppression du HEADER_BANNER dupliqué de CategoryPage ; IN_ARTICLE 250px ; sidebar restreintes.
+- Composants raffinés : ArticleCard (badge rouge 10px arrondi, cartes p-3.5, titres 15-16px, mini/ranked affinés), HeroSlider (titres xl→4xl, flèches size-9 hover rouge, dots réduits), SectionTitle (h2 xl/2xl, trait w-10), CategoryBlocks/HomePage (espacements py-8/gap-5/mt-12, cartes vidéos/podcasts compactes, CTA newsletter resserré), ArticlePage (h1 2xl→4xl, cover rounded-lg), CategoryPage (bannière py-10, h1 2xl→4xl).
+- Footer noir permanent : filet rouge supérieur, logo, eyebrow rouges (.text-brand-bright), inputs sombres, barre basse rebrandée.
+- Images : les 28 fichiers IA remplacés par de VRAIES photos (z-ai image-search, filtrage des sources à filigrane depositphotos/shutterstock/unsplash+/vectorstock, vérification visuelle une par une, 3 vagues de remplacement : business-1/2, dossier-1/2, entrepreneuriat-2, tribune-1, ad-banner-2, podcast-2). Sources finales propres : pexels, unsplash libres, photos réelles (data center, carte bancaire, borne EV, paiement mobile, skyline Nairobi, studios…).
+- Rebranding intégral : sed sur 20+ fichiers src (Header/Footer/AdminShell/Login/SettingsAdmin/rss/auth/utils/types/api…), layout.tsx (métadonnées + favicon + metadataBase), page.tsx ; base de données : 16 SiteSetting (siteName, tagline, seo, contacts, réseaux, copyright, popup, footerAbout, themeColor #C8102E), 5 AdminUser emails → @reussitemagazine.com, 17 catégories colorées #C8102E, pages statiques/articles nettoyés (0 mention restante) ; prisma/seed.ts aligné (couleurs + branding).
+- BUG corrigé au passage : filtre d'articles par catégorie exact — une rubrique parente (ex. entrepreneuriat) renvoyait 0 article car les contenus sont rattachés aux sous-rubriques ; l'API inclut désormais les enfants (categoryId IN). Rubriques parentes à nouveau peuplées.
+- Débordement horizontal mobile corrigé (scrollWidth 421→390) : min-w-0/overflow-hidden sur cartes grid/flex, truncate + min-w-0 sur invités podcast, overflow-x-clip sur le shell front.
+- Vérification agent-browser : accueil clair/sombre, masthead noir, ticker, pub compacte, hero réel, cartes rouges, footer noir collé en bas ; menu hamburger desktop + mobile ; article (fil d'Ariane, badge, meta) ; rubrique entrepreneuriat (bannière réelle, onglets, 3 articles) ; admin (login charte rouge, connexion OK avec admin@reussitemagazine.com/admin123, dashboard rouge) ; lint 0 erreur ; console propre.
+
+Stage Summary:
+- Plateforme rebrandée « Réussite Magazine » (rouge #C8102E / noir / blanc), logo officiel partout, menu hamburger sans overflow, pubs compactes, composants plus fins et mieux structurés, images 100 % réelles vérifiées visuellement.
+- Accès démo inchangé côté mot de passe : admin@reussitemagazine.com / admin123 (emails mis à jour en base).
+- Fichiers clés : globals.css (thème), Header.tsx (masthead + hamburger), AdSlot.tsx (tailles appliquées), Footer.tsx (noir), ArticleCard/HeroSlider/SectionTitle/HomePage (raffinement), route.ts API (filtre rubriques parentes), layout.tsx (SEO/favicon).

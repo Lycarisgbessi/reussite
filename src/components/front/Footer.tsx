@@ -1,8 +1,9 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// FOOTER — 4 colonnes (À propos, Rubriques, Informations, Newsletter)
-// + barre basse : ©, mentions légales, plan du site, espace rédaction.
+// FOOTER — Réussite Magazine. Noir permanent (charte rouge/noir/blanc) :
+// 4 colonnes (À propos, Rubriques, Informations, Newsletter) + barre
+// basse : ©, mentions légales, plan du site, espace rédaction.
 // ═══════════════════════════════════════════════════════════════
 import { useState } from 'react';
 import {
@@ -71,17 +72,23 @@ export function Footer() {
   ].filter((r) => r.value);
 
   return (
-    <footer className="mt-auto border-t bg-secondary/40">
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+    <footer className="mt-auto bg-neutral-950 text-neutral-300">
+      <div className="h-0.5 w-full bg-primary" aria-hidden="true" />
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* À propos */}
           <div>
-            <p className="font-editorial text-lg font-bold">
-              BUSINESS <span className="text-primary">HORIZON</span>
-            </p>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            <a href="#/" aria-label="Réussite Magazine — Accueil" className="inline-block">
+              <img
+                src="/images/logo-reussite.png"
+                alt="Réussite Magazine"
+                className="h-8 w-auto"
+                loading="lazy"
+              />
+            </a>
+            <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-neutral-400">
               {settings?.footerAbout ||
-                "Le magazine de référence de l'entrepreneuriat, du business et de l'innovation."}
+                'Le trimestriel des décideurs africains : entrepreneuriat, business, management et innovation.'}
             </p>
             <div className="mt-4 flex gap-2">
               {socials.map(({ key, url, Icon, label }) => (
@@ -91,9 +98,9 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="flex size-9 items-center justify-center rounded-full border bg-card transition-colors hover:bg-primary hover:text-primary-foreground"
+                  className="flex size-8 items-center justify-center rounded-full border border-white/15 transition-colors hover:border-primary hover:bg-primary hover:text-white"
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-3.5" />
                 </a>
               ))}
             </div>
@@ -101,14 +108,14 @@ export function Footer() {
 
           {/* Rubriques */}
           <nav aria-label="Rubriques du site">
-            <p className="eyebrow mb-3 text-primary">Rubriques</p>
-            <ul className="space-y-2 text-sm">
+            <p className="eyebrow mb-3 text-brand-bright">Rubriques</p>
+            <ul className="space-y-2 text-[13px]">
               {footerMenu.length > 0
                 ? footerMenu.map((item) => (
                     <li key={item.id}>
                       <a
                         href={item.url.startsWith('#') ? item.url : `#${item.url}`}
-                        className="text-muted-foreground transition-colors hover:text-primary"
+                        className="text-neutral-400 transition-colors hover:text-white"
                       >
                         {item.label}
                       </a>
@@ -118,19 +125,19 @@ export function Footer() {
                     <li key={cat.id}>
                       <a
                         href={`#/category/${cat.slug}`}
-                        className="text-muted-foreground transition-colors hover:text-primary"
+                        className="text-neutral-400 transition-colors hover:text-white"
                       >
                         {cat.name}
                       </a>
                     </li>
                   ))}
               <li>
-                <a href="#/videos" className="text-muted-foreground transition-colors hover:text-primary">
+                <a href="#/videos" className="text-neutral-400 transition-colors hover:text-white">
                   Vidéos
                 </a>
               </li>
               <li>
-                <a href="#/podcasts" className="text-muted-foreground transition-colors hover:text-primary">
+                <a href="#/podcasts" className="text-neutral-400 transition-colors hover:text-white">
                   Podcasts
                 </a>
               </li>
@@ -139,16 +146,16 @@ export function Footer() {
 
           {/* Informations */}
           <div>
-            <p className="eyebrow mb-3 text-primary">Informations</p>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <p className="eyebrow mb-3 text-brand-bright">Informations</p>
+            <ul className="space-y-2.5 text-[13px] text-neutral-400">
               {contactRows.map(({ Icon, value, label }) => (
                 <li key={label} className="flex items-start gap-2.5">
-                  <Icon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                  <Icon className="mt-0.5 size-3.5 shrink-0 text-brand-bright" aria-hidden="true" />
                   <span>{value}</span>
                 </li>
               ))}
               <li>
-                <a href="#/contact" className="font-medium text-primary hover:underline">
+                <a href="#/contact" className="font-medium text-brand-bright hover:underline">
                   Nous contacter →
                 </a>
               </li>
@@ -157,14 +164,14 @@ export function Footer() {
 
           {/* Newsletter */}
           <div>
-            <p className="eyebrow mb-3 text-primary">Newsletter</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="eyebrow mb-3 text-brand-bright">Newsletter</p>
+            <p className="text-[13px] leading-relaxed text-neutral-400">
               L'essentiel de l'actu business chaque semaine, dans votre boîte mail.
             </p>
             {done ? (
-              <div className="mt-4 flex items-center gap-3 rounded-lg border bg-card p-3">
+              <div className="mt-4 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
                 <DrawCheck className="size-8" />
-                <p className="text-sm font-medium">Inscription confirmée. Merci !</p>
+                <p className="text-[13px] font-medium text-white">Inscription confirmée. Merci !</p>
               </div>
             ) : (
               <form onSubmit={subscribe} className="mt-4 flex gap-2">
@@ -174,14 +181,14 @@ export function Footer() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Votre email"
                   aria-label="Adresse email pour la newsletter"
-                  className="h-11"
+                  className="h-10 border-white/15 bg-white/5 text-sm text-white placeholder:text-neutral-500"
                 />
-                <Button type="submit" disabled={busy} className="h-11 shrink-0 rounded-lg px-4">
+                <Button type="submit" disabled={busy} className="h-10 shrink-0 rounded-md px-4 text-[13px]">
                   {busy ? <Loader2 className="size-4 animate-spin" /> : "S'inscrire"}
                 </Button>
               </form>
             )}
-            <p className="mt-2 text-[11px] text-muted-foreground">
+            <p className="mt-2 text-[11px] text-neutral-500">
               En vous inscrivant, vous acceptez notre politique de confidentialité.
             </p>
           </div>
@@ -189,22 +196,22 @@ export function Footer() {
       </div>
 
       {/* Barre basse */}
-      <div className="border-t">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} Business Horizon — Tous droits réservés.</p>
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-neutral-500 md:flex-row">
+          <p>© {new Date().getFullYear()} Réussite Magazine — Tous droits réservés.</p>
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1" aria-label="Liens légaux">
-            <a href="#/page/mentions-legales" className="transition-colors hover:text-primary">
+            <a href="#/page/mentions-legales" className="transition-colors hover:text-white">
               Mentions légales
             </a>
-            <a href="#/page/cgu" className="transition-colors hover:text-primary">
+            <a href="#/page/cgu" className="transition-colors hover:text-white">
               CGU
             </a>
-            <a href="#/page/politique-confidentialite" className="transition-colors hover:text-primary">
+            <a href="#/page/politique-confidentialite" className="transition-colors hover:text-white">
               Confidentialité
             </a>
             <Popover>
               <PopoverTrigger asChild>
-                <button type="button" className="transition-colors hover:text-primary">
+                <button type="button" className="transition-colors hover:text-white">
                   Plan du site
                 </button>
               </PopoverTrigger>
@@ -226,7 +233,7 @@ export function Footer() {
                         <a
                           key={child.id}
                           href={`#/category/${child.slug}`}
-                          className="block rounded px-2 py-1 pl-6 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          className="block rounded px-2 py-1.5 pl-6 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
                         >
                           {child.name}
                         </a>
@@ -254,7 +261,7 @@ export function Footer() {
             </Popover>
             <a
               href="#/admin"
-              className="inline-flex items-center gap-1 opacity-60 transition-opacity hover:opacity-100"
+              className="inline-flex items-center gap-1 transition-colors hover:text-white"
             >
               <Lock className="size-3" aria-hidden="true" />
               Espace rédaction

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// CLIENT API — Plateforme Magazine Business Horizon
+// CLIENT API — Plateforme Magazine Réussite Magazine
 // Toutes les routes commencent par /api. Le token admin est envoyé
 // via l'en-tête Authorization: Bearer <token>.
 // ═══════════════════════════════════════════════════════════════

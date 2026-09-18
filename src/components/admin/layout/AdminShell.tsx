@@ -173,7 +173,7 @@ function SidebarLogo() {
         <Mountain className="h-5 w-5" aria-hidden="true" />
       </div>
       <div className="leading-tight">
-        <p className="font-editorial text-[15px] font-bold text-white">Business Horizon</p>
+        <p className="font-editorial text-[15px] font-bold text-white">Réussite Magazine</p>
         <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">CMS v1.0</p>
       </div>
     </div>
@@ -283,7 +283,7 @@ export function AdminShell({ section, title, children }: {
   const handleLogout = () => {
     clearAdminSession();
     navigate('/');
-    toast({ title: 'Déconnecté', description: 'À bientôt sur Business Horizon !' });
+    toast({ title: 'Déconnecté', description: 'À bientôt sur Réussite Magazine !' });
   };
 
   if (!adminUser) return null;
@@ -297,7 +297,7 @@ export function AdminShell({ section, title, children }: {
           <SidebarLogo />
           <NavContent section={section} role={role} badges={badgesValue} />
           <div className="border-t border-zinc-800 px-4 py-3">
-            <p className="text-[11px] text-zinc-500">Business Horizon CMS v1.0</p>
+            <p className="text-[11px] text-zinc-500">Réussite Magazine — CMS v1.0</p>
             <p className="mt-0.5 text-[11px] text-zinc-600">© {new Date().getFullYear()} — Tous droits réservés</p>
           </div>
         </aside>
@@ -326,7 +326,7 @@ export function AdminShell({ section, title, children }: {
                     onNavigate={() => setMobileOpen(false)}
                   />
                   <div className="border-t border-zinc-800 px-4 py-3">
-                    <p className="text-[11px] text-zinc-500">Business Horizon CMS v1.0</p>
+                    <p className="text-[11px] text-zinc-500">Réussite Magazine — CMS v1.0</p>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -402,7 +402,7 @@ export function AdminShell({ section, title, children }: {
 
           {/* Pied de page admin (stick au bas via flex) */}
           <footer className="mt-auto border-t border-border/60 px-4 py-3 text-center text-[11px] text-muted-foreground md:px-6">
-            Business Horizon CMS v1.0 — Espace d’administration
+            Réussite Magazine — CMS v1.0 — Espace d’administration
           </footer>
         </div>
 

@@ -1,13 +1,14 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// HEADER — sticky : topbar (date FR, réseaux, annonceurs, thème, pro),
-// logo, recherche, bouton S'abonner, menu catégories + sous-menus,
-// menu mobile en Sheet latéral avec accordéon.
+// HEADER — Réussite Magazine.
+// Masthead noir permanent (logo officiel + tagline), topbar fine
+// (date, réseaux, thème, annonceurs), recherche, abonnement et
+// menu hamburger sur TOUS les écrans (aucun overflow horizontal).
+// Le menu latéral contient la navigation complète avec accordéon.
 // ═══════════════════════════════════════════════════════════════
 import { useState } from 'react';
 import {
-  ChevronDown,
   Facebook,
   Linkedin,
   Menu,
@@ -53,6 +54,7 @@ export function Header() {
   });
 
   const roots = (bootstrap?.categories || []).filter((c) => !c.parentId && c.showInMenu);
+  const tagline = settings?.tagline || 'Trimestriel des décideurs africains';
 
   const socials = [
     { key: 'facebook', url: settings?.facebook, Icon: Facebook, label: 'Facebook' },
@@ -61,20 +63,13 @@ export function Header() {
     { key: 'youtube', url: settings?.youtube, Icon: Youtube, label: 'YouTube' },
   ].filter((s) => s.url);
 
-  const fixedLinks = [
-    { label: 'Accueil', href: '#/' },
-    { label: 'Vidéos', href: '#/videos' },
-    { label: 'Podcasts', href: '#/podcasts' },
-    { label: 'Contact', href: '#/contact' },
-  ];
-
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
-      {/* ── Topbar ─────────────────────────────────────────────── */}
-      <div className="hidden border-b bg-secondary/60 sm:block">
-        <div className="mx-auto flex h-9 max-w-7xl items-center justify-between px-4 text-xs text-muted-foreground">
-          <p className="font-medium">{today || '\u00a0'}</p>
-          <div className="flex items-center gap-1">
+    <header className="sticky top-0 z-50">
+      {/* ── Topbar fine (noir permanent) ────────────────────────── */}
+      <div className="hidden border-b border-white/10 bg-neutral-950 sm:block">
+        <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-[11px] text-white/60">
+          <p className="font-medium tracking-wide">{today || '\u00a0'}</p>
+          <div className="flex items-center gap-0.5">
             {socials.map(({ key, url, Icon, label }) => (
               <a
                 key={key}
@@ -82,29 +77,29 @@ export function Header() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                className="flex size-7 items-center justify-center rounded-full transition-colors hover:bg-background hover:text-primary"
+                className="flex size-6.5 items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white"
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-3" />
               </a>
             ))}
-            <span className="mx-2 h-4 w-px bg-border" aria-hidden="true" />
-            <a href="#/announcers" className="rounded px-2 py-1 transition-colors hover:text-primary">
+            <span className="mx-2 h-3.5 w-px bg-white/15" aria-hidden="true" />
+            <a href="#/announcers" className="rounded px-1.5 py-0.5 transition-colors hover:text-white">
               Espace annonceurs
             </a>
-            <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+            <span className="mx-1.5 h-3.5 w-px bg-white/15" aria-hidden="true" />
             {settings?.darkModeEnabled !== false && (
               <button
                 type="button"
                 onClick={toggleTheme}
                 aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
-                className="flex size-7 items-center justify-center rounded-full transition-colors hover:bg-background hover:text-primary"
+                className="flex size-6.5 items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white"
               >
-                {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+                {theme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />}
               </button>
             )}
             <a
               href="#/admin"
-              className="ml-1 rounded px-2 py-1 opacity-50 transition-opacity hover:opacity-100"
+              className="ml-1.5 rounded px-1.5 py-0.5 opacity-50 transition-opacity hover:opacity-100"
               title="Espace rédaction"
             >
               Pro
@@ -113,198 +108,160 @@ export function Header() {
         </div>
       </div>
 
-      {/* ── Barre principale ───────────────────────────────────── */}
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <a href="#/" className="group flex shrink-0 items-baseline gap-2" aria-label="Business Horizon — Accueil">
-          <span className="font-editorial text-xl font-bold tracking-tight sm:text-2xl">
-            BUSINESS <span className="text-primary">HORIZON</span>
-          </span>
-          <span className="hidden text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground lg:block">
-            {settings?.tagline || 'Entrepreneuriat · Business · Innovation'}
-          </span>
-        </a>
-
-        {/* Menu desktop */}
-        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Navigation principale">
+      {/* ── Masthead noir avec logo officiel ───────────────────── */}
+      <div className="border-b-2 border-primary bg-neutral-950">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:h-16">
           <a
             href="#/"
-            className="rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
+            className="flex shrink-0 items-center gap-3"
+            aria-label="Réussite Magazine — Accueil"
           >
-            Accueil
+            {/* png transparent : rouge du logo sur fond noir permanent */}
+            <img
+              src="/images/logo-reussite.png"
+              alt="Réussite Magazine — Trimestriel des décideurs africains"
+              className="h-7 w-auto sm:h-8 md:h-9"
+            />
+            <span className="hidden border-l border-white/15 pl-3 text-[10px] font-medium uppercase leading-relaxed tracking-[0.22em] text-white/55 md:block">
+              {tagline}
+            </span>
           </a>
-          {roots.map((cat) => (
-            <div key={cat.id} className="group relative">
-              <a
-                href={`#/category/${cat.slug}`}
-                className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
-                aria-haspopup={cat.children && cat.children.length > 0 ? 'true' : undefined}
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Rechercher"
+              className="flex size-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <Search className="size-[18px]" />
+            </button>
+            {settings?.darkModeEnabled !== false && (
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+                className="flex size-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
               >
-                {cat.name}
-                {cat.children && cat.children.length > 0 ? (
-                  <ChevronDown className="size-3.5 transition-transform duration-200 group-hover:rotate-180" />
-                ) : null}
-              </a>
-              {cat.children && cat.children.length > 0 ? (
-                <div className="invisible absolute left-0 top-full z-50 translate-y-1 pt-1 opacity-0 transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                  <div className="min-w-60 rounded-lg border bg-popover p-1.5 shadow-xl">
-                    <a
-                      href={`#/category/${cat.slug}`}
-                      className="block rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-secondary"
-                    >
-                      Tous les articles
-                    </a>
-                    {cat.children.map((child) => (
+                {theme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
+              </button>
+            )}
+            <Button
+              size="sm"
+              className="ml-1 hidden h-9 rounded-full px-4 text-[13px] font-semibold sm:inline-flex"
+              onClick={() => navigate('/newsletter')}
+            >
+              S'abonner
+            </Button>
+
+            {/* Menu hamburger — tous les écrans */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Ouvrir le menu"
+                  className="flex size-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+                >
+                  <Menu className="size-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-84 overflow-y-auto sm:w-88">
+                <SheetHeader className="border-b">
+                  <SheetTitle className="font-editorial text-lg font-bold">
+                    Réussite <span className="text-primary">Magazine</span>
+                  </SheetTitle>
+                  <SheetDescription className="text-xs">{tagline}</SheetDescription>
+                </SheetHeader>
+                <nav className="flex flex-col gap-0.5 px-3 py-3" aria-label="Menu principal">
+                  <a
+                    href="#/"
+                    className="rounded-md px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-secondary hover:text-primary"
+                  >
+                    Accueil
+                  </a>
+                  {roots.map((cat) =>
+                    cat.children && cat.children.length > 0 ? (
+                      <Accordion key={cat.id} type="single" collapsible>
+                        <AccordionItem value={cat.slug} className="border-none">
+                          <AccordionTrigger className="rounded-md px-3 py-2.5 text-sm font-medium hover:bg-secondary hover:no-underline">
+                            {cat.name}
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-1 pl-2">
+                            <a
+                              href={`#/category/${cat.slug}`}
+                              className="block rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-secondary"
+                            >
+                              Tous les articles
+                            </a>
+                            {cat.children.map((child) => (
+                              <a
+                                key={child.id}
+                                href={`#/category/${child.slug}`}
+                                className={cn(
+                                  'block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+                                )}
+                              >
+                                {child.name}
+                              </a>
+                            ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    ) : (
                       <a
-                        key={child.id}
-                        href={`#/category/${child.slug}`}
-                        className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-secondary"
+                        key={cat.id}
+                        href={`#/category/${cat.slug}`}
+                        className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
                       >
-                        {child.name}
+                        {cat.name}
+                      </a>
+                    ),
+                  )}
+                  <div className="my-2 h-px bg-border" aria-hidden="true" />
+                  <a href="#/videos" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
+                    Vidéos
+                  </a>
+                  <a href="#/podcasts" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
+                    Podcasts
+                  </a>
+                  <a href="#/favorites" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
+                    Mes favoris
+                  </a>
+                  <a href="#/announcers" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
+                    Espace annonceurs
+                  </a>
+                  <a href="#/contact" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
+                    Contact
+                  </a>
+                </nav>
+                <div className="mt-auto border-t p-4">
+                  <Button
+                    className="w-full rounded-full"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      navigate('/newsletter');
+                    }}
+                  >
+                    S'abonner à la newsletter
+                  </Button>
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    {socials.map(({ key, url, Icon, label }) => (
+                      <a
+                        key={key}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={label}
+                        className="flex size-9 items-center justify-center rounded-full border transition-colors hover:bg-secondary hover:text-primary"
+                      >
+                        <Icon className="size-4" />
                       </a>
                     ))}
                   </div>
                 </div>
-              ) : null}
-            </div>
-          ))}
-          <a
-            href="#/videos"
-            className="rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
-          >
-            Vidéos
-          </a>
-          <a
-            href="#/podcasts"
-            className="rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
-          >
-            Podcasts
-          </a>
-          <a
-            href="#/contact"
-            className="rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
-          >
-            Contact
-          </a>
-        </nav>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Rechercher"
-            className="flex size-10 items-center justify-center rounded-full transition-colors hover:bg-secondary hover:text-primary"
-          >
-            <Search className="size-5" />
-          </button>
-          <Button
-            size="sm"
-            className="cta-pulse ml-1 hidden h-10 rounded-full px-5 font-semibold sm:inline-flex"
-            onClick={() => navigate('/newsletter')}
-          >
-            S'abonner
-          </Button>
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                aria-label="Ouvrir le menu"
-                className="flex size-10 items-center justify-center rounded-full transition-colors hover:bg-secondary lg:hidden"
-              >
-                <Menu className="size-5" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 overflow-y-auto">
-              <SheetHeader className="border-b">
-                <SheetTitle className="font-editorial text-lg font-bold">
-                  BUSINESS <span className="text-primary">HORIZON</span>
-                </SheetTitle>
-                <SheetDescription className="text-xs">
-                  {settings?.tagline || 'Entrepreneuriat · Business · Innovation'}
-                </SheetDescription>
-              </SheetHeader>
-              <nav className="flex flex-col gap-1 px-4 py-3" aria-label="Menu mobile">
-                <a
-                  href="#/"
-                  className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary"
-                >
-                  Accueil
-                </a>
-                {roots.map((cat) =>
-                  cat.children && cat.children.length > 0 ? (
-                    <Accordion key={cat.id} type="single" collapsible>
-                      <AccordionItem value={cat.slug} className="border-none">
-                        <AccordionTrigger className="rounded-md px-3 py-2.5 text-sm font-medium hover:bg-secondary hover:no-underline">
-                          {cat.name}
-                        </AccordionTrigger>
-                        <AccordionContent className="pb-1 pl-2">
-                          <a
-                            href={`#/category/${cat.slug}`}
-                            className="block rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-secondary"
-                          >
-                            Tous les articles
-                          </a>
-                          {cat.children.map((child) => (
-                            <a
-                              key={child.id}
-                              href={`#/category/${child.slug}`}
-                              className={cn(
-                                'block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
-                              )}
-                            >
-                              {child.name}
-                            </a>
-                          ))}
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  ) : (
-                    <a
-                      key={cat.id}
-                      href={`#/category/${cat.slug}`}
-                      className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary"
-                    >
-                      {cat.name}
-                    </a>
-                  ),
-                )}
-                {fixedLinks.slice(1).map((l) => (
-                  <a
-                    key={l.href}
-                    href={l.href}
-                    className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary"
-                  >
-                    {l.label}
-                  </a>
-                ))}
-              </nav>
-              <div className="mt-auto border-t p-4">
-                <Button
-                  className="w-full rounded-full"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    navigate('/newsletter');
-                  }}
-                >
-                  S'abonner à la newsletter
-                </Button>
-                <div className="mt-3 flex justify-center gap-2">
-                  {socials.map(({ key, url, Icon, label }) => (
-                    <a
-                      key={key}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={label}
-                      className="flex size-9 items-center justify-center rounded-full border transition-colors hover:bg-secondary hover:text-primary"
-                    >
-                      <Icon className="size-4" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>

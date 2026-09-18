@@ -966,7 +966,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
             {/* Aperçu snippet Google */}
             <div className="rounded-lg border border-border/60 bg-muted/40 p-3">
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Aperçu moteur de recherche</p>
-              <p className="truncate text-xs text-muted-foreground">businesshorizon.fr › article › {slug || 'mon-article'}</p>
+              <p className="truncate text-xs text-muted-foreground">reussitemagazine.com › article › {slug || 'mon-article'}</p>
               <p className="truncate text-sm font-medium text-primary">{seoTitle || title || 'Titre de votre article'}</p>
               <p className="line-clamp-2 text-xs text-muted-foreground">
                 {seoDescription || subtitle || 'La méta description apparaîtra ici. Rédigez un résumé de 150 à 160 caractères incitant au clic.'}

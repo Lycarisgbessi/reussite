@@ -187,11 +187,11 @@ export function ArticlePage({ slug }: { slug: string }) {
             color={article.category?.color}
             className="mb-3"
           />
-          <h1 className="font-editorial text-3xl font-bold leading-tight sm:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
+          <h1 className="font-editorial text-2xl font-bold leading-tight sm:text-3xl lg:text-4xl lg:leading-[1.15]">
             {article.title}
           </h1>
           {article.subtitle ? (
-            <p className="mt-4 text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
               {article.subtitle}
             </p>
           ) : null}
@@ -232,7 +232,7 @@ export function ArticlePage({ slug }: { slug: string }) {
 
         {/* Image de couverture */}
         <figure className="mt-8">
-          <div className="overflow-hidden rounded-2xl">
+          <div className="overflow-hidden rounded-lg">
             <SmartImage
               src={article.coverImage}
               alt={article.title}

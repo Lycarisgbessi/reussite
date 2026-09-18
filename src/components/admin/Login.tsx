@@ -1,7 +1,7 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// LOGIN — Écran de connexion au back-office Business Horizon
+// LOGIN — Écran de connexion au back-office Réussite Magazine
 // ═══════════════════════════════════════════════════════════════
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ export function Login() {
       setAdminSession(session.token, session.user);
       toast({
         title: `Bonjour ${session.user.name} !`,
-        description: 'Bienvenue dans l’espace d’administration Business Horizon.',
+        description: 'Bienvenue dans l’espace d’administration Réussite Magazine.',
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -47,7 +47,7 @@ export function Login() {
   };
 
   const fillDemo = () => {
-    setEmail('admin@businesshorizon.fr');
+    setEmail('admin@reussitemagazine.com');
     setPassword('admin123');
     setError(null);
   };
@@ -68,9 +68,9 @@ export function Login() {
           </div>
           <div>
             <p className="eyebrow text-primary">Espace d’administration</p>
-            <h1 className="font-editorial text-3xl font-bold tracking-tight">Business Horizon</h1>
+            <h1 className="font-editorial text-3xl font-bold tracking-tight">Réussite Magazine</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Magazine entrepreneuriat, business &amp; innovation
+              Trimestriel des décideurs africains
             </p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function Login() {
                     id="login-email"
                     type="email"
                     autoComplete="email"
-                    placeholder="vous@businesshorizon.fr"
+                    placeholder="vous@reussitemagazine.com"
                     className="pl-8"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -143,7 +143,7 @@ export function Login() {
         <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-center text-xs text-muted-foreground">
           <p>
             Compte de démonstration :{' '}
-            <span className="font-medium text-foreground">admin@businesshorizon.fr</span>
+            <span className="font-medium text-foreground">admin@reussitemagazine.com</span>
             {' / '}
             <span className="font-medium text-foreground">admin123</span>
           </p>
@@ -153,7 +153,7 @@ export function Login() {
         </div>
 
         <p className="text-center text-[11px] text-muted-foreground">
-          © {new Date().getFullYear()} Business Horizon — Business Horizon CMS v1.0
+          © {new Date().getFullYear()} Réussite Magazine — CMS v1.0
         </p>
       </div>
     </div>

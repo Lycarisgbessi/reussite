@@ -73,7 +73,9 @@ async function listPublishedArticles(sp: URLSearchParams) {
   if (categorySlug) {
     const category = await db.category.findUnique({ where: { slug: categorySlug }, select: { id: true } });
     if (!category) return { articles: [], total: 0, page, totalPages: 1 };
-    where.categoryId = category.id;
+    // Une rubrique parente inclut ses sous-rubriques.
+    const children = await db.category.findMany({ where: { parentId: category.id }, select: { id: true } });
+    where.categoryId = { in: [category.id, ...children.map((c) => c.id)] };
   }
   const tag = sp.get('tag');
   if (tag) where.tags = { some: { tag: { name: tag } } };

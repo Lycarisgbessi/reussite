@@ -83,7 +83,7 @@ export function StaticPageView({ slug }: { slug: string }) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:py-14">
       <header className="mb-8">
-        <p className="eyebrow text-primary">Business Horizon</p>
+        <p className="eyebrow text-primary">Réussite Magazine</p>
         <h1 className="mt-1 font-editorial text-3xl font-bold sm:text-4xl">{page.title}</h1>
         <div className="mt-4 h-1 w-16 rounded-full bg-primary" aria-hidden="true" />
         {page.updatedAt ? (

@@ -21,7 +21,7 @@ export function SmartImage({
   alt,
   className,
   fallbackClassName,
-  fallbackLabel = 'Business Horizon',
+  fallbackLabel = 'Réussite Magazine',
   ...props
 }: SmartImageProps) {
   const [error, setError] = useState(false);

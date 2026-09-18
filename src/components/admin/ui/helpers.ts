@@ -1,7 +1,7 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// HELPERS PARTAGÉS — Back-office Business Horizon
+// HELPERS PARTAGÉS — Back-office Réussite Magazine
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
 import type { AdminRole, ArticleStatus, ContentBlock } from '@/lib/types';

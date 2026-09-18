@@ -186,7 +186,7 @@ export function VideosPage() {
               {selected?.title}
             </DialogTitle>
             <DialogDescription>
-              {selected?.playlist ? `Playlist : ${selected.playlist}` : 'Vidéo Business Horizon'}
+              {selected?.playlist ? `Playlist : ${selected.playlist}` : 'Vidéo Réussite Magazine'}
             </DialogDescription>
           </DialogHeader>
           <div className="aspect-video w-full bg-black">

@@ -27,14 +27,17 @@ const PLACEMENT_FLAGS: Record<string, keyof SiteSettings> = {
   INTERSTITIAL: 'adsInterstitialEnabled',
 };
 
-/** Classes de dimensions selon l'emplacement (CDC section 6.1). */
+/**
+ * Classes de dimensions selon l'emplacement (CDC section 6.1).
+ * Bannières header/footer : format « leaderboard » compact et centré.
+ */
 const SIZE_CLASSES: Record<string, string> = {
-  HEADER_BANNER: 'h-24 w-full md:h-32',
-  SIDEBAR_TOP: 'h-[250px] w-full max-w-[336px]',
-  SIDEBAR_STICKY: 'h-[600px] w-full max-w-[336px]',
-  IN_ARTICLE: 'mx-auto h-[280px] w-full max-w-[336px]',
+  HEADER_BANNER: 'mx-auto h-16 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-20',
+  SIDEBAR_TOP: 'h-[250px] w-full overflow-hidden rounded-md border bg-card',
+  SIDEBAR_STICKY: 'h-[600px] w-full overflow-hidden rounded-md border bg-card',
+  IN_ARTICLE: 'mx-auto h-[250px] w-full max-w-[336px] overflow-hidden rounded-md border bg-card',
   NATIVE: 'aspect-[4/3] w-full',
-  FOOTER_BANNER: 'h-24 w-full md:h-28',
+  FOOTER_BANNER: 'mx-auto h-16 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-20',
 };
 
 interface AdSlotProps {
@@ -112,7 +115,11 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
   if (!creative) return null;
 
   return (
-    <div className={cn('relative', className)} role="complementary" aria-label="Espace publicitaire">
+    <div
+      className={cn('relative', SIZE_CLASSES[placement] || '', className)}
+      role="complementary"
+      aria-label="Espace publicitaire"
+    >
       {creative}
       <span className="pointer-events-none absolute right-1.5 top-1.5 rounded bg-black/45 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/90">
         {placement === 'NATIVE' ? 'Sponsorisé' : label}

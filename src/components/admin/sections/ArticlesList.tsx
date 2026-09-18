@@ -169,8 +169,8 @@ export function ArticlesList() {
   const doExport = async (format: 'json' | 'csv') => {
     try {
       const { data } = await adminApi.export('articles', format);
-      downloadExport(`articles-business-horizon.${format}`, data, format);
-      toast({ title: 'Export réussi', description: `Le fichier « articles-business-horizon.${format} » a été téléchargé.` });
+      downloadExport(`articles-reussite-magazine.${format}`, data, format);
+      toast({ title: 'Export réussi', description: `Le fichier « articles-reussite-magazine.${format} » a été téléchargé.` });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Export impossible', description: e instanceof Error ? e.message : 'Erreur inconnue.' });
     }

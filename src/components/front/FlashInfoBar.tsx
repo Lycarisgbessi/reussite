@@ -46,17 +46,17 @@ export function FlashInfoBar() {
 
   return (
     <div
-      className="slide-in-top bg-primary text-primary-foreground"
+      className="slide-in-top bg-neutral-950 text-white dark:bg-black"
       role="region"
       aria-label="Flash info"
     >
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5">
-        <span className="flex shrink-0 items-center gap-1.5 rounded bg-primary-foreground px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
-          <span className="size-1.5 animate-pulse rounded-full bg-destructive" aria-hidden="true" />
+        <span className="flex shrink-0 items-center gap-1.5 rounded-sm bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
+          <span className="size-1.5 animate-pulse rounded-full bg-white" aria-hidden="true" />
           Flash
         </span>
         <div className="relative flex-1 overflow-hidden" aria-live="polite">
-          <div className="ticker-marquee text-sm font-medium">
+          <div className="ticker-marquee text-[13px] font-medium">
             {items.map((i) => renderItem(i, false))}
             {items.map((i) => renderItem(i, true))}
           </div>
@@ -65,7 +65,7 @@ export function FlashInfoBar() {
           type="button"
           onClick={close}
           aria-label="Masquer le flash info"
-          className="flex size-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-primary-foreground/20"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/10"
         >
           <X className="size-4" />
         </button>

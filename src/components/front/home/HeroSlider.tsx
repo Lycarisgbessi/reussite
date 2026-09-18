@@ -70,12 +70,12 @@ export function HeroSlider({ articles }: HeroSliderProps) {
       }}
     >
       <div className="relative" style={{ perspective: '1200px' }}>
-        <div ref={emblaRef} className="overflow-hidden rounded-2xl">
+        <div ref={emblaRef} className="overflow-hidden rounded-lg">
           <div className="flex">
             {slides.map((article) => (
               <div key={article.id} className="min-w-0 flex-[0_0_100%] pl-0">
                 <div
-                  className="tilt-card relative aspect-[16/9] w-full overflow-hidden rounded-2xl sm:aspect-[16/7]"
+                  className="tilt-card relative aspect-[16/9] w-full overflow-hidden rounded-lg sm:aspect-[16/7]"
                   style={{ transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)` }}
                   onMouseMove={onTiltMove}
                 >
@@ -89,21 +89,21 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                       className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/5"
                       aria-hidden="true"
                     />
-                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8 lg:p-10">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
                       <CategoryBadge
                         name={article.category?.name || 'À la une'}
                         color={article.category?.color}
-                        className="mb-3 shadow-sm"
+                        className="mb-2 shadow-sm"
                       />
-                      <h2 className="font-editorial text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">
+                      <h2 className="font-editorial text-xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl">
                         <span className="line-clamp-2">{article.title}</span>
                       </h2>
-                      <p className="mt-2 hidden max-w-3xl text-base text-white/85 md:line-clamp-2">
+                      <p className="mt-1.5 hidden max-w-2xl text-sm text-white/85 md:line-clamp-2">
                         {article.subtitle}
                       </p>
-                      <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition-colors group-hover:bg-white/25">
+                      <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur transition-colors group-hover:bg-white/25">
                         Lire la suite
-                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                        <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </div>
                   </a>
@@ -120,20 +120,20 @@ export function HeroSlider({ articles }: HeroSliderProps) {
               type="button"
               onClick={() => emblaApi?.scrollPrev()}
               aria-label="Article précédent"
-              className="absolute left-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60"
+              className="absolute left-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition-colors hover:bg-primary"
             >
-              <ChevronLeft className="size-5" />
+              <ChevronLeft className="size-4.5" />
             </button>
             <button
               type="button"
               onClick={() => emblaApi?.scrollNext()}
               aria-label="Article suivant"
-              className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60"
+              className="absolute right-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition-colors hover:bg-primary"
             >
-              <ChevronRight className="size-5" />
+              <ChevronRight className="size-4.5" />
             </button>
             {/* Dots */}
-            <div className="absolute bottom-4 right-6 flex items-center gap-1.5">
+            <div className="absolute bottom-3.5 right-5 flex items-center gap-1.5">
               {slides.map((_, i) => (
                 <button
                   key={i}
@@ -143,8 +143,8 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                   aria-current={selected === i}
                   className={
                     selected === i
-                      ? 'h-2.5 w-7 rounded-full bg-white transition-all'
-                      : 'size-2.5 rounded-full bg-white/50 transition-all hover:bg-white/80'
+                      ? 'h-2 w-6 rounded-full bg-white transition-all'
+                      : 'size-2 rounded-full bg-white/50 transition-all hover:bg-white/80'
                   }
                 />
               ))}

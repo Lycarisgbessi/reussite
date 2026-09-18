@@ -272,7 +272,7 @@ export function UsersAdmin() {
               <Input value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} placeholder="Ex : Marie Martin" />
             </Field>
             <Field label="E-mail" required>
-              <Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="marie@businesshorizon.fr" />
+              <Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder="marie@reussitemagazine.com" />
             </Field>
             <Field label="Mot de passe" required hint="6 caractères minimum. À transmettre en sécurité.">
               <Input type="password" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} placeholder="••••••••" />

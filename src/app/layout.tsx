@@ -14,21 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Business Horizon — Magazine Entrepreneuriat, Business & Innovation",
+  metadataBase: new URL("http://localhost:3000"),
+  title: "Réussite Magazine — Trimestriel des décideurs africains",
   description:
-    "La référence francophone de l'entrepreneuriat, du business, du management et de l'innovation : articles, dossiers, interviews, vidéos et podcasts.",
-  keywords: ["entrepreneuriat", "business", "innovation", "startups", "management", "magazine"],
-  authors: [{ name: "Business Horizon" }],
+    "Le magazine des décideurs africains : entrepreneuriat, business, management, innovation, interviews et analyses exclusives.",
+  keywords: ["Réussite Magazine", "décideurs africains", "entrepreneuriat", "business", "Afrique", "magazine"],
+  authors: [{ name: "Réussite Magazine" }],
+  icons: { icon: "/images/favicon-reussite.png" },
   openGraph: {
-    title: "Business Horizon — Magazine Entrepreneuriat, Business & Innovation",
-    description: "Articles, dossiers, interviews, vidéos et podcasts business.",
-    siteName: "Business Horizon",
+    title: "Réussite Magazine — Trimestriel des décideurs africains",
+    description: "Entrepreneuriat, business, management et innovation : articles, dossiers, interviews, vidéos et podcasts.",
+    siteName: "Réussite Magazine",
+    images: ["/images/og-default.jpg"],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Business Horizon",
-    description: "La référence francophone de l'entrepreneuriat et de l'innovation.",
+    title: "Réussite Magazine",
+    description: "Le trimestriel des décideurs africains.",
   },
 };
 

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// SEED — Business Horizon (magazine entrepreneuriat / business / innovation)
+// SEED — Réussite Magazine (magazine entrepreneuriat / business / innovation)
 // Exécution : cd /home/z/my-project && bun run prisma/seed.ts
 // Idempotent : purge toutes les tables puis recrée un jeu de données
 // éditorial francophone complet et crédible.
@@ -55,7 +55,7 @@ const divider = (): Block => ({ id: bid(), type: 'divider' })
 // MAIN
 // ═══════════════════════════════════════════════════════════════
 async function main() {
-  console.log('🌱  Seed Business Horizon — démarrage')
+  console.log('🌱  Seed Réussite Magazine — démarrage')
 
   // ───────────────────────────────────────────────────────────
   // 1. PURGE (ordre respectant les clés étrangères)
@@ -94,11 +94,11 @@ async function main() {
       update: { name, password: hashPassword(password), role, bio, active: true },
       create: { email, name, password: hashPassword(password), role, bio, active: true },
     })
-  const camille = await upsertUser('admin@businesshorizon.fr', 'Camille Rousseau', 'admin123', 'ADMIN', 'Directrice de la rédaction')
-  const marc = await upsertUser('marc.dupont@businesshorizon.fr', 'Marc Dupont', 'editeur123', 'EDITOR_IN_CHIEF', 'Éditeur en chef, 20 ans de presse économique')
-  const claire = await upsertUser('claire.martin@businesshorizon.fr', 'Claire Martin', 'redacteur123', 'WRITER', 'Rédactrice startups & innovation')
-  const sophie = await upsertUser('sophie.leroy@businesshorizon.fr', 'Sophie Leroy', 'cm123456', 'COMMUNITY_MANAGER', 'Animation communauté & newsletter')
-  const karim = await upsertUser('karim.benali@businesshorizon.fr', 'Karim Benali', 'pub123456', 'AD_MANAGER', 'Régie publicitaire')
+  const camille = await upsertUser('admin@reussitemagazine.com', 'Camille Rousseau', 'admin123', 'ADMIN', 'Directrice de la rédaction')
+  const marc = await upsertUser('marc.dupont@reussitemagazine.com', 'Marc Dupont', 'editeur123', 'EDITOR_IN_CHIEF', 'Éditeur en chef, 20 ans de presse économique')
+  const claire = await upsertUser('claire.martin@reussitemagazine.com', 'Claire Martin', 'redacteur123', 'WRITER', 'Rédactrice startups & innovation')
+  const sophie = await upsertUser('sophie.leroy@reussitemagazine.com', 'Sophie Leroy', 'cm123456', 'COMMUNITY_MANAGER', 'Animation communauté & newsletter')
+  const karim = await upsertUser('karim.benali@reussitemagazine.com', 'Karim Benali', 'pub123456', 'AD_MANAGER', 'Régie publicitaire')
   console.log(`   ✔ 5 utilisateurs (ADMIN, EDITOR_IN_CHIEF, WRITER, COMMUNITY_MANAGER, AD_MANAGER)`)
 
   // ───────────────────────────────────────────────────────────
@@ -113,75 +113,75 @@ async function main() {
   const cEntrepreneuriat = await mkParent(
     'Entrepreneuriat', 'entrepreneuriat',
     'Passer de l\'idée à l\'entreprise : création, financement, croissance et récits d\'entrepreneurs qui transforment leurs ambitions en réalité.',
-    '#ea580c', '/images/cover-entrepreneuriat-1.jpg', 1, true, true)
+    '#C8102E', '/images/cover-entrepreneuriat-1.jpg', 1, true, true)
   const cCreation = await mkChild(
     'Création d\'entreprise', 'creation-entreprise',
     'Statuts, business plan, immatriculation : toutes les clés pour lancer sa société sans faux pas.',
-    '#c2410c', '/images/cover-entrepreneuriat-2.jpg', 1, cEntrepreneuriat.id)
+    '#C8102E', '/images/cover-entrepreneuriat-2.jpg', 1, cEntrepreneuriat.id)
   const cFinancement = await mkChild(
     'Financement & Levées de fonds', 'financement-levees-fonds',
     'Capital-risque, business angels, prêts d\'honneur : comprendre et réussir chaque étape de son financement.',
-    '#9a3412', '/images/cover-financement-1.jpg', 2, cEntrepreneuriat.id)
+    '#C8102E', '/images/cover-financement-1.jpg', 2, cEntrepreneuriat.id)
   const cSuccess = await mkChild(
     'Success stories', 'success-stories',
     'Des parcours d\'entrepreneurs français et francophones qui ont su faire la différence.',
-    '#7c2d12', '/images/cover-success-1.jpg', 3, cEntrepreneuriat.id)
+    '#C8102E', '/images/cover-success-1.jpg', 3, cEntrepreneuriat.id)
 
   const cBusiness = await mkParent(
     'Business & Économie', 'business-economie',
     'L\'actualité économique décryptée : marchés, secteurs, politiques publiques et grandes tendances qui façonnent l\'économie réelle.',
-    '#b45309', '/images/cover-business-1.jpg', 2, true, true)
+    '#C8102E', '/images/cover-business-1.jpg', 2, true, true)
   const cActuEco = await mkChild(
     'Actualités économiques', 'actualites-economiques',
     'L\'essentiel de l\'actualité éco française et européenne, expliqué aux décideurs.',
-    '#92400e', '/images/cover-business-2.jpg', 1, cBusiness.id)
+    '#C8102E', '/images/cover-business-2.jpg', 1, cBusiness.id)
   const cMarches = await mkChild(
     'Marchés & Secteurs', 'marches-secteurs',
     'Analyses sectorielles : industrie, services, tech, retail — les dynamiques de chaque marché.',
-    '#78350f', '/images/cover-business-1.jpg', 2, cBusiness.id)
+    '#C8102E', '/images/cover-business-1.jpg', 2, cBusiness.id)
 
   const cManagement = await mkParent(
     'Management & Leadership', 'management-leadership',
     'Diriger, décider, fédérer : méthodes de management, culture d\'entreprise et développement du leadership.',
-    '#4d7c0f', '/images/cover-management-1.jpg', 3, true, true)
+    '#C8102E', '/images/cover-management-1.jpg', 3, true, true)
   const cRH = await mkChild(
     'Ressources humaines', 'ressources-humaines',
     'Recrutement, QVCT, télétravail : les bonnes pratiques RH des entreprises qui attirent et fidélisent.',
-    '#3f6212', '/images/cover-management-2.jpg', 1, cManagement.id)
+    '#C8102E', '/images/cover-management-2.jpg', 1, cManagement.id)
   const cStrategie = await mkChild(
     'Stratégie d\'entreprise', 'strategie-entreprise',
     'Positionnement, croissance externe, RSE : les choix stratégiques qui font la différence.',
-    '#365314', '/images/cover-management-1.jpg', 2, cManagement.id)
+    '#C8102E', '/images/cover-management-1.jpg', 2, cManagement.id)
 
   const cStartups = await mkParent(
     'Startups & Innovation', 'startups-innovation',
     'L\'écosystème startup au sens large : levées de fonds, innovations de rupture, tech et deep tech francophones.',
-    '#0f766e', '/images/cover-startups-1.jpg', 4, true, true)
+    '#C8102E', '/images/cover-startups-1.jpg', 4, true, true)
   const cTech = await mkChild(
     'Tech & Digital', 'tech-digital',
     'Produit, growth, cybersécurité : la technologie au service des modèles économiques.',
-    '#115e59', '/images/cover-startups-2.jpg', 1, cStartups.id)
+    '#C8102E', '/images/cover-startups-2.jpg', 1, cStartups.id)
   const cIA = await mkChild(
     'Intelligence artificielle', 'intelligence-artificielle',
     'IA générative, automatisation, cas d\'usage concrets : l\'IA appliquée au business, sans hype.',
-    '#134e4a', '/images/cover-ia-1.jpg', 2, cStartups.id)
+    '#C8102E', '/images/cover-ia-1.jpg', 2, cStartups.id)
 
   const cInterviews = await mkParent(
     'Interviews & Portraits', 'interviews-portraits',
     'Rencontres avec celles et ceux qui font l\'économie de demain : fondateurs, dirigeants, investisseurs et talents atypiques.',
-    '#a16207', '/images/cover-interview-1.jpg', 5, true, true)
+    '#C8102E', '/images/cover-interview-1.jpg', 5, true, true)
   const cDossiers = await mkParent(
     'Dossiers & Analyses', 'dossiers-analyses',
     'Enquêtes de fond, grands formats et analyses approfondies pour comprendre les mutations de l\'économie.',
-    '#78350f', '/images/cover-dossier-1.jpg', 6, true, true)
+    '#C8102E', '/images/cover-dossier-1.jpg', 6, true, true)
   const cTribune = await mkParent(
     'Tribune Libre', 'tribune-libre',
     'Prises de position, points de vue et contributions d\'experts : les tribunes engagent leurs auteurs.',
-    '#57534e', '/images/cover-tribune-1.jpg', 7, true, true)
+    '#C8102E', '/images/cover-tribune-1.jpg', 7, true, true)
   const cEvenements = await mkParent(
     'Événements', 'evenements',
     'Salons, conférences, webinaires : l\'agenda des rendez-vous business à ne pas manquer.',
-    '#991b1b', '/images/cover-evenement-1.jpg', 8, true, false)
+    '#C8102E', '/images/cover-evenement-1.jpg', 8, true, false)
 
   const catMap: Record<string, string> = {
     'entrepreneuriat': cEntrepreneuriat.id, 'creation-entreprise': cCreation.id,
@@ -767,9 +767,9 @@ async function main() {
       tags: ['Levée de fonds', 'Financement'], cover: '/images/cover-evenement-1.jpg',
       status: 'SCHEDULED', views: 0, readingTime: 5, days: 1, hour: 15, scheduledInDays: 3,
       seoTitle: 'Webinaire : réussir sa première levée de fonds',
-      seoDescription: 'Inscrivez-vous au webinaire gratuit Business Horizon : 60 minutes avec investisseurs et fondateurs pour préparer votre première levée de fonds.',
+      seoDescription: 'Inscrivez-vous au webinaire gratuit Réussite Magazine : 60 minutes avec investisseurs et fondateurs pour préparer votre première levée de fonds.',
       blocks: [
-        p('Vous préparez votre première levée de fonds ? Business Horizon organise un webinaire exclusif de 60 minutes, animé par notre rédaction, avec deux investisseurs actifs en seed et un fondateur qui vient de boucler son tour de table. Objectif : répondre aux questions que personne n\'ose poser — valorisation réaliste, calendrier, erreurs de pitch, négociation du pacte — et donner des repères concrets, chiffrés, sans langue de bois.'),
+        p('Vous préparez votre première levée de fonds ? Réussite Magazine organise un webinaire exclusif de 60 minutes, animé par notre rédaction, avec deux investisseurs actifs en seed et un fondateur qui vient de boucler son tour de table. Objectif : répondre aux questions que personne n\'ose poser — valorisation réaliste, calendrier, erreurs de pitch, négociation du pacte — et donner des repères concrets, chiffrés, sans langue de bois.'),
         h2('Au programme de ces 60 minutes'),
         list(
           'Ce que les investisseurs vérifient réellement en seed : les 10 indicateurs incontournables.',
@@ -806,7 +806,7 @@ async function main() {
       data: {
         slug: a.slug, title: a.title, subtitle: a.subtitle,
         content: JSON.stringify(a.blocks),
-        coverImage: a.cover, coverCredit: 'Photo : Business Horizon',
+        coverImage: a.cover, coverCredit: 'Photo : Réussite Magazine',
         status,
         authorId: authorByKey[a.authorKey].id,
         categoryId: catMap[a.category],
@@ -843,13 +843,13 @@ async function main() {
     ['cover-dossier-1.jpg', 'Entrepôt logistique moderne avec préparation automatisée des commandes', 'dossier,cover'],
     ['cover-tribune-1.jpg', 'Tribune et plume sur un bureau d\'écriture en noir et blanc', 'tribune,cover'],
     ['cover-evenement-1.jpg', 'Salle de conférence remplie lors d\'un événement business', 'evenement,cover'],
-    ['og-default.jpg', 'Image de partage social par défaut du magazine Business Horizon', 'og,partage'],
+    ['og-default.jpg', 'Image de partage social par défaut du magazine Réussite Magazine', 'og,partage'],
   ]
   for (const [filename, alt, tags] of medias) {
     await prisma.media.create({
       data: {
         url: `/images/${filename}`, publicId: filename.replace('.jpg', ''), filename,
-        alt, caption: alt, credit: 'Business Horizon', tags, type: 'image',
+        alt, caption: alt, credit: 'Réussite Magazine', tags, type: 'image',
       },
     })
   }
@@ -907,30 +907,30 @@ async function main() {
   const mkPage = (slug: string, title: string, content: string, seoTitle: string, seoDescription: string) =>
     prisma.staticPage.create({ data: { slug, title, content, seoTitle, seoDescription, published: true } })
 
-  await mkPage('a-propos', 'À propos de Business Horizon',
-    'Business Horizon est né en 2023 d\'un constat simple : les entrepreneurs francophones méritaient un média à la hauteur de leurs ambitions, exigeant et accessible à la fois.\n\n## Notre mission\n\nNous décryptons l\'économie réelle de celles et ceux qui la font : créateurs d\'entreprise, dirigeants de PME et d\'ETI, acteurs de l\'innovation. Pas de recettes miracles ni de jargon inutile : des analyses documentées, des enquêtes de terrain et des interviews sincères pour comprendre et anticiper l\'économie de demain.\n\n## Notre équipe\n\nCamille Rousseau — Directrice de la rédaction : dix-huit ans de presse économique, ancienne rédactrice en chef adjointe d\'un grand hebdomadaire économique.\n\nMarc Dupont — Éditeur en chef : vingt ans de presse économique, spécialiste des questions d\'entreprise et de marché.\n\nClaire Martin — Rédactrice startups & innovation : elle couvre l\'écosystème tech français depuis ses débuts.\n\nSophie Leroy — Community manager : elle anime la communauté et la newsletter hebdomadaire.\n\nKarim Benali — Régie publicitaire : votre contact pour les partenariats et campagnes.\n\n## Business Horizon en chiffres\n\nPlus de 250 000 lecteurs mensuels, 1 200 articles publiés, 40 interviews par an et une newsletter lue par 18 000 abonnés chaque mardi.\n\n## Notre ligne éditoriale\n\nIndépendance, rigueur et proximité : nous vérifions chaque chiffre, nous allons sur le terrain et nous donnons la parole à toutes les sensibilités économiques. Nos tribunes engagent leurs auteurs, nos dossiers sont signés par la rédaction.',
-    'À propos de Business Horizon — Notre mission et notre équipe',
-    'Découvrez l\'équipe, la mission et la ligne éditoriale de Business Horizon, le magazine de référence de l\'entrepreneuriat francophone.')
+  await mkPage('a-propos', 'À propos de Réussite Magazine',
+    'Réussite Magazine est né en 2023 d\'un constat simple : les entrepreneurs francophones méritaient un média à la hauteur de leurs ambitions, exigeant et accessible à la fois.\n\n## Notre mission\n\nNous décryptons l\'économie réelle de celles et ceux qui la font : créateurs d\'entreprise, dirigeants de PME et d\'ETI, acteurs de l\'innovation. Pas de recettes miracles ni de jargon inutile : des analyses documentées, des enquêtes de terrain et des interviews sincères pour comprendre et anticiper l\'économie de demain.\n\n## Notre équipe\n\nCamille Rousseau — Directrice de la rédaction : dix-huit ans de presse économique, ancienne rédactrice en chef adjointe d\'un grand hebdomadaire économique.\n\nMarc Dupont — Éditeur en chef : vingt ans de presse économique, spécialiste des questions d\'entreprise et de marché.\n\nClaire Martin — Rédactrice startups & innovation : elle couvre l\'écosystème tech français depuis ses débuts.\n\nSophie Leroy — Community manager : elle anime la communauté et la newsletter hebdomadaire.\n\nKarim Benali — Régie publicitaire : votre contact pour les partenariats et campagnes.\n\n## Réussite Magazine en chiffres\n\nPlus de 250 000 lecteurs mensuels, 1 200 articles publiés, 40 interviews par an et une newsletter lue par 18 000 abonnés chaque mardi.\n\n## Notre ligne éditoriale\n\nIndépendance, rigueur et proximité : nous vérifions chaque chiffre, nous allons sur le terrain et nous donnons la parole à toutes les sensibilités économiques. Nos tribunes engagent leurs auteurs, nos dossiers sont signés par la rédaction.',
+    'À propos de Réussite Magazine — Notre mission et notre équipe',
+    'Découvrez l\'équipe, la mission et la ligne éditoriale de Réussite Magazine, le magazine de référence de l\'entrepreneuriat francophone.')
 
   await mkPage('mentions-legales', 'Mentions légales',
-    'Business Horizon est édité par la société Horizon Média SAS, au capital de 50 000 euros, immatriculée au RCS de Paris sous le numéro 912 345 678.\n\nSiège social : 18 rue de la Paix, 75002 Paris, France. Téléphone : +33 1 84 80 20 26. Courriel : contact@businesshorizon.fr.\n\nDirecteur de la publication : Camille Rousseau, en sa qualité de directrice de la rédaction. Hébergement : le site est hébergé dans l\'Union européenne par un prestataire professionnel garantissant une disponibilité supérieure à 99,9 %.\n\nPropriété intellectuelle : l\'ensemble des contenus (textes, images, vidéos, podcasts, logos) est protégé par le droit d\'auteur. Toute reproduction, même partielle, sans autorisation écrite préalable est interdite. Les liens profonds vers nos articles sont autorisés sous réserve de citer la source.\n\nResponsabilité : les tribunes publiées engagent uniquement leurs auteurs. Les informations diffusées sont fournies à titre indicatif et ne constituent ni un conseil en investissement ni un conseil juridique.',
-    'Mentions légales — Business Horizon',
-    'Mentions légales du site Business Horizon : éditeur, directeur de publication, hébergement, propriété intellectuelle et responsabilité.')
+    'Réussite Magazine est édité par la société Horizon Média SAS, au capital de 50 000 euros, immatriculée au RCS de Paris sous le numéro 912 345 678.\n\nSiège social : 18 rue de la Paix, 75002 Paris, France. Téléphone : +33 1 84 80 20 26. Courriel : contact@reussitemagazine.com.\n\nDirecteur de la publication : Camille Rousseau, en sa qualité de directrice de la rédaction. Hébergement : le site est hébergé dans l\'Union européenne par un prestataire professionnel garantissant une disponibilité supérieure à 99,9 %.\n\nPropriété intellectuelle : l\'ensemble des contenus (textes, images, vidéos, podcasts, logos) est protégé par le droit d\'auteur. Toute reproduction, même partielle, sans autorisation écrite préalable est interdite. Les liens profonds vers nos articles sont autorisés sous réserve de citer la source.\n\nResponsabilité : les tribunes publiées engagent uniquement leurs auteurs. Les informations diffusées sont fournies à titre indicatif et ne constituent ni un conseil en investissement ni un conseil juridique.',
+    'Mentions légales — Réussite Magazine',
+    'Mentions légales du site Réussite Magazine : éditeur, directeur de publication, hébergement, propriété intellectuelle et responsabilité.')
 
   await mkPage('politique-confidentialite', 'Politique de confidentialité',
-    'Business Horizon s\'engage à protéger vos données personnelles conformément au Règlement général sur la protection des données (RGPD) et à la loi Informatique et Libertés.\n\n## Données collectées\n\nNous collectons uniquement les données nécessaires : adresse e-mail pour la newsletter, nom et e-mail pour les commentaires, données de navigation agrégées et anonymisées pour mesurer l\'audience. Aucune donnée sensible n\'est collectée.\n\n## Finalités\n\nVos données servent exclusivement à : vous adresser nos communications si vous y avez consenti, modérer et publier vos commentaires, mesurer l\'audience du site de façon agrégée. Elles ne sont jamais vendues ni cédées à des tiers.\n\n## Durée de conservation\n\nLes abonnés newsletter : jusqu\'à désinscription. Les commentaires : jusqu\'à suppression demandée. Les données d\'audience : 13 mois maximum.\n\n## Vos droits\n\nConformément au RGPD, vous disposez des droits d\'accès, de rectification, d\'effacement, de limitation, d\'opposition et de portabilité. Pour les exercer, écrivez à privacy@businesshorizon.fr : nous répondons sous 30 jours maximum.\n\n## Cookies\n\nSeuls les cookies strictement nécessaires et, avec votre consentement, les cookies de mesure d\'audience sont déposés. Vous pouvez modifier votre choix à tout moment depuis le bandeau de consentement.',
-    'Politique de confidentialité — Business Horizon',
-    'Comment Business Horizon collecte, utilise et protège vos données personnelles, conformément au RGPD. Vos droits et nos engagements.')
+    'Réussite Magazine s\'engage à protéger vos données personnelles conformément au Règlement général sur la protection des données (RGPD) et à la loi Informatique et Libertés.\n\n## Données collectées\n\nNous collectons uniquement les données nécessaires : adresse e-mail pour la newsletter, nom et e-mail pour les commentaires, données de navigation agrégées et anonymisées pour mesurer l\'audience. Aucune donnée sensible n\'est collectée.\n\n## Finalités\n\nVos données servent exclusivement à : vous adresser nos communications si vous y avez consenti, modérer et publier vos commentaires, mesurer l\'audience du site de façon agrégée. Elles ne sont jamais vendues ni cédées à des tiers.\n\n## Durée de conservation\n\nLes abonnés newsletter : jusqu\'à désinscription. Les commentaires : jusqu\'à suppression demandée. Les données d\'audience : 13 mois maximum.\n\n## Vos droits\n\nConformément au RGPD, vous disposez des droits d\'accès, de rectification, d\'effacement, de limitation, d\'opposition et de portabilité. Pour les exercer, écrivez à privacy@reussitemagazine.com : nous répondons sous 30 jours maximum.\n\n## Cookies\n\nSeuls les cookies strictement nécessaires et, avec votre consentement, les cookies de mesure d\'audience sont déposés. Vous pouvez modifier votre choix à tout moment depuis le bandeau de consentement.',
+    'Politique de confidentialité — Réussite Magazine',
+    'Comment Réussite Magazine collecte, utilise et protège vos données personnelles, conformément au RGPD. Vos droits et nos engagements.')
 
   await mkPage('cgu', 'Conditions générales d\'utilisation',
-    'Les présentes conditions régissent l\'accès au site Business Horizon et son utilisation. En naviguant sur le site, vous acceptez ces conditions sans réserve.\n\n## Accès au service\n\nLe site est accessible gratuitement, 24 heures sur 24, sous réserve de la disponibilité technique. Nous nous réservons le droit de modifier, suspendre ou interrompre le service pour maintenance ou pour tout autre motif, sans préavis.\n\n## Utilisation des contenus\n\nLes contenus sont destinés à un usage personnel et privé. Toute extraction systématique, republication ou utilisation commerciale sans accord écrit est interdite. Les commentaires publiés par les utilisateurs reflètent leur opinion seule : nous nous réservons le droit de modérer, de déplacer ou de supprimer tout contenu contraire à nos règles de courtoisie ou à la loi.\n\n## Comptes et abonnement newsletter\n\nL\'inscription à la newsletter est volontaire et révocable à tout moment via le lien de désinscription présent dans chaque e-mail. La création d\'un compte lecteur implique l\'exactitude des informations fournies.\n\n## Droit applicable\n\nLes présentes conditions sont soumises au droit français. En cas de litige, les tribunaux français seront seuls compétents après tentative de résolution amiable.',
-    'Conditions générales d\'utilisation — Business Horizon',
-    'CGU de Business Horizon : conditions d\'accès, d\'utilisation des contenus, modération des commentaires et newsletter.')
+    'Les présentes conditions régissent l\'accès au site Réussite Magazine et son utilisation. En naviguant sur le site, vous acceptez ces conditions sans réserve.\n\n## Accès au service\n\nLe site est accessible gratuitement, 24 heures sur 24, sous réserve de la disponibilité technique. Nous nous réservons le droit de modifier, suspendre ou interrompre le service pour maintenance ou pour tout autre motif, sans préavis.\n\n## Utilisation des contenus\n\nLes contenus sont destinés à un usage personnel et privé. Toute extraction systématique, republication ou utilisation commerciale sans accord écrit est interdite. Les commentaires publiés par les utilisateurs reflètent leur opinion seule : nous nous réservons le droit de modérer, de déplacer ou de supprimer tout contenu contraire à nos règles de courtoisie ou à la loi.\n\n## Comptes et abonnement newsletter\n\nL\'inscription à la newsletter est volontaire et révocable à tout moment via le lien de désinscription présent dans chaque e-mail. La création d\'un compte lecteur implique l\'exactitude des informations fournies.\n\n## Droit applicable\n\nLes présentes conditions sont soumises au droit français. En cas de litige, les tribunaux français seront seuls compétents après tentative de résolution amiable.',
+    'Conditions générales d\'utilisation — Réussite Magazine',
+    'CGU de Réussite Magazine : conditions d\'accès, d\'utilisation des contenus, modération des commentaires et newsletter.')
 
   await mkPage('espace-annonceurs', 'Espace annonceurs',
-    'Business Horizon touche chaque mois plus de 250 000 décideurs : entrepreneurs, dirigeants de PME et d\'ETI, investisseurs et responsables innovation. Proposez vos produits à une audience engagée, qualifiée et à fort pouvoir d\'achat.\n\n## Nos formats publicitaires\n\nBannière header (970x90) : visibilité maximale dès l\'arrivée sur le site. À partir de 1 800 euros HT / mois.\n\nColonne latérale (300x250 et 300x600) : présence continue pendant la lecture. À partir de 950 euros HT / mois.\n\nIn-article (336x280) : intégration au cœur du contenu éditorial. À partir de 750 euros HT / mois.\n\nContenu sponsorisé (NATIVE) : article ou carte produite avec notre rédaction, clairement signalée « Sponsorisé ». À partir de 3 500 euros HT le format.\n\nInterstitiel et sticky mobile : couverture complète des visiteurs mobiles. Sur devis.\n\n## Pourquoi nous choisir\n\nTaux d\'attention exceptionnel : 4 minutes 30 de temps moyen par article. Audience B2B qualifiée à 68 %. Reporting détaillé avec impressions et clics en temps réel dans votre espace annonceur.\n\n## Contact\n\nNotre régie vous répond sous 24 heures : regie@businesshorizon.fr — ou consultez la page « Espace annonceurs » depuis le menu. Les placements sont attribués par rotation pondérée, avec exclusivité de catégorie sur demande.',
-    'Espace annonceurs — Publicité sur Business Horizon',
-    'Formats publicitaires, tarifs et audience de Business Horizon : bannières, in-article, contenus sponsorisés et interstitiels pour annonceurs B2B.')
+    'Réussite Magazine touche chaque mois plus de 250 000 décideurs : entrepreneurs, dirigeants de PME et d\'ETI, investisseurs et responsables innovation. Proposez vos produits à une audience engagée, qualifiée et à fort pouvoir d\'achat.\n\n## Nos formats publicitaires\n\nBannière header (970x90) : visibilité maximale dès l\'arrivée sur le site. À partir de 1 800 euros HT / mois.\n\nColonne latérale (300x250 et 300x600) : présence continue pendant la lecture. À partir de 950 euros HT / mois.\n\nIn-article (336x280) : intégration au cœur du contenu éditorial. À partir de 750 euros HT / mois.\n\nContenu sponsorisé (NATIVE) : article ou carte produite avec notre rédaction, clairement signalée « Sponsorisé ». À partir de 3 500 euros HT le format.\n\nInterstitiel et sticky mobile : couverture complète des visiteurs mobiles. Sur devis.\n\n## Pourquoi nous choisir\n\nTaux d\'attention exceptionnel : 4 minutes 30 de temps moyen par article. Audience B2B qualifiée à 68 %. Reporting détaillé avec impressions et clics en temps réel dans votre espace annonceur.\n\n## Contact\n\nNotre régie vous répond sous 24 heures : regie@reussitemagazine.com — ou consultez la page « Espace annonceurs » depuis le menu. Les placements sont attribués par rotation pondérée, avec exclusivité de catégorie sur demande.',
+    'Espace annonceurs — Publicité sur Réussite Magazine',
+    'Formats publicitaires, tarifs et audience de Réussite Magazine : bannières, in-article, contenus sponsorisés et interstitiels pour annonceurs B2B.')
 
   console.log(`   ✔ 5 pages statiques`)
 
@@ -1014,7 +1014,7 @@ async function main() {
     await prisma.adCampaign.create({
       data: {
         placementId: placementIds[placementKey], name, advertiser, imageUrl,
-        targetUrl: `https://exemple-annonceur.fr?utm_source=businesshorizon&utm_medium=banner&utm_campaign=${slug}`,
+        targetUrl: `https://exemple-annonceur.fr?utm_source=reussitemagazine&utm_medium=banner&utm_campaign=${slug}`,
         weight, deviceTargeting: device, categoryTargeting,
         startDate: daysAgo(startDaysAgo, 0, 0), endDate: daysAhead(endInDays, 23, 59),
         active: true, impressions, clicks: Math.round(impressions * ctr),
@@ -1056,19 +1056,19 @@ async function main() {
     { type: 'CATEGORY', title: 'Business & Économie', categorySlug: 'business-economie', enabled: true, order: 5 },
   ]
   const settings: Record<string, string> = {
-    siteName: 'Business Horizon',
+    siteName: 'Réussite Magazine',
     tagline: 'Entrepreneuriat · Business · Innovation',
     logoText: 'BUSINESS HORIZON',
-    contactEmail: 'contact@businesshorizon.fr',
+    contactEmail: 'contact@reussitemagazine.com',
     contactPhone: '+33 1 84 80 20 26',
     contactAddress: '18 rue de la Paix, 75002 Paris, France',
     contactHours: 'Lun-Ven : 9h-18h',
-    facebook: 'https://facebook.com/businesshorizon',
-    twitter: 'https://x.com/businesshorizonfr',
-    linkedin: 'https://linkedin.com/company/business-horizon',
-    youtube: 'https://youtube.com/@businesshorizon',
+    facebook: 'https://facebook.com/reussitemagazine',
+    twitter: 'https://x.com/reussitemagazinefr',
+    linkedin: 'https://linkedin.com/company/reussite-magazine',
+    youtube: 'https://youtube.com/@reussitemagazine',
     whatsapp: '',
-    seoTitle: 'Business Horizon — Magazine Entrepreneuriat, Business & Innovation',
+    seoTitle: 'Réussite Magazine — Magazine Entrepreneuriat, Business & Innovation',
     seoDescription: 'La référence francophone de l\'entrepreneuriat et de l\'innovation : articles, dossiers, interviews, vidéos et podcasts.',
     ogImage: '/images/og-default.jpg',
     commentsEnabled: 'true',
@@ -1086,7 +1086,7 @@ async function main() {
     newsletterHeroText: 'Chaque mardi : nos meilleurs articles, les financements à suivre et une interview exclusive.',
     partnersTitle: 'Ils nous font confiance',
     partnersLogos: 'NextBank Pro\nCloudSuite\nFundMe\nEcoDrive\nLegalStart',
-    footerAbout: 'Business Horizon est le magazine digital de référence des entrepreneurs, dirigeants et décideurs : décryptages, interviews et analyses pour comprendre et anticiper l\'économie de demain.',
+    footerAbout: 'Réussite Magazine est le magazine digital de référence des entrepreneurs, dirigeants et décideurs : décryptages, interviews et analyses pour comprendre et anticiper l\'économie de demain.',
     adsHeaderEnabled: 'true',
     adsSidebarEnabled: 'true',
     adsInArticleEnabled: 'true',
@@ -1094,9 +1094,9 @@ async function main() {
     adsStickyMobileEnabled: 'true',
     adsNativeEnabled: 'true',
     adsInterstitialEnabled: 'false',
-    themeColor: '#d97706',
+    themeColor: '#C8102E',
     // Clés complémentaires
-    copyrightText: '© 2026 Business Horizon — Tous droits réservés',
+    copyrightText: '© 2026 Réussite Magazine — Tous droits réservés',
     rssEnabled: 'true',
     analyticsEnabled: 'true',
     commentsModeration: 'true',
@@ -1298,7 +1298,7 @@ async function main() {
     for (const [label] of failed) console.error(`   ✘ ÉCHEC : ${label}`)
     throw new Error(`Seed incomplet : ${failed.length} vérification(s) en échec`)
   }
-  console.log('✅  Seed Business Horizon terminé avec succès')
+  console.log('✅  Seed Réussite Magazine terminé avec succès')
 }
 
 main()

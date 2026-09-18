@@ -101,12 +101,12 @@ export function HomePage() {
     <div className="pb-4">
       <HeroSlider articles={data.featured} />
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:py-12">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
         {/* ── Derniers articles + sidebar ──────────────────────── */}
-        <div className="grid gap-10 lg:grid-cols-3">
+        <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <SectionTitle eyebrow="Actualités" title="Derniers articles" />
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               {allLatest.map((article, i) => (
                 <Reveal key={article.id} delay={(i % 4) * 60}>
                   <ArticleCard article={article} variant="grid" />
@@ -130,7 +130,7 @@ export function HomePage() {
           </div>
 
           {/* Sidebar */}
-          <aside className="space-y-10">
+          <aside className="space-y-8">
             <AdSlot placement="SIDEBAR_TOP" />
 
             <section aria-label="Populaires de la semaine">
@@ -149,13 +149,13 @@ export function HomePage() {
         </div>
 
         {/* ── Blocs thématiques ─────────────────────────────────── */}
-        <div className="mt-14">
+        <div className="mt-12">
           <CategoryBlocks blocks={data.categoryBlocks} />
         </div>
 
         {/* ── Dernières vidéos ──────────────────────────────────── */}
         {data.latestVideos.length > 0 ? (
-          <Reveal className="mt-14">
+          <Reveal className="mt-12">
             <section aria-label="Dernières vidéos">
               <SectionTitle eyebrow="Format vidéo" title="Dernières vidéos" seeAllHref="/videos" />
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -163,7 +163,7 @@ export function HomePage() {
                   <a
                     key={video.id}
                     href="#/videos"
-                    className="article-card group overflow-hidden rounded-xl border bg-card"
+                    className="article-card group flex min-w-0 flex-col overflow-hidden rounded-lg border bg-card"
                   >
                     <div className="relative aspect-video overflow-hidden">
                       <SmartImage
@@ -186,11 +186,11 @@ export function HomePage() {
                         </span>
                       ) : null}
                     </div>
-                    <div className="p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                    <div className="p-3.5">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">
                         {video.playlist || 'Vidéo'}
                       </p>
-                      <h3 className="mt-1 font-editorial text-base font-bold leading-snug transition-colors group-hover:text-primary">
+                      <h3 className="mt-1 font-editorial text-[15px] font-bold leading-snug transition-colors group-hover:text-primary">
                         <span className="line-clamp-2">{video.title}</span>
                       </h3>
                     </div>
@@ -203,7 +203,7 @@ export function HomePage() {
 
         {/* ── Derniers podcasts ─────────────────────────────────── */}
         {data.latestPodcasts.length > 0 ? (
-          <Reveal className="mt-14">
+          <Reveal className="mt-12">
             <section aria-label="Derniers podcasts">
               <SectionTitle eyebrow="Format audio" title="Derniers podcasts" seeAllHref="/podcasts" />
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -211,9 +211,9 @@ export function HomePage() {
                   <a
                     key={pod.id}
                     href="#/podcasts"
-                    className="article-card group flex gap-4 rounded-xl border bg-card p-4"
+                    className="article-card group flex min-w-0 gap-3.5 overflow-hidden rounded-lg border bg-card p-3"
                   >
-                    <div className="relative size-16 shrink-0 overflow-hidden rounded-lg sm:size-20">
+                    <div className="relative size-14 shrink-0 overflow-hidden rounded-md sm:size-16">
                       <SmartImage
                         src={pod.coverImage}
                         alt={pod.title}
@@ -228,16 +228,16 @@ export function HomePage() {
                       </div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">
                         S{pod.season} · Épisode {pod.episode}
                       </p>
-                      <h3 className="mt-0.5 font-editorial text-sm font-bold leading-snug transition-colors group-hover:text-primary">
+                      <h3 className="mt-0.5 font-editorial text-[13px] font-bold leading-snug transition-colors group-hover:text-primary sm:text-sm">
                         <span className="line-clamp-2">{pod.title}</span>
                       </h3>
-                      <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock3 className="size-3" aria-hidden="true" />
+                      <p className="mt-1 flex min-w-0 items-center gap-2 overflow-hidden text-[11px] text-muted-foreground">
+                        <Clock3 className="size-3 shrink-0" aria-hidden="true" />
                         {pod.duration || '—'}
-                        {pod.guests ? <span className="truncate">· {pod.guests}</span> : null}
+                        {pod.guests ? <span className="min-w-0 truncate">· {pod.guests}</span> : null}
                       </p>
                     </div>
                   </a>
@@ -249,7 +249,7 @@ export function HomePage() {
 
         {/* ── Partenaires / sponsorisés ─────────────────────────── */}
         {data.partners.length > 0 ? (
-          <Reveal className="mt-14">
+          <Reveal className="mt-12">
             <section aria-label="Partenaires">
               <SectionTitle
                 eyebrow="Ils nous soutiennent"
@@ -263,7 +263,7 @@ export function HomePage() {
                     target="_blank"
                     rel="sponsored noopener noreferrer"
                     onClick={() => publicApi.adClick(p.id).catch(() => {})}
-                    className="article-card relative block overflow-hidden rounded-xl border bg-card"
+                    className="article-card relative block min-w-0 overflow-hidden rounded-lg border bg-card"
                     aria-label={`Partenaire ${p.advertiser || ''}`}
                   >
                     {p.imageUrl ? (
@@ -289,7 +289,7 @@ export function HomePage() {
         ) : null}
 
         {/* ── CTA newsletter ────────────────────────────────────── */}
-        <Reveal className="mt-16">
+        <Reveal className="mt-12">
           <NewsletterCta />
         </Reveal>
       </div>
@@ -330,25 +330,25 @@ function NewsletterCta() {
   return (
     <section
       aria-label="Newsletter"
-      className="overflow-hidden rounded-2xl border bg-gradient-to-br from-secondary via-card to-accent/40"
+      className="overflow-hidden rounded-xl border bg-gradient-to-br from-secondary via-card to-accent/40"
     >
-      <div className="grid items-center gap-8 p-8 sm:p-10 lg:grid-cols-2">
+      <div className="grid items-center gap-6 p-6 sm:gap-8 sm:p-8 lg:grid-cols-2">
         <div>
           <p className="eyebrow text-primary">Newsletter</p>
-          <h2 className="mt-1 font-editorial text-2xl font-bold leading-tight sm:text-3xl">
+          <h2 className="mt-1 font-editorial text-xl font-bold leading-tight sm:text-2xl">
             {settings?.newsletterHeroTitle || "L'essentiel business, chaque semaine"}
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          <p className="mt-2.5 text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
             {settings?.newsletterHeroText ||
               'Analyses exclusives, success stories et tendances à ne pas manquer. Rejoignez notre communauté de lecteurs.'}
           </p>
-          <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="mt-3.5 flex items-center gap-4 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <Users className="size-4 text-primary" aria-hidden="true" />
+              <Users className="size-3.5 text-primary" aria-hidden="true" />
               +15 000 abonnés
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Mail className="size-4 text-primary" aria-hidden="true" />
+              <Mail className="size-3.5 text-primary" aria-hidden="true" />
               1 email / semaine
             </span>
           </div>
@@ -356,23 +356,23 @@ function NewsletterCta() {
         {done ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
             <DrawCheck className="size-14" />
-            <p className="font-editorial text-lg font-bold">Inscription confirmée !</p>
-            <p className="text-sm text-muted-foreground">Merci de rejoindre la communauté Business Horizon.</p>
+            <p className="font-editorial text-base font-bold">Inscription confirmée !</p>
+            <p className="text-[13px] text-muted-foreground">Merci de rejoindre la communauté Réussite Magazine.</p>
           </div>
         ) : (
-          <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row">
+          <form onSubmit={submit} className="flex flex-col gap-2.5 sm:flex-row">
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="votre@email.com"
               aria-label="Adresse email"
-              className="h-12 flex-1 rounded-full"
+              className="h-11 flex-1 rounded-full"
             />
             <Button
               type="submit"
               disabled={busy}
-              className="cta-pulse h-12 rounded-full px-8 font-semibold"
+              className="cta-pulse h-11 rounded-full px-7 text-sm font-semibold"
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : <Headphones className="hidden" />}
               {busy ? 'Inscription…' : "Je m'abonne"}

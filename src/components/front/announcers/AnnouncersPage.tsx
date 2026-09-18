@@ -122,7 +122,7 @@ export function AnnouncersPage() {
             Donnez de la visibilité à votre marque auprès des décideurs
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed opacity-90 sm:text-base">
-            Business Horizon réunit chaque mois une communauté d'entrepreneurs, d'investisseurs et
+            Réussite Magazine réunit chaque mois une communauté d'entrepreneurs, d'investisseurs et
             de cadres dirigeants. Nous construisons avec vous des campagnes sur-mesure, au service
             de vos objectifs.
           </p>

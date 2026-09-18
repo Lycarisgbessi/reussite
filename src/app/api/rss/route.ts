@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   <channel>
     <title>${xmlEscape(`${settings.siteName} — Podcast`)}</title>
     <link>${xmlEscape(siteLink)}</link>
-    <description>${xmlEscape(settings.tagline || 'Podcasts Business Horizon')}</description>
+    <description>${xmlEscape(settings.tagline || 'Podcasts Réussite Magazine')}</description>
     <language>fr</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${xmlEscape(`${origin}/api/rss`)}" rel="self" type="application/rss+xml" />

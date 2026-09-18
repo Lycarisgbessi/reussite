@@ -1,7 +1,7 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// BUSINESS HORIZON — Application SPA unique (route /)
+// RÉUSSITE MAGAZINE — Application SPA unique (route /)
 // Front-office public + Back-office (/admin) rendus côté client.
 // Navigation par hash : #/, #/article/slug, #/category/slug,
 // #/videos, #/podcasts, #/search?q=, #/contact, #/page/slug,
@@ -32,7 +32,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 rounded-full border-3 border-primary border-t-transparent animate-spin" />
-          <p className="text-sm text-muted-foreground font-editorial tracking-wide">Business Horizon</p>
+          <p className="text-sm text-muted-foreground font-editorial tracking-wide">Réussite Magazine</p>
         </div>
       </div>
     );

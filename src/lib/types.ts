@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// TYPES PARTAGÉS — Plateforme Magazine Business Horizon
+// TYPES PARTAGÉS — Plateforme Magazine Réussite Magazine
 // Contrat unique entre front-office, back-office et API.
 // ═══════════════════════════════════════════════════════════════
 

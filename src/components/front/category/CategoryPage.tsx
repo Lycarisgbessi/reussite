@@ -16,7 +16,6 @@ import { ArticleCard } from '../mag/ArticleCard';
 import { Pagination } from '../mag/Pagination';
 import { SmartImage } from '../mag/SmartImage';
 import { ArticleCardSkeleton } from '../mag/Skeletons';
-import { AdSlot } from '../ads/AdSlot';
 
 type SortKey = 'RECENT' | 'POPULAR' | 'AZ';
 
@@ -74,11 +73,6 @@ export function CategoryPage({ slug }: { slug: string }) {
 
   return (
     <div className="pb-6">
-      {/* Pub en tête de rubrique */}
-      <div className="mx-auto max-w-7xl px-4 pt-6">
-        <AdSlot placement="HEADER_BANNER" category={slug} />
-      </div>
-
       {/* Bannière */}
       <section
         className="relative mt-6 overflow-hidden"
@@ -97,7 +91,7 @@ export function CategoryPage({ slug }: { slug: string }) {
         ) : (
           <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
         )}
-        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:py-16">
+        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:py-12">
           <nav aria-label="Fil d'Ariane" className="mb-3 flex items-center gap-1 text-xs text-white/70">
             <a href="#/" className="transition-colors hover:text-white">
               Accueil
@@ -105,7 +99,7 @@ export function CategoryPage({ slug }: { slug: string }) {
             <ChevronRight className="size-3" aria-hidden="true" />
             <span>{info?.cat.name || 'Rubrique'}</span>
           </nav>
-          <h1 className="font-editorial text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
+          <h1 className="font-editorial text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
             {info?.cat.name || slug}
           </h1>
           {info?.cat.description ? (

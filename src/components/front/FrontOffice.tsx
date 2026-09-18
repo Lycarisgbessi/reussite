@@ -108,12 +108,12 @@ export default function FrontOffice() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-background text-foreground">
       <Header />
       <FlashInfoBar />
 
-      {/* Bannière publicitaire sous le menu (CDC §6.1) */}
-      <div className="mx-auto w-full max-w-7xl px-4 pt-4">
+      {/* Bannière publicitaire compacte sous le menu (CDC §6.1) */}
+      <div className="mx-auto w-full max-w-3xl px-4 pt-3">
         <AdSlot placement="HEADER_BANNER" />
       </div>
 
@@ -131,8 +131,8 @@ export default function FrontOffice() {
         </AnimatePresence>
       </main>
 
-      {/* Bannière publicitaire avant le pied de page (CDC §6.1) */}
-      <div className="mx-auto w-full max-w-7xl px-4 pb-6 pt-2">
+      {/* Bannière publicitaire compacte avant le pied de page (CDC §6.1) */}
+      <div className="mx-auto w-full max-w-3xl px-4 pb-6 pt-2">
         <AdSlot placement="FOOTER_BANNER" />
       </div>
 

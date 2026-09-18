@@ -18,7 +18,7 @@ export function CategoryBlocks({ blocks }: CategoryBlocksProps) {
   if (!blocks || blocks.length === 0) return null;
 
   return (
-    <div className="space-y-14">
+    <div className="space-y-12">
       {blocks.map((block, index) => {
         const articles = block.articles || [];
         if (articles.length === 0) return null;
@@ -35,7 +35,7 @@ export function CategoryBlocks({ blocks }: CategoryBlocksProps) {
               />
               {index % 2 === 0 ? (
                 // Layout LARGE : 1 grande carte + colonne de 3 mini
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-5 lg:grid-cols-2">
                   <ArticleCard article={first} variant="grid" />
                   <div className="flex flex-col gap-3">
                     {rest.slice(0, 3).map((a) => (
@@ -45,7 +45,7 @@ export function CategoryBlocks({ blocks }: CategoryBlocksProps) {
                 </div>
               ) : (
                 // Layout NARROW : grille de 4 cartes
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {articles.slice(0, 4).map((a) => (
                     <ArticleCard key={a.id} article={a} variant="grid" showExcerpt={false} />
                   ))}

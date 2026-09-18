@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// AUTHENTIFICATION BACK-OFFICE — Business Horizon
+// AUTHENTIFICATION BACK-OFFICE — Réussite Magazine
 // Mots de passe scrypt (salt:hash hex), tokens HMAC-SHA256,
 // gardes Bearer + journal d'audit.
 // ═══════════════════════════════════════════════════════════════

@@ -160,7 +160,7 @@ export function SettingsAdmin() {
           <Separator />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="E-mail de contact">
-              <Input type="email" value={settings.contactEmail} onChange={(e) => patch({ contactEmail: e.target.value })} placeholder="contact@businesshorizon.fr" />
+              <Input type="email" value={settings.contactEmail} onChange={(e) => patch({ contactEmail: e.target.value })} placeholder="contact@reussitemagazine.com" />
             </Field>
             <Field label="Téléphone">
               <Input value={settings.contactPhone} onChange={(e) => patch({ contactPhone: e.target.value })} placeholder="+33 1 23 45 67 89" />
@@ -185,10 +185,10 @@ export function SettingsAdmin() {
       <TabsContent value="social" className="mt-0">
         <div className="max-w-2xl space-y-4 rounded-xl border border-border/70 bg-card p-5">
           {([
-            { key: 'facebook', label: 'Facebook', icon: Facebook, placeholder: 'https://facebook.com/businesshorizon' },
-            { key: 'twitter', label: 'Twitter / X', icon: Twitter, placeholder: 'https://x.com/businesshorizon' },
-            { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, placeholder: 'https://linkedin.com/company/business-horizon' },
-            { key: 'youtube', label: 'YouTube', icon: Youtube, placeholder: 'https://youtube.com/@businesshorizon' },
+            { key: 'facebook', label: 'Facebook', icon: Facebook, placeholder: 'https://facebook.com/reussitemagazine' },
+            { key: 'twitter', label: 'Twitter / X', icon: Twitter, placeholder: 'https://x.com/reussitemagazine' },
+            { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, placeholder: 'https://linkedin.com/company/reussite-magazine' },
+            { key: 'youtube', label: 'YouTube', icon: Youtube, placeholder: 'https://youtube.com/@reussitemagazine' },
             { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, placeholder: 'https://wa.me/33612345678' },
           ] as const).map(({ key, label, icon: Icon, placeholder }) => (
             <Field key={key} label={label} hint="Laissez vide pour masquer le lien.">

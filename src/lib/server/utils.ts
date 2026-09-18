@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// HELPERS SERVEUR PARTAGÉS — routes API Business Horizon
+// HELPERS SERVEUR PARTAGÉS — routes API Réussite Magazine
 // (slugify, rate limiting, réponses, pagination, sérialisation,
 //  réglages site, recherche, données par défaut)
 // ═══════════════════════════════════════════════════════════════
@@ -546,19 +546,19 @@ const BOOLEAN_SETTINGS = new Set<string>([
 const NUMBER_SETTINGS = new Set<string>(['newsletterPopupDelay', 'newsletterPopupScroll']);
 
 export const DEFAULT_SETTINGS: SiteSettings = {
-  siteName: 'Business Horizon',
+  siteName: 'Réussite Magazine',
   tagline: 'Entrepreneuriat · Business · Innovation',
-  logoText: 'Business Horizon',
-  contactEmail: 'contact@businesshorizon.fr',
+  logoText: 'Réussite Magazine',
+  contactEmail: 'contact@reussitemagazine.com',
   contactPhone: '+33 1 84 80 20 26',
   contactAddress: '12 rue de la Bourse, 75002 Paris',
   contactHours: 'Lundi – Vendredi, 9h à 18h',
-  facebook: 'https://facebook.com/businesshorizon',
-  twitter: 'https://twitter.com/businesshorizon',
-  linkedin: 'https://linkedin.com/company/businesshorizon',
-  youtube: 'https://youtube.com/@businesshorizon',
+  facebook: 'https://facebook.com/reussitemagazine',
+  twitter: 'https://twitter.com/reussitemagazine',
+  linkedin: 'https://linkedin.com/company/reussitemagazine',
+  youtube: 'https://youtube.com/@reussitemagazine',
   whatsapp: '',
-  seoTitle: 'Business Horizon — Entrepreneuriat, Business & Innovation',
+  seoTitle: 'Réussite Magazine — Entrepreneuriat, Business & Innovation',
   seoDescription:
     'Le magazine digital des entrepreneurs : stratégies, financement, management, startups et intelligence artificielle.',
   ogImage: '/images/og-default.jpg',
@@ -567,7 +567,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   readerAccountsEnabled: true,
   flashInfoEnabled: true,
   newsletterPopupEnabled: true,
-  newsletterPopupTitle: 'Rejoignez la communauté Business Horizon',
+  newsletterPopupTitle: 'Rejoignez la communauté Réussite Magazine',
   newsletterPopupText:
     'Chaque semaine, l’essentiel de l’actualité business, des analyses exclusives et des portraits d’entrepreneurs, directement dans votre boîte mail.',
   newsletterPopupTrigger: 'TIME',
@@ -580,7 +580,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   partnersTitle: 'Nos partenaires',
   partnersLogos: '',
   footerAbout:
-    'Business Horizon est le média des entrepreneurs, dirigeants et innovateurs : décryptages, interviews et dossiers de fond pour comprendre et réussir.',
+    'Réussite Magazine est le média des entrepreneurs, dirigeants et innovateurs : décryptages, interviews et dossiers de fond pour comprendre et réussir.',
   adsHeaderEnabled: true,
   adsSidebarEnabled: true,
   adsInArticleEnabled: true,
@@ -661,7 +661,7 @@ async function buildDefaultHomeBlocks(): Promise<HomeBlockConfig[]> {
     {
       id: 'hb-podcasts',
       type: 'PODCASTS',
-      title: 'Le podcast Business Horizon',
+      title: 'Le podcast Réussite Magazine',
       categorySlug: '',
       enabled: true,
       order: cats.length + 2,

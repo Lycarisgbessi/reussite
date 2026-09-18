@@ -2,7 +2,8 @@
 
 // ═══════════════════════════════════════════════════════════════
 // ARTICLE CARD — 5 variantes : hero | grid | horizontal | mini | ranked
-// Badge catégorie coloré, dates FR, hover image scale, navigation hash.
+// Badge catégorie rouge (charte Réussite), dates FR, hover discret,
+// navigation hash. Typographie resserrée et élégante.
 // ═══════════════════════════════════════════════════════════════
 import { Clock3, Eye } from 'lucide-react';
 import type { ArticleSummary } from '@/lib/types';
@@ -19,11 +20,11 @@ export function CategoryBadge({
   color?: string;
   className?: string;
 }) {
-  const bg = color || '#b45309';
+  const bg = color || '#C8102E';
   return (
     <span
       className={cn(
-        'inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide',
+        'inline-flex w-fit items-center rounded-[3px] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]',
         className,
       )}
       style={{ backgroundColor: bg, color: contrastText(bg) }}
@@ -56,21 +57,21 @@ export function ArticleCard({
     <CategoryBadge name={article.category?.name || 'Article'} color={article.category?.color} />
   );
   const metaRow = showMeta ? (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
       <span>{frRelative(article.publishedAt)}</span>
       <span className="inline-flex items-center gap-1">
-        <Eye className="size-3.5" aria-hidden="true" />
+        <Eye className="size-3" aria-hidden="true" />
         {formatViews(article.views)}
       </span>
       {article.readingTime ? (
         <span className="inline-flex items-center gap-1">
-          <Clock3 className="size-3.5" aria-hidden="true" />
+          <Clock3 className="size-3" aria-hidden="true" />
           {article.readingTime} min
         </span>
       ) : null}
     </div>
   ) : (
-    <div className="text-xs text-muted-foreground">{frRelative(article.publishedAt)}</div>
+    <div className="text-[11px] text-muted-foreground">{frRelative(article.publishedAt)}</div>
   );
 
   if (variant === 'hero') {
@@ -78,7 +79,7 @@ export function ArticleCard({
       <a
         href={href}
         className={cn(
-          'article-card group relative block overflow-hidden rounded-2xl bg-card',
+          'article-card group relative block overflow-hidden rounded-lg bg-card',
           className,
         )}
       >
@@ -89,15 +90,17 @@ export function ArticleCard({
             className="card-image absolute inset-0 h-full w-full object-cover"
           />
           <div
-            className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10"
+            className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5"
             aria-hidden="true"
           />
-          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-            <div className="mb-3">{badge}</div>
-            <h3 className="font-editorial text-xl font-bold leading-snug text-white sm:text-3xl">
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+            <div className="mb-2">{badge}</div>
+            <h3 className="font-editorial text-lg font-bold leading-snug text-white sm:text-2xl lg:text-[1.7rem]">
               {article.title}
             </h3>
-            <p className="mt-2 hidden text-sm text-white/80 md:line-clamp-2">{article.subtitle}</p>
+            <p className="mt-1.5 hidden text-[13px] leading-relaxed text-white/80 md:line-clamp-2">
+              {article.subtitle}
+            </p>
           </div>
         </div>
       </a>
@@ -109,24 +112,26 @@ export function ArticleCard({
       <a
         href={href}
         className={cn(
-          'article-card group flex gap-4 overflow-hidden rounded-xl border bg-card p-3',
+          'article-card group flex min-w-0 gap-3 overflow-hidden rounded-lg border bg-card p-2.5',
           className,
         )}
       >
-        <div className="relative aspect-[16/10] w-32 shrink-0 overflow-hidden rounded-lg sm:w-44">
+        <div className="relative aspect-[16/10] w-28 shrink-0 overflow-hidden rounded-md sm:w-40">
           <SmartImage
             src={article.coverImage}
             alt={article.title}
             className="card-image h-full w-full object-cover"
           />
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5 py-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 py-0.5">
           {badge}
-          <h3 className="font-editorial text-base font-bold leading-snug transition-colors group-hover:text-primary sm:text-lg">
+          <h3 className="font-editorial text-[15px] font-bold leading-snug transition-colors group-hover:text-primary">
             {article.title}
           </h3>
           {showExcerpt && article.subtitle ? (
-            <p className="hidden text-sm text-muted-foreground sm:line-clamp-2">{article.subtitle}</p>
+            <p className="hidden text-[13px] leading-relaxed text-muted-foreground sm:line-clamp-2">
+              {article.subtitle}
+            </p>
           ) : null}
           <div className="mt-auto">{metaRow}</div>
         </div>
@@ -137,7 +142,7 @@ export function ArticleCard({
   if (variant === 'mini') {
     return (
       <a href={href} className={cn('group flex items-center gap-3', className)}>
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-lg sm:size-20">
+        <div className="relative size-14 shrink-0 overflow-hidden rounded-md sm:size-16">
           <SmartImage
             src={article.coverImage}
             alt={article.title}
@@ -145,10 +150,10 @@ export function ArticleCard({
           />
         </div>
         <div className="min-w-0">
-          <h4 className="font-editorial text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+          <h4 className="font-editorial text-[13px] font-semibold leading-snug transition-colors group-hover:text-primary sm:text-sm">
             <span className="line-clamp-2">{article.title}</span>
           </h4>
-          <p className="mt-1 text-xs text-muted-foreground">{frRelative(article.publishedAt)}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{frRelative(article.publishedAt)}</p>
         </div>
       </a>
     );
@@ -156,18 +161,18 @@ export function ArticleCard({
 
   if (variant === 'ranked') {
     return (
-      <a href={href} className={cn('group flex items-start gap-3 py-2.5', className)}>
+      <a href={href} className={cn('group flex items-start gap-3 py-2', className)}>
         <span
-          className="w-7 shrink-0 font-editorial text-2xl font-bold leading-none text-primary/60 transition-colors group-hover:text-primary"
+          className="w-6 shrink-0 font-editorial text-xl font-bold leading-none text-primary/50 transition-colors group-hover:text-primary"
           aria-hidden="true"
         >
           {rank ?? 1}
         </span>
-        <div className="min-w-0 flex-1 border-b border-border/70 pb-2.5">
-          <h4 className="font-editorial text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+        <div className="min-w-0 flex-1 border-b border-border/70 pb-2">
+          <h4 className="font-editorial text-[13px] font-semibold leading-snug transition-colors group-hover:text-primary sm:text-sm">
             <span className="line-clamp-2">{article.title}</span>
           </h4>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-[11px] text-muted-foreground">
             {article.category?.name} · {frRelative(article.publishedAt)}
           </p>
         </div>
@@ -180,26 +185,28 @@ export function ArticleCard({
     <a
       href={href}
       className={cn(
-        'article-card group flex flex-col overflow-hidden rounded-xl border bg-card',
+        'article-card group flex min-w-0 flex-col overflow-hidden rounded-lg border bg-card',
         className,
       )}
     >
-      <div className="relative aspect-[16/10] overflow-hidden">
+      <div className="relative aspect-[16/9] overflow-hidden">
         <SmartImage
           src={article.coverImage}
           alt={article.title}
           className="card-image h-full w-full object-cover"
         />
-        <div className="absolute left-3 top-3">{badge}</div>
+        <div className="absolute left-2.5 top-2.5">{badge}</div>
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="font-editorial text-lg font-bold leading-snug transition-colors group-hover:text-primary">
+      <div className="flex flex-1 flex-col gap-1.5 p-3.5">
+        <h3 className="font-editorial text-[15px] font-bold leading-snug transition-colors group-hover:text-primary sm:text-base">
           <span className="line-clamp-2">{article.title}</span>
         </h3>
         {showExcerpt && article.subtitle ? (
-          <p className="text-sm text-muted-foreground line-clamp-2">{article.subtitle}</p>
+          <p className="text-[13px] leading-relaxed text-muted-foreground line-clamp-2">
+            {article.subtitle}
+          </p>
         ) : null}
-        <div className="mt-auto pt-2">{metaRow}</div>
+        <div className="mt-auto pt-1.5">{metaRow}</div>
       </div>
     </a>
   );
