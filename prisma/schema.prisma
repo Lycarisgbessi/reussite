@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// UTILISATEURS BACK-OFFICE (RBAC : section 16 du cahier des charges)
+// Rôles : ADMIN, EDITOR_IN_CHIEF, WRITER, COMMUNITY_MANAGER, AD_MANAGER
+// ─────────────────────────────────────────────────────────────
+model AdminUser {
+  id        String       @id @default(cuid())
+  email     String       @unique
+  name      String
+  password  String
+  role      String       @default("WRITER")
+  bio       String       @default("")
+  avatarUrl String       @default("")
+  twitter   String       @default("")
+  linkedin  String       @default("")
+  active    Boolean      @default(true)
+  articles  Article[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// CATÉGORIES / RUBRIQUES (arborescence parent/enfant)
+// ─────────────────────────────────────────────────────────────
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String     @default("")
+  imageUrl    String     @default("")
+  color       String     @default("#d97706")
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  order       Int        @default(0)
+  showInMenu  Boolean    @default(true)
+  showInHome  Boolean    @default(false)
+  articles    Article[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// ARTICLES + TAGS + VERSIONS
+// ─────────────────────────────────────────────────────────────
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  articles ArticleTag[]
+}
+
+model Article {
+  id            String           @id @default(cuid())
+  slug          String           @unique
+  title         String
+  subtitle      String           @default("")
+  content       String           @default("[]")
+  coverImage    String           @default("")
+  coverCredit   String           @default("")
+  status        String           @default("DRAFT") // DRAFT, REVIEW, SCHEDULED, PUBLISHED, ARCHIVED
+  authorId      String
+  author        AdminUser        @relation(fields: [authorId], references: [id])
+  categoryId    String
+  category      Category         @relation(fields: [categoryId], references: [id])
+  featured      Boolean          @default(false)
+  featuredOrder Int              @default(0)
+  trending      Boolean          @default(false)
+  views         Int              @default(0)
+  likes         Int              @default(0)
+  readingTime   Int              @default(3)
+  seoTitle      String           @default("")
+  seoDescription String          @default("")
+  publishedAt   DateTime?
+  scheduledAt   DateTime?
+  tags          ArticleTag[]
+  comments      Comment[]
+  favorites     Favorite[]
+  versions      ArticleVersion[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model ArticleVersion {
+  id        String   @id @default(cuid())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  savedBy   String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model ArticleTag {
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// MÉDIAS (métadonnées — stockage externalisé type Cloudinary)
+// ─────────────────────────────────────────────────────────────
+model Media {
+  id       String   @id @default(cuid())
+  url      String
+  publicId String   @default("")
+  filename String
+  alt      String   @default("")
+  caption  String   @default("")
+  credit   String   @default("")
+  tags     String   @default("")
+  type     String   @default("image")
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// VIDÉOS (YouTube) & PODCASTS (Drive/RSS)
+// ─────────────────────────────────────────────────────────────
+model Video {
+  id           String   @id @default(cuid())
+  title        String
+  description  String   @default("")
+  youtubeId    String
+  thumbnailUrl String   @default("")
+  duration     String   @default("")
+  playlist     String   @default("Général")
+  published    Boolean  @default(true)
+  views        Int      @default(0)
+  publishedAt  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Podcast {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  audioUrl    String
+  duration    String   @default("")
+  season      Int      @default(1)
+  episode     Int      @default(1)
+  coverImage  String   @default("")
+  guests      String   @default("")
+  published   Boolean  @default(true)
+  plays       Int      @default(0)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// PAGES STATIQUES + MENUS
+// ─────────────────────────────────────────────────────────────
+model StaticPage {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  content        String   @default("")
+  seoTitle       String   @default("")
+  seoDescription String   @default("")
+  published      Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model MenuItem {
+  id       String   @id @default(cuid())
+  label    String
+  url      String   @default("")
+  location String   @default("header") // header, footer
+  parentId String?
+  order    Int      @default(0)
+  active   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// COMMENTAIRES
+// ─────────────────────────────────────────────────────────────
+model Comment {
+  id          String   @id @default(cuid())
+  articleId   String
+  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorName  String
+  authorEmail String
+  content     String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  reply       String   @default("")
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// NEWSLETTER
+// ─────────────────────────────────────────────────────────────
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String   @default("")
+  interests String   @default("")
+  source    String   @default("popup")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model NewsletterCampaign {
+  id          String    @id @default(cuid())
+  subject     String
+  intro       String    @default("")
+  articleIds  String    @default("")
+  status      String    @default("DRAFT") // DRAFT, SCHEDULED, SENT
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  recipients  Int       @default(0)
+  openRate    Float     @default(0)
+  clickRate   Float     @default(0)
+  createdAt   DateTime  @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// PUBLICITÉ : EMPLACEMENTS + CAMPAGNES + STATS (section 6)
+// ─────────────────────────────────────────────────────────────
+model AdPlacement {
+  id        String       @id @default(cuid())
+  key       String       @unique
+  label     String
+  format    String       @default("970x90")
+  active    Boolean      @default(true)
+  campaigns AdCampaign[]
+  createdAt DateTime     @default(now())
+}
+
+model AdCampaign {
+  id               String       @id @default(cuid())
+  placementId      String
+  placement        AdPlacement  @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  name             String
+  advertiser       String
+  imageUrl         String       @default("")
+  htmlCode         String       @default("")
+  targetUrl        String       @default("")
+  weight           Int          @default(1)
+  deviceTargeting  String       @default("ALL") // ALL, MOBILE, DESKTOP
+  categoryTargeting String      @default("")
+  startDate        DateTime?
+  endDate          DateTime?
+  active           Boolean      @default(true)
+  impressions      Int          @default(0)
+  clicks           Int          @default(0)
+  createdAt        DateTime     @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// RÉGLAGES SITE + FLASH INFO + CONFIG ACCUEIL + POPUP
+// ─────────────────────────────────────────────────────────────
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model FlashInfo {
+  id        String   @id @default(cuid())
+  text      String
+  link      String   @default("")
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// ANALYTICS + FAVORIS + AUDIT
+// ─────────────────────────────────────────────────────────────
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String
+  path      String   @default("")
+  meta      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  readerKey String
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([readerKey, articleId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  userName  String
+  action    String
+  details   String   @default("")
+  createdAt DateTime @default(now())
+}

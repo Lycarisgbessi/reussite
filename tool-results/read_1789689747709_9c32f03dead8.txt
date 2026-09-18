@@ -1,0 +1,571 @@
+     1→     1→# CAHIER DES CHARGES
+     2→     2→## Plateforme Média Digitale — Magazine Entrepreneuriat, Business & Innovation
+     3→     3→
+     4→     4→**Version :** 1.0
+     5→     5→**Date :** Septembre 2026
+     6→     6→**Type de projet :** Site web magazine avec back-office (CMS sur-mesure) — Architecture Serverless / Base de données PostgreSQL
+     7→     7→
+     8→     8→---
+     9→     9→
+    10→    10→## SOMMAIRE
+    11→    11→
+    12→    12→1. Présentation générale du projet
+    13→    13→2. Objectifs et public cible
+    14→    14→3. Architecture technique globale
+    15→    15→4. Arborescence et rubriques du site (Front-office)
+    16→    16→5. Structure détaillée des pages
+    17→    17→6. Espaces publicitaires
+    18→    18→7. Expérience utilisateur : animations, micro-interactions, effets spéciaux
+    19→    19→8. Fonctionnalités utilisateur (visiteurs / membres)
+    20→    20→9. Intégrations tierces (Cloudinary, YouTube, Google Drive)
+    21→    21→10. Tableau de bord (Back-office) — spécifications détaillées
+    22→    22→11. Modèle de données PostgreSQL
+    23→    23→12. Flux de communication Dashboard ↔ Front-office
+    24→    24→13. SEO, performance et accessibilité
+    25→    25→14. Sécurité et conformité (RGPD)
+    26→    26→15. Hébergement, déploiement et environnements
+    27→    27→16. Rôles et permissions
+    28→    28→17. Charte graphique et identité visuelle
+    29→    29→18. Planning de réalisation par phases
+    30→    30→19. Livrables attendus
+    31→    31→20. Critères de recette / tests d'acceptation
+    32→    32→21. Maintenance, évolutivité et support
+    33→    33→22. Annexes
+    34→    34→
+    35→    35→---
+    36→    36→
+    37→    37→## 1. PRÉSENTATION GÉNÉRALE DU PROJET
+    38→    38→
+    39→    39→### 1.1 Contexte
+    40→    40→Le projet consiste à concevoir et développer une plateforme média digitale (site magazine en ligne) dédiée à l'entrepreneuriat, au business, au management et à l'innovation, avec une ambition de rayonnement international. La plateforme doit combiner :
+    41→    41→- Un **front-office** (interface publique) riche, moderne, dynamique, engageant et monétisable (publicité).
+    42→    42→- Un **back-office** (tableau de bord d'administration) permettant à un utilisateur non technique de gérer **l'intégralité** du contenu et des paramètres du site, sans intervention d'un développeur.
+    43→    43→
+    44→    44→### 1.2 Enjeux
+    45→    45→- Autonomie totale de l'administrateur/rédaction sur la gestion du contenu.
+    46→    46→- Expérience utilisateur premium (fluidité, animations, interactivité).
+    47→    47→- Monétisation via emplacements publicitaires stratégiquement disposés.
+    48→    48→- Fidélisation de l'audience (newsletter, notifications, contenu récurrent).
+    49→    49→- Scalabilité technique (architecture serverless, base de données relationnelle robuste).
+    50→    50→- Faible coût de stockage média grâce à des services tiers externalisés (Cloudinary, YouTube, Google Drive).
+    51→    51→
+    52→    52→### 1.3 Vision
+    53→    53→Devenir une référence francophone/internationale de l'information business et entrepreneuriale, avec un outil de publication aussi souple qu'un CMS professionnel (type WordPress) mais taillé sur-mesure pour les besoins spécifiques du magazine.
+    54→    54→
+    55→    55→---
+    56→    56→
+    57→    57→## 2. OBJECTIFS ET PUBLIC CIBLE
+    58→    58→
+    59→    59→### 2.1 Objectifs fonctionnels
+    60→    60→- Permettre la publication illimitée d'articles, dossiers, interviews, vidéos et podcasts.
+    61→    61→- Offrir une autonomie complète de gestion via le tableau de bord.
+    62→    62→- Générer des revenus publicitaires via des espaces dédiés et mesurables (impressions/clics).
+    63→    63→- Développer une base d'abonnés newsletter qualifiée.
+    64→    64→- Garantir une expérience de lecture fluide sur tous supports (desktop, tablette, mobile).
+    65→    65→
+    66→    66→### 2.2 Public cible
+    67→    67→- **Lecteurs principaux :** entrepreneurs, dirigeants de PME/startups, cadres, investisseurs, étudiants en entrepreneuriat, freelances.
+    68→    68→- **Lecteurs secondaires :** journalistes économiques, partenaires institutionnels, annonceurs/publicitaires B2B.
+    69→    69→- **Utilisateurs back-office :** administrateur(s), rédacteurs, éditeurs, modérateurs, community manager, régie publicitaire.
+    70→    70→
+    71→    71→### 2.3 Personas indicatifs
+    72→    72→| Persona | Besoin principal | Fréquence de visite |
+    73→    73→|---|---|---|
+    74→    74→| Jeune entrepreneur | Conseils pratiques, retours d'expérience | Quotidienne |
+    75→    75→| Investisseur / VC | Actualités startups, levées de fonds | Hebdomadaire |
+    76→    76→| Étudiant en business school | Dossiers de fond, interviews | Ponctuelle |
+    77→    77→| Annonceur / Régie pub | Visibilité de marque, statistiques d'audience | — |
+    78→    78→
+    79→    79→---
+    80→    80→
+    81→    81→## 3. ARCHITECTURE TECHNIQUE GLOBALE
+    82→    82→
+    83→    83→### 3.1 Principes directeurs
+    84→    84→- **Architecture serverless** (Functions-as-a-Service) : pas de serveur à gérer en permanence, scalabilité automatique, coûts optimisés à l'usage.
+    85→    85→- **Base de données relationnelle PostgreSQL** hébergée sur un fournisseur managé compatible serverless (ex. Neon, Supabase, ou équivalent), avec pooling de connexions adapté aux fonctions serverless.
+    86→    86→- **Séparation stricte** entre le front-office (rendu des pages, consommation d'API) et le back-office (interface d'administration, également servie en tant qu'application web sécurisée).
+    87→    87→- **API interne** (REST ou GraphQL) exposée par les fonctions serverless, consommée à la fois par le front-office (lecture publique) et le back-office (lecture/écriture authentifiée).
+    88→    88→
+    89→    89→### 3.2 Stack technique recommandée
+    90→    90→| Couche | Technologie recommandée | Justification |
+    91→    91→|---|---|---|
+    92→    92→| Frontend (front-office) | Framework React moderne avec rendu hybride (SSR/SSG/ISR) | SEO natif, performance, revalidation incrémentale du contenu |
+    93→    93→| Backend (API) | Fonctions serverless (Node.js/TypeScript) | Scalabilité, coût à l'usage, déploiement simple |
+    94→    94→| ORM | Prisma ou équivalent | Typage fort, migrations versionnées, requêtes sécurisées |
+    95→    95→| Base de données | PostgreSQL managé (serverless-friendly) | Relationnel, intégrité référentielle, requêtes complexes |
+    96→    96→| Authentification | Solution JWT / sessions sécurisées avec gestion des rôles | Sécurité, granularité des permissions |
+    97→    97→| Stockage images | Cloudinary (API + widget d'upload) | CDN intégré, transformations à la volée, optimisation automatique |
+    98→    98→| Vidéos | YouTube (intégration via lien/ID + oEmbed) | Pas de coût de stockage/streaming, lecteur robuste |
+    99→    99→| Podcasts | Google Drive (dossier dédié) + génération de flux RSS | Stockage permanent externalisé, compatibilité plateformes d'écoute |
+   100→   100→| Cache / CDN | CDN edge pour assets statiques + cache de pages | Temps de chargement minimal |
+   101→   101→| Emailing / Newsletter | Service tiers d'envoi transactionnel/marketing (API) | Délivrabilité, gestion des listes, statistiques d'ouverture |
+   102→   102→| Monitoring | Outil de logs et suivi d'erreurs en temps réel | Fiabilité, détection proactive des incidents |
+   103→   103→
+   104→   104→### 3.3 Schéma d'architecture (vue logique)
+   105→   105→```
+   106→   106→[Visiteur] ──> [Front-office (SSR/SSG)] ──> [API Serverless] ──> [PostgreSQL]
+   107→   107→                                                 │
+   108→   108→                                                 ├──> [Cloudinary] (images)
+   109→   109→                                                 ├──> [YouTube] (vidéos, via lien)
+   110→   110→                                                 ├──> [Google Drive] (podcasts, fichiers audio)
+   111→   111→                                                 └──> [Service Emailing] (newsletter)
+   112→   112→
+   113→   113→[Administrateur] ──> [Back-office (Dashboard)] ──> [API Serverless] ──> [PostgreSQL]
+   114→   114→```
+   115→   115→
+   116→   116→### 3.4 Principe de communication temps réel
+   117→   117→Toute modification effectuée dans le tableau de bord doit se répercuter sur le site public :
+   118→   118→- **Immédiatement** pour les éléments critiques (flash info, bandeau d'alerte, mise en avant homepage) via invalidation de cache ciblée / revalidation à la demande.
+   119→   119→- **Quasi-immédiatement** (quelques secondes) pour les articles et pages via revalidation incrémentale (ISR) ou webhook de purge de cache CDN.
+   120→   120→- Aucune reconstruction manuelle ni redéploiement ne doit être nécessaire pour publier du contenu.
+   121→   121→
+   122→   122→---
+   123→   123→
+   124→   124→## 4. ARBORESCENCE ET RUBRIQUES DU SITE (FRONT-OFFICE)
+   125→   125→
+   126→   126→### 4.1 Rubriques principales (menu de navigation)
+   127→   127→1. **Accueil**
+   128→   128→2. **À la Une** (dossier spécial du moment)
+   129→   129→3. **Entrepreneuriat**
+   130→   130→   - Création d'entreprise
+   131→   131→   - Financement & Levées de fonds
+   132→   132→   - Success stories
+   133→   133→4. **Business & Économie**
+   134→   134→   - Actualités économiques
+   135→   135→   - Marchés & Secteurs
+   136→   136→5. **Management & Leadership**
+   137→   137→   - Ressources humaines
+   138→   138→   - Stratégie d'entreprise
+   139→   139→6. **Startups & Innovation**
+   140→   140→   - Tech & Digital
+   141→   141→   - Intelligence artificielle
+   142→   142→7. **Interviews & Portraits**
+   143→   143→8. **Dossiers & Analyses** (contenus longs, enquêtes)
+   144→   144→9. **Tribune Libre** (avis d'experts, contributions externes)
+   145→   145→10. **Vidéos** (galerie alimentée par liens YouTube)
+   146→   146→11. **Podcasts** (lecteur intégré, flux Google Drive/RSS)
+   147→   147→12. **Événements** (agenda, conférences, webinaires)
+   148→   148→13. **Annuaire des entreprises / Partenaires** (optionnel)
+   149→   149→14. **Offres d'emploi / Opportunités** (optionnel)
+   150→   150→15. **Newsletter** (page d'inscription dédiée)
+   151→   151→16. **À propos** (équipe, ligne éditoriale, historique)
+   152→   152→17. **Contact**
+   153→   153→18. **Mentions légales / Politique de confidentialité / CGU**
+   154→   154→19. **Espace annonceurs** (kit média, tarifs publicitaires — optionnel)
+   155→   155→
+   156→   156→### 4.2 Éléments transverses (présents sur toutes les pages)
+   157→   157→- **Header** : logo, menu principal, barre de recherche, sélecteur de langue (si multilingue), bouton newsletter, réseaux sociaux.
+   158→   158→- **Bandeau "Flash Info"** défilant (ticker), activable/désactivable depuis le dashboard.
+   159→   159→- **Footer** : liens rubriques, informations de contact (dynamiques), réseaux sociaux, mentions légales, plan du site, formulaire newsletter secondaire.
+   160→   160→- **Fil d'Ariane (breadcrumb)**.
+   161→   161→- **Bouton retour en haut de page**.
+   162→   162→- **Widget de partage social flottant** (Facebook, X/Twitter, LinkedIn, WhatsApp, Email, copier le lien).
+   163→   163→
+   164→   164→---
+   165→   165→
+   166→   166→## 5. STRUCTURE DÉTAILLÉE DES PAGES
+   167→   167→
+   168→   168→### 5.1 Page d'accueil
+   169→   169→- **Hero / À la Une** : slider/carrousel des articles phares (image, titre, chapeau, catégorie), gérable depuis le dashboard (glisser-déposer pour l'ordre).
+   170→   170→- **Bandeau Flash Info** : texte court défilant, modifiable en un clic.
+   171→   171→- **Bloc "Derniers articles"** : grille responsive avec pagination/infinite scroll.
+   172→   172→- **Bloc "Populaires de la semaine"** : classement automatique basé sur les vues (ou mise en avant manuelle).
+   173→   173→- **Blocs thématiques par rubrique** (ex. "Dernières actus Startups", "Derniers Podcasts", "Dernières Vidéos").
+   174→   174→- **Bloc Newsletter** : formulaire d'inscription intégré avec accroche personnalisable.
+   175→   175→- **Bloc Annonceurs / Partenaires** : logos défilants ou bannière.
+   176→   176→- **Emplacements publicitaires** intégrés harmonieusement (voir section 6).
+   177→   177→- **Pop-up d'inscription newsletter** : déclenchement configurable (au bout de X secondes, au scroll à Y%, à la sortie de page — exit intent), fréquence d'affichage paramétrable (ex. une fois par session/semaine), désactivable globalement depuis le dashboard.
+   178→   178→
+   179→   179→### 5.2 Page article (template)
+   180→   180→- Titre, chapeau, métadonnées (auteur, date de publication, date de mise à jour, temps de lecture estimé, catégorie, tags).
+   181→   181→- Image/vidéo de mise en avant.
+   182→   182→- Corps de l'article en contenu riche (titres, paragraphes, citations, listes, images, vidéos intégrées, tableaux, encadrés "à retenir").
+   183→   183→- Boutons de partage social.
+   184→   184→- Compteur de vues (optionnel, affiché ou non).
+   185→   185→- Espaces publicitaires intégrés dans le corps du texte (in-content ads) après le 1er, 2e paragraphe, etc.
+   186→   186→- Bloc "Articles similaires / à lire aussi".
+   187→   187→- Zone de commentaires (avec modération).
+   188→   188→- Newsletter inline (au sein ou à la fin de l'article).
+   189→   189→- Fil d'auteur (mini-bio, autres articles de l'auteur, réseaux sociaux de l'auteur).
+   190→   190→
+   191→   191→### 5.3 Page catégorie/rubrique
+   192→   192→- Bannière de rubrique (titre, description, image de fond personnalisable).
+   193→   193→- Filtres (date, sous-catégorie, popularité).
+   194→   194→- Liste paginée des articles.
+   195→   195→- Emplacement publicitaire en tête et pied de liste.
+   196→   196→
+   197→   197→### 5.4 Page vidéos
+   198→   198→- Grille de vidéos (miniature récupérée automatiquement depuis YouTube via l'ID/lien).
+   199→   199→- Lecture en modal ou en page dédiée avec lecteur YouTube intégré (embed).
+   200→   200→- Filtrage par playlist/catégorie.
+   201→   201→
+   202→   202→### 5.5 Page podcasts
+   203→   203→- Liste des épisodes (titre, description, durée, date).
+   204→   204→- Lecteur audio intégré en streaming direct depuis les fichiers stockés sur Google Drive (ou via flux RSS généré automatiquement, compatible Spotify/Apple Podcasts/Deezer si diffusion externe souhaitée).
+   205→   205→- Fonction "Écouter plus tard" / téléchargement (si autorisé par l'admin).
+   206→   206→
+   207→   207→### 5.6 Page recherche
+   208→   208→- Recherche full-text (titre, contenu, tags, auteur).
+   209→   209→- Filtres avancés (catégorie, date, type de contenu : article/vidéo/podcast).
+   210→   210→- Suggestions en temps réel (auto-complétion).
+   211→   211→
+   212→   212→### 5.7 Page contact
+   213→   213→- Formulaire de contact (nom, email, sujet, message) avec envoi vers l'adresse email définie dans le dashboard.
+   214→   214→- Informations dynamiques : adresse, téléphone(s), email(s), horaires, carte de localisation (optionnelle), liens réseaux sociaux — **tous modifiables depuis le dashboard sans toucher au code**.
+   215→   215→
+   216→   216→---
+   217→   217→
+   218→   218→## 6. ESPACES PUBLICITAIRES
+   219→   219→
+   220→   220→### 6.1 Emplacements types
+   221→   221→| Emplacement | Position | Format recommandé |
+   222→   222→|---|---|---|
+   223→   223→| Bannière Header | Sous le menu principal, pleine largeur | 970x90 / 728x90 (responsive) |
+   224→   224→| Sidebar Top | Haut de colonne latérale (desktop) | 300x250 / 300x600 |
+   225→   225→| Sidebar Sticky | Colonne latérale, reste visible au scroll | 300x600 |
+   226→   226→| In-Article | Intégrée entre les paragraphes d'un article | 336x280 |
+   227→   227→| Native / Sponsorisé | Intégrée dans les grilles d'articles, identifiée "Sponsorisé" | Format carte article |
+   228→   228→| Footer Banner | Avant le pied de page | 970x90 |
+   229→   229→| Interstitiel | Pop-up plein écran à l'entrée du site (fréquence limitée) | Plein écran mobile/desktop |
+   230→   230→| Sticky Mobile | Bannière fixe en bas d'écran sur mobile | 320x50 |
+   231→   231→| Popup / Take-over ponctuel | Campagne spéciale annonceur | Sur-mesure |
+   232→   232→
+   233→   233→### 6.2 Gestion depuis le dashboard
+   234→   234→- Upload de la bannière (image via Cloudinary) ou insertion d'un code tiers (ex. régie publicitaire externe, tag HTML/JS).
+   235→   235→- Définition de l'URL de destination + tracking UTM.
+   236→   236→- Programmation de la période de diffusion (date de début/fin).
+   237→   237→- Rotation entre plusieurs annonceurs sur un même emplacement (pondération/priorité).
+   238→   238→- Ciblage simple (par rubrique, par device : mobile/desktop, par zone géographique si disponible).
+   239→   239→- **Statistiques** : nombre d'impressions, nombre de clics, taux de clic (CTR), par emplacement et par annonceur.
+   240→   240→- Activation/désactivation instantanée de chaque emplacement.
+   241→   241→
+   242→   242→---
+   243→   243→
+   244→   244→## 7. EXPÉRIENCE UTILISATEUR : ANIMATIONS, MICRO-INTERACTIONS, EFFETS SPÉCIAUX
+   245→   245→
+   246→   246→### 7.1 Animations d'interface
+   247→   247→- Transitions douces entre les pages (fade/slide) sans rupture visuelle.
+   248→   248→- Effets de **scroll reveal** (apparition progressive des blocs au scroll).
+   249→   249→- Effets de **parallax** légers sur les bannières/héros visuels.
+   250→   250→- **Skeleton loading** (squelettes de chargement) plutôt que spinners bruts, pour une perception de rapidité.
+   251→   251→- Animation du curseur ou effets de survol (hover) sur les cartes d'articles (zoom léger sur l'image, ombre dynamique).
+   252→   252→- Compteurs animés (ex. nombre de lecteurs, statistiques clés en page "À propos").
+   253→   253→- Menu de navigation avec sous-menus animés (déroulé fluide).
+   254→   254→- Barre de progression de lecture d'article (indicateur en haut de page indiquant l'avancement de la lecture).
+   255→   255→
+   256→   256→### 7.2 Micro-interactions
+   257→   257→- Retour visuel immédiat sur chaque action (clic bouton, like, ajout en favoris, abonnement newsletter validé).
+   258→   258→- Animation de confirmation (ex. coche animée) après inscription à la newsletter ou envoi de commentaire.
+   259→   259→- Boutons de partage social avec petite animation au clic.
+   260→   260→- Notification "toast" discrète (ex. "Article ajouté à vos favoris").
+   261→   261→- Effet de vibration/pulsation subtile sur les call-to-action stratégiques (bouton newsletter, bouton abonnement).
+   262→   262→
+   263→   263→### 7.3 Effets spéciaux ciblés (sans nuire à la performance)
+   264→   264→- Mode sombre / mode clair avec transition animée.
+   265→   265→- Effet de survol 3D léger (tilt) sur certaines cartes de mise en avant (À la Une).
+   266→   266→- Animation d'apparition du bandeau Flash Info (slide-in).
+   267→   267→- Curseur personnalisé sur les zones interactives (optionnel, desktop uniquement).
+   268→   268→
+   269→   269→### 7.4 Contraintes de performance
+   270→   270→- Toutes les animations doivent être optimisées (GPU-accelerated, pas de re-render coûteux) et désactivables automatiquement si l'utilisateur a activé la préférence système "réduire les animations" (accessibilité).
+   271→   271→- Les animations ne doivent jamais retarder l'affichage du contenu principal (respect des Core Web Vitals).
+   272→   272→
+   273→   273→---
+   274→   274→
+   275→   275→## 8. FONCTIONNALITÉS UTILISATEUR (VISITEURS / MEMBRES)
+   276→   276→
+   277→   277→- Inscription à la newsletter (simple email ou compte complet avec préférences de centres d'intérêt).
+   278→   278→- Système de commentaires sous les articles (avec modération a priori/a posteriori configurable).
+   279→   279→- Réactions/likes sur les articles.
+   280→   280→- Ajout d'articles en favoris (nécessite un compte utilisateur léger, optionnel selon besoin).
+   281→   281→- Partage sur les réseaux sociaux.
+   282→   282→- Recherche avancée.
+   283→   283→- Notifications push web (optionnel) pour les nouveaux articles à la Une.
+   284→   284→- Espace "Mon compte" (si comptes lecteurs activés) : préférences, favoris, historique.
+   285→   285→
+   286→   286→---
+   287→   287→
+   288→   288→## 9. INTÉGRATIONS TIERCES
+   289→   289→
+   290→   290→### 9.1 Cloudinary (gestion des images)
+   291→   291→- Upload direct depuis le dashboard (widget d'upload intégré) vers Cloudinary.
+   292→   292→- Stockage exclusif sur Cloudinary : la base PostgreSQL ne conserve que les métadonnées (URL sécurisée, ID public, dimensions, texte alternatif, légende, crédit photo).
+   293→   293→- Transformations automatiques à la volée (redimensionnement responsive, compression, format moderne type WebP/AVIF) servies via CDN Cloudinary.
+   294→   294→- Bibliothèque média centralisée dans le dashboard (recherche, filtres, suppression, remplacement).
+   295→   295→
+   296→   296→### 9.2 YouTube (gestion des vidéos)
+   297→   297→- L'administrateur/rédacteur publie sa vidéo sur une chaîne YouTube (dédiée au magazine ou partenaire), puis colle le lien ou l'ID de la vidéo dans le dashboard.
+   298→   298→- Le système extrait automatiquement : miniature, titre, durée (via l'API YouTube ou parsing oEmbed) pour affichage cohérent sur le site.
+   299→   299→- Lecture intégrée via lecteur embed YouTube (respect des CGU YouTube, pas de téléchargement/stockage vidéo en local).
+   300→   300→
+   301→   301→### 9.3 Google Drive (gestion des podcasts)
+   302→   302→- Création d'un dossier Google Drive dédié et partagé, servant de stockage permanent des fichiers audio (épisodes).
+   303→   303→- Depuis le dashboard, l'administrateur associe un fichier du dossier Drive (via lien de partage/ID de fichier) à une fiche épisode (titre, description, illustration via Cloudinary, durée).
+   304→   304→- Le site génère un lecteur audio en streaming pointant vers le fichier Drive (lien direct/streamable).
+   305→   305→- Génération automatique d'un **flux RSS** standard pour permettre, si souhaité, la syndication vers Spotify, Apple Podcasts, Deezer, etc.
+   306→   306→
+   307→   307→### 9.4 Service d'emailing / Newsletter
+   308→   308→- Intégration à un service tiers d'envoi d'emails (marketing + transactionnel) via API.
+   309→   309→- Synchronisation des abonnés collectés sur le site vers les listes du service d'emailing.
+   310→   310→- Envoi de campagnes directement depuis le dashboard (choix des articles à inclure, template, programmation d'envoi).
+   311→   311→
+   312→   312→---
+   313→   313→
+   314→   314→## 10. TABLEAU DE BORD (BACK-OFFICE) — SPÉCIFICATIONS DÉTAILLÉES
+   315→   315→
+   316→   316→### 10.1 Principe général
+   317→   317→Le dashboard doit offrir une **autonomie totale** à l'administrateur : aucune modification de contenu, de structure de page, de contact, de publicité, de mise en avant ne doit nécessiter une intervention technique.
+   318→   318→
+   319→   319→### 10.2 Authentification et sécurité d'accès
+   320→   320→- Connexion sécurisée (email/mot de passe, avec option double authentification).
+   321→   321→- Gestion des sessions, déconnexion automatique après inactivité prolongée.
+   322→   322→- Journal des connexions et des actions sensibles (log d'audit).
+   323→   323→
+   324→   324→### 10.3 Modules du tableau de bord
+   325→   325→
+   326→   326→**a) Tableau de bord / Vue d'ensemble**
+   327→   327→- Statistiques clés : visites, articles publiés, commentaires en attente, performance publicitaire, abonnés newsletter.
+   328→   328→- Raccourcis vers les actions fréquentes (nouvel article, nouvelle bannière pub, etc.).
+   329→   329→
+   330→   330→**b) Gestion des articles**
+   331→   331→- Éditeur de contenu riche (type "block editor") : titres, paragraphes, images, vidéos (lien YouTube), citations, listes, tableaux, encadrés, embeds réseaux sociaux.
+   332→   332→- Champs : titre, sous-titre/chapeau, catégorie(s), tags, image de couverture (via Cloudinary), auteur, statut (brouillon/en relecture/planifié/publié/archivé), date de publication programmée.
+   333→   333→- Gestion des brouillons et historique des versions (possibilité de revenir à une version antérieure).
+   334→   334→- Planification de publication (date/heure future).
+   335→   335→- Champs SEO par article (titre SEO, meta description, image de partage/Open Graph, URL personnalisée/slug).
+   336→   336→
+   337→   337→**c) Gestion des rubriques/catégories**
+   338→   338→- Création, modification, suppression, réorganisation (drag & drop) des catégories et sous-catégories.
+   339→   339→- Personnalisation de chaque page de rubrique (bannière, description).
+   340→   340→
+   341→   341→**d) Gestion des médias**
+   342→   342→- Bibliothèque centralisée connectée à Cloudinary.
+   343→   343→- Upload, recherche, tags, suppression.
+   344→   344→
+   345→   345→**e) Gestion des vidéos**
+   346→   346→- Ajout via lien/ID YouTube, récupération automatique des métadonnées, organisation en playlists internes.
+   347→   347→
+   348→   348→**f) Gestion des podcasts**
+   349→   349→- Association des fichiers du dossier Google Drive à des fiches épisodes.
+   350→   350→- Gestion des saisons/épisodes, génération du flux RSS.
+   351→   351→
+   352→   352→**g) Gestion de la page d'accueil**
+   353→   353→- Configuration du bloc "À la Une" (sélection et ordre des articles mis en avant, glisser-déposer).
+   354→   354→- Activation/désactivation et contenu du bandeau **Flash Info**.
+   355→   355→- Configuration des blocs thématiques affichés en page d'accueil et leur ordre.
+   356→   356→
+   357→   357→**h) Gestion des espaces publicitaires**
+   358→   358→- Voir section 6.2 — création, upload, programmation, statistiques.
+   359→   359→
+   360→   360→**i) Gestion de la newsletter**
+   361→   361→- Gestion des abonnés (liste, export, désinscriptions).
+   362→   362→- Création de campagnes (sélection d'articles, mise en forme, envoi/programmation).
+   363→   363→- Configuration du pop-up d'inscription (message, déclencheur, fréquence, activation/désactivation).
+   364→   364→
+   365→   365→**j) Gestion des commentaires**
+   366→   366→- Modération (approbation, suppression, réponse), filtre anti-spam.
+   367→   367→
+   368→   368→**k) Gestion des pages statiques et du contact**
+   369→   369→- Édition libre des pages : À propos, Mentions légales, CGU, Politique de confidentialité, Espace annonceurs.
+   370→   370→- **Informations de contact globales** (téléphone, email, adresse, horaires, liens réseaux sociaux) éditables une fois et répercutées automatiquement partout où elles apparaissent (header, footer, page contact) via un système de "variables globales".
+   371→   371→
+   372→   372→**l) Gestion des menus/navigation**
+   373→   373→- Réorganisation par glisser-déposer des rubriques du menu principal et du footer.
+   374→   374→
+   375→   375→**m) Gestion des utilisateurs du back-office**
+   376→   376→- Création de comptes rédacteurs/éditeurs/modérateurs avec rôles et permissions différenciés (voir section 16).
+   377→   377→
+   378→   378→**n) Statistiques et analytics**
+   379→   379→- Tableau de bord d'audience (pages vues, articles les plus lus, provenance du trafic).
+   380→   380→- Statistiques publicitaires (impressions/clics par emplacement).
+   381→   381→- Statistiques newsletter (taux d'ouverture, taux de clic — si disponibles via l'API du service d'emailing).
+   382→   382→
+   383→   383→**o) Paramètres généraux du site**
+   384→   384→- Logo, favicon, couleurs principales, typographies (personnalisation légère de la charte sans toucher au code).
+   385→   385→- Activation/désactivation de fonctionnalités (commentaires, mode sombre, comptes lecteurs, etc.).
+   386→   386→- Gestion multilingue (si activée) : traduction des rubriques et pages.
+   387→   387→
+   388→   388→**p) Sauvegarde et export**
+   389→   389→- Export des articles/contenus (CSV/JSON) pour sauvegarde ou migration.
+   390→   390→
+   391→   391→### 10.4 Ergonomie du dashboard
+   392→   392→- Interface claire, en langue française (et éventuellement multilingue), pensée pour un utilisateur non technique.
+   393→   393→- Aide contextuelle (info-bulles) sur chaque champ complexe.
+   394→   394→- Aperçu en temps réel ("preview") avant publication.
+   395→   395→- Confirmation systématique avant toute action destructrice (suppression).
+   396→   396→
+   397→   397→---
+   398→   398→
+   399→   399→## 11. MODÈLE DE DONNÉES POSTGRESQL (SCHÉMA RELATIONNEL — VUE LOGIQUE)
+   400→   400→
+   401→   401→### 11.1 Tables principales (liste non exhaustive, à affiner en phase de conception détaillée)
+   402→   402→
+   403→   403→| Table | Rôle |
+   404→   404→|---|---|
+   405→   405→| `users` | Comptes back-office (admin, rédacteurs, etc.) |
+   406→   406→| `roles` / `permissions` | Gestion fine des droits d'accès |
+   407→   407→| `articles` | Contenus éditoriaux |
+   408→   408→| `article_versions` | Historique des versions/brouillons |
+   409→   409→| `categories` | Rubriques et sous-rubriques (arborescence) |
+   410→   410→| `tags` | Étiquettes thématiques |
+   411→   411→| `article_tags` | Table de liaison articles ↔ tags |
+   412→   412→| `media` | Métadonnées des images (référence Cloudinary) |
+   413→   413→| `videos` | Métadonnées des vidéos (référence YouTube) |
+   414→   414→| `podcasts` | Métadonnées des épisodes (référence Google Drive) |
+   415→   415→| `pages` | Pages statiques (À propos, Contact, etc.) |
+   416→   416→| `menus` / `menu_items` | Structure de navigation |
+   417→   417→| `comments` | Commentaires des lecteurs |
+   418→   418→| `newsletter_subscribers` | Abonnés à la newsletter |
+   419→   419→| `newsletter_campaigns` | Campagnes envoyées/programmées |
+   420→   420→| `ad_placements` | Emplacements publicitaires définis |
+   421→   421→| `ad_campaigns` | Campagnes/bannières publiées sur un emplacement |
+   422→   422→| `ad_stats` | Impressions et clics enregistrés |
+   423→   423→| `site_settings` | Réglages globaux (contact, réseaux sociaux, thème) |
+   424→   424→| `homepage_blocks` | Configuration dynamique de la page d'accueil |
+   425→   425→| `flash_info` | Contenu du bandeau d'alerte/flash info |
+   426→   426→| `popups` | Configuration des pop-ups (newsletter, promo) |
+   427→   427→| `analytics_events` | Événements de suivi internes (vues, clics) |
+   428→   428→| `readers` (optionnel) | Comptes lecteurs/membres |
+   429→   429→| `favorites` (optionnel) | Articles favoris des lecteurs |
+   430→   430→| `audit_logs` | Journal des actions d'administration |
+   431→   431→
+   432→   432→### 11.2 Principes de conception
+   433→   433→- Intégrité référentielle stricte (clés étrangères, contraintes).
+   434→   434→- Utilisation d'identifiants uniques (UUID) pour les entités exposées publiquement.
+   435→   435→- Indexation des champs de recherche fréquents (slug, catégorie, date de publication, statut).
+   436→   436→- Horodatage systématique (`created_at`, `updated_at`) sur toutes les tables.
+   437→   437→- Suppression logique (`deleted_at` / soft delete) pour les contenus sensibles, plutôt que suppression physique immédiate.
+   438→   438→
+   439→   439→---
+   440→   440→
+   441→   441→## 12. FLUX DE COMMUNICATION DASHBOARD ↔ FRONT-OFFICE
+   442→   442→
+   443→   443→- Toute écriture effectuée via le dashboard passe par l'API serverless sécurisée, qui met à jour PostgreSQL de manière transactionnelle.
+   444→   444→- Le front-office consomme les mêmes données via des endpoints publics en lecture (mis en cache intelligemment).
+   445→   445→- Mécanisme de **revalidation/purge de cache automatique** déclenché après chaque publication ou modification critique (article publié, flash info modifié, bannière publicitaire activée), afin que le changement soit visible côté public sans délai perceptible.
+   446→   446→- Les statistiques (vues, clics publicitaires) sont enregistrées de façon asynchrone (non bloquante pour l'expérience du visiteur) puis agrégées pour affichage dans le dashboard.
+   447→   447→
+   448→   448→---
+   449→   449→
+   450→   450→## 13. SEO, PERFORMANCE ET ACCESSIBILITÉ
+   451→   451→
+   452→   452→- Balises meta dynamiques par page (title, description, Open Graph, Twitter Card), pilotables depuis le dashboard.
+   453→   453→- Génération automatique du sitemap XML et du fichier robots.txt.
+   454→   454→- Données structurées Schema.org (Article, BreadcrumbList, Organization, VideoObject, PodcastEpisode).
+   455→   455→- URLs propres et personnalisables (slugs).
+   456→   456→- Optimisation des images (formats modernes, dimensionnement responsive via Cloudinary).
+   457→   457→- Objectifs Core Web Vitals respectés (chargement rapide, stabilité visuelle, réactivité).
+   458→   458→- Accessibilité : contrastes suffisants, navigation au clavier, attributs alt sur les images, respect des préférences de réduction des animations.
+   459→   459→
+   460→   460→---
+   461→   461→
+   462→   462→## 14. SÉCURITÉ ET CONFORMITÉ (RGPD)
+   463→   463→
+   464→   464→- Chiffrement des mots de passe (hachage fort), transport HTTPS obligatoire.
+   465→   465→- Protection contre les injections SQL (ORM paramétré), le XSS (assainissement du contenu riche) et le CSRF.
+   466→   466→- Limitation du débit (rate limiting) sur les endpoints sensibles (formulaires, connexion).
+   467→   467→- Bandeau de consentement aux cookies, politique de confidentialité éditable.
+   468→   468→- Droit d'accès/suppression des données personnelles (abonnés newsletter, commentateurs) sur demande.
+   469→   469→- Sauvegardes régulières et automatisées de la base de données.
+   470→   470→
+   471→   471→---
+   472→   472→
+   473→   473→## 15. HÉBERGEMENT, DÉPLOIEMENT ET ENVIRONNEMENTS
+   474→   474→
+   475→   475→- Environnement de **développement**, de **pré-production/staging** et de **production** distincts.
+   476→   476→- Déploiement continu (CI/CD) : chaque mise à jour du code est testée puis déployée sans interruption de service.
+   477→   477→- Le contenu (articles, médias, réglages) reste totalement indépendant du code applicatif : une mise à jour technique du site n'affecte jamais le contenu publié.
+   478→   478→
+   479→   479→---
+   480→   480→
+   481→   481→## 16. RÔLES ET PERMISSIONS (BACK-OFFICE)
+   482→   482→
+   483→   483→| Rôle | Droits |
+   484→   484→|---|---|
+   485→   485→| **Administrateur** | Accès total : contenu, utilisateurs, publicité, paramètres, statistiques |
+   486→   486→| **Éditeur en chef** | Gestion complète du contenu, validation des publications, modération |
+   487→   487→| **Rédacteur** | Création/modification de ses propres articles (soumis à validation) |
+   488→   488→| **Community Manager** | Gestion des commentaires, réseaux sociaux, newsletter |
+   489→   489→| **Régie publicitaire** | Gestion des emplacements et campagnes publicitaires, accès aux statistiques pub uniquement |
+   490→   490→
+   491→   491→---
+   492→   492→
+   493→   493→## 17. CHARTE GRAPHIQUE ET IDENTITÉ VISUELLE
+   494→   494→
+   495→   495→- Logo, déclinaisons (couleur, monochrome), favicon.
+   496→   496→- Palette de couleurs principale et secondaire (à valider avec le client).
+   497→   497→- Typographies (titres/texte courant) — lisibles et modernes, adaptées à un support éditorial international.
+   498→   498→- Iconographie cohérente (style d'icônes unique sur tout le site).
+   499→   499→- Ton éditorial et ligne graphique reflétant le positionnement "business international, professionnel, dynamique".
+   500→   500→
+   501→   501→---
+   502→   502→
+   503→   503→## 18. PLANNING DE RÉALISATION PAR PHASES
+   504→   504→
+   505→   505→| Phase | Contenu | Livrable |
+   506→   506→|---|---|---|
+   507→   507→| 1. Découverte & Cadrage | Ateliers, validation du présent cahier des charges, arborescence finale | Spécifications validées |
+   508→   508→| 2. Conception UX/UI | Maquettes (wireframes puis maquettes graphiques haute fidélité) | Maquettes validées |
+   509→   509→| 3. Modélisation des données | Schéma PostgreSQL détaillé, choix techniques définitifs | Schéma de base validé |
+   510→   510→| 4. Développement Back-office | Construction du tableau de bord et de l'API | Dashboard fonctionnel |
+   511→   511→| 5. Développement Front-office | Intégration des pages publiques, animations, publicités | Site fonctionnel |
+   512→   512→| 6. Intégrations tierces | Cloudinary, YouTube, Google Drive, emailing | Intégrations testées |
+   513→   513→| 7. Tests & Recette | Tests fonctionnels, tests de charge, tests de sécurité | Rapport de recette |
+   514→   514→| 8. Formation | Formation de l'équipe éditoriale à l'utilisation du dashboard | Support de formation |
+   515→   515→| 9. Mise en production | Déploiement final, DNS, certificats SSL | Site en ligne |
+   516→   516→| 10. Maintenance & Évolutions | Support post-lancement, corrections, nouvelles fonctionnalités | Contrat de maintenance |
+   517→   517→
+   518→   518→---
+   519→   519→
+   520→   520→## 19. LIVRABLES ATTENDUS
+   521→   521→
+   522→   522→- Le site web public complet (toutes rubriques listées en section 4).
+   523→   523→- Le tableau de bord d'administration complet (tous modules listés en section 10).
+   524→   524→- La documentation technique (architecture, schéma de base de données, API).
+   525→   525→- Un guide utilisateur du dashboard destiné à l'équipe éditoriale.
+   526→   526→- Les accès aux différents services tiers configurés (Cloudinary, compte YouTube, dossier Google Drive, service d'emailing).
+   527→   527→- Le code source versionné.
+   528→   528→
+   529→   529→---
+   530→   530→
+   531→   531→## 20. CRITÈRES DE RECETTE / TESTS D'ACCEPTATION
+   532→   532→
+   533→   533→- Un utilisateur non technique peut publier un article complet (texte, image, vidéo) en moins de 5 minutes, sans aide.
+   534→   534→- La modification des informations de contact se répercute instantanément sur toutes les pages concernées.
+   535→   535→- Un espace publicitaire nouvellement créé s'affiche correctement sur desktop et mobile, avec comptage des impressions/clics fonctionnel.
+   536→   536→- Le bandeau Flash Info et le bloc "À la Une" peuvent être modifiés et sont visibles côté public en moins d'une minute.
+   537→   537→- Le pop-up newsletter respecte la fréquence d'affichage configurée.
+   538→   538→- Les vidéos YouTube et podcasts Google Drive s'affichent et se lisent correctement sur le site.
+   539→   539→- Le site conserve un temps de chargement performant malgré les animations et les publicités.
+   540→   540→- Le site est fonctionnel et lisible sur mobile, tablette et desktop (tests multi-navigateurs).
+   541→   541→
+   542→   542→---
+   543→   543→
+   544→   544→## 21. MAINTENANCE, ÉVOLUTIVITÉ ET SUPPORT
+   545→   545→
+   546→   546→- Support technique post-lancement (correction de bugs, assistance).
+   547→   547→- Évolutions futures envisageables : application mobile compagnon, espace membres premium/abonnement payant, système de petites annonces B2B, marketplace de formations, multilingue étendu, notifications push avancées, intelligence artificielle pour suggestions d'articles personnalisées.
+   548→   548→- Sauvegardes automatiques régulières et procédure de restauration documentée.
+   549→   549→
+   550→   550→---
+   551→   551→
+   552→   552→## 22. ANNEXES
+   553→   553→
+   554→   554→### 22.1 Glossaire
+   555→   555→- **Serverless** : modèle d'exécution où le code s'exécute à la demande sur des fonctions gérées par un fournisseur cloud, sans gestion de serveur permanent.
+   556→   556→- **CDN** : réseau de diffusion de contenu permettant de servir les fichiers (images, vidéos, scripts) depuis des serveurs proches géographiquement du visiteur.
+   557→   557→- **ISR (Incremental Static Regeneration)** : technique de régénération incrémentale des pages statiques sans reconstruction complète du site.
+   558→   558→- **CTR (Click-Through Rate)** : taux de clic, indicateur de performance publicitaire.
+   559→   559→- **RBAC (Role-Based Access Control)** : contrôle d'accès basé sur les rôles des utilisateurs.
+   560→   560→
+   561→   561→### 22.2 Points à valider avec le client avant démarrage
+   562→   562→- Choix définitif du nom de domaine et de la charte graphique.
+   563→   563→- Nécessité ou non des comptes lecteurs/membres.
+   564→   564→- Activation ou non du multilingue dès le lancement.
+   565→   565→- Choix du prestataire d'emailing/newsletter.
+   566→   566→- Volume prévisionnel de trafic (pour dimensionner l'infrastructure).
+   567→   567→- Modèle de monétisation publicitaire (régie propre, régie externe, ou mixte).
+   568→   568→
+   569→   569→---
+   570→   570→
+   571→   571→*Fin du cahier des charges.*
