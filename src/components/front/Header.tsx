@@ -11,8 +11,10 @@ import { useState } from 'react';
 import {
   Facebook,
   Linkedin,
+  Mail,
   Menu,
   Moon,
+  Phone,
   Search,
   Sun,
   Twitter,
@@ -34,7 +36,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { formatFrDate } from './mag/helpers';
+import { contactHref, formatFrDate } from './mag/helpers';
 import { cn } from '@/lib/utils';
 
 export function Header() {
@@ -68,7 +70,29 @@ export function Header() {
       {/* ── Topbar fine (noir permanent) ────────────────────────── */}
       <div className="hidden border-b border-white/10 bg-neutral-950 sm:block">
         <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-[11px] text-white/60">
-          <p className="font-medium tracking-wide">{today || '\u00a0'}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <p className="hidden shrink-0 font-medium tracking-wide lg:block">{today || '\u00a0'}</p>
+            {settings?.contactPhone && (
+              <a
+                href={contactHref('Téléphone', settings.contactPhone)}
+                className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white md:flex"
+                aria-label="Téléphone de la rédaction"
+              >
+                <Phone className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
+                <span className="truncate">{settings.contactPhone}</span>
+              </a>
+            )}
+            {settings?.contactEmail && (
+              <a
+                href={contactHref('Email', settings.contactEmail)}
+                className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white lg:flex"
+                aria-label="Email de la rédaction"
+              >
+                <Mail className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
+                <span className="truncate">{settings.contactEmail}</span>
+              </a>
+            )}
+          </div>
           <div className="flex items-center gap-0.5">
             {socials.map(({ key, url, Icon, label }) => (
               <a
@@ -244,6 +268,30 @@ export function Header() {
                   >
                     S'abonner à la newsletter
                   </Button>
+                  {(settings?.contactPhone || settings?.contactEmail) && (
+                    <div className="mt-3 space-y-1.5 rounded-lg border bg-secondary/40 p-3">
+                      {settings?.contactPhone && (
+                        <a
+                          href={contactHref('Téléphone', settings.contactPhone)}
+                          className="flex items-center gap-2.5 text-sm transition-colors hover:text-primary"
+                          aria-label="Téléphone de la rédaction"
+                        >
+                          <Phone className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                          <span className="min-w-0 break-words">{settings.contactPhone}</span>
+                        </a>
+                      )}
+                      {settings?.contactEmail && (
+                        <a
+                          href={contactHref('Email', settings.contactEmail)}
+                          className="flex items-center gap-2.5 text-sm transition-colors hover:text-primary"
+                          aria-label="Email de la rédaction"
+                        >
+                          <Mail className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                          <span className="min-w-0 break-words">{settings.contactEmail}</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-3 flex items-center justify-center gap-2">
                     {socials.map(({ key, url, Icon, label }) => (
                       <a

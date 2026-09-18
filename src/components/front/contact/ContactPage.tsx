@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { isValidEmail } from '../mag/helpers';
+import { contactHref, isValidEmail } from '../mag/helpers';
 
 const SUBJECTS = [
   "Demande d'information",
@@ -187,17 +187,32 @@ export function ContactPage() {
           <Card className="p-6">
             <p className="eyebrow mb-4 text-primary">Coordonnées</p>
             <ul className="space-y-4 text-sm">
-              {infoRows.map(({ Icon, value, label }) => (
-                <li key={label} className="flex items-start gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="font-semibold">{label}</p>
-                    <p className="text-muted-foreground">{value}</p>
-                  </div>
-                </li>
-              ))}
+              {infoRows.map(({ Icon, value, label }) => {
+                const href = contactHref(label, value);
+                return (
+                  <li key={label} className="flex items-start gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Icon className="size-4" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <p className="font-semibold">{label}</p>
+                      {href ? (
+                        <a
+                          href={href}
+                          {...(href.startsWith('http')
+                            ? { target: '_blank', rel: 'noopener noreferrer' }
+                            : {})}
+                          className="break-words text-muted-foreground transition-colors hover:text-primary hover:underline underline-offset-2"
+                        >
+                          {value}
+                        </a>
+                      ) : (
+                        <p className="text-muted-foreground">{value}</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
             {socials.length > 0 ? (
               <>

@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DrawCheck } from './mag/DrawCheck';
-import { isValidEmail } from './mag/helpers';
+import { contactHref, isValidEmail } from './mag/helpers';
 
 export function Footer() {
   const bootstrap = useMagazineStore((s) => s.bootstrap);
@@ -37,7 +37,11 @@ export function Footer() {
   const [done, setDone] = useState(false);
 
   const roots = (bootstrap?.categories || []).filter((c) => !c.parentId && c.showInMenu);
-  const footerMenu = (bootstrap?.menus.footer || []).filter((m) => m.active && !m.parentId);
+  // Liens de rubriques du menu footer (enfants réels uniquement — les
+  // entrées parents de groupement ont une URL vide et sont exclues)
+  const footerCatLinks = (bootstrap?.menus.footer || []).filter(
+    (m) => m.active && m.parentId && m.url.startsWith('#/category/'),
+  );
 
   const socials = [
     { key: 'facebook', url: settings?.facebook, Icon: Facebook, label: 'Facebook' },
@@ -110,8 +114,8 @@ export function Footer() {
           <nav aria-label="Rubriques du site">
             <p className="eyebrow mb-3 text-brand-bright">Rubriques</p>
             <ul className="space-y-2 text-[13px]">
-              {footerMenu.length > 0
-                ? footerMenu.map((item) => (
+              {footerCatLinks.length > 0
+                ? footerCatLinks.map((item) => (
                     <li key={item.id}>
                       <a
                         href={item.url.startsWith('#') ? item.url : `#${item.url}`}
@@ -148,12 +152,27 @@ export function Footer() {
           <div>
             <p className="eyebrow mb-3 text-brand-bright">Informations</p>
             <ul className="space-y-2.5 text-[13px] text-neutral-400">
-              {contactRows.map(({ Icon, value, label }) => (
-                <li key={label} className="flex items-start gap-2.5">
-                  <Icon className="mt-0.5 size-3.5 shrink-0 text-brand-bright" aria-hidden="true" />
-                  <span>{value}</span>
-                </li>
-              ))}
+              {contactRows.map(({ Icon, value, label }) => {
+                const href = contactHref(label, value);
+                return (
+                  <li key={label} className="flex items-start gap-2.5">
+                    <Icon className="mt-0.5 size-3.5 shrink-0 text-brand-bright" aria-hidden="true" />
+                    {href ? (
+                      <a
+                        href={href}
+                        {...(href.startsWith('http')
+                          ? { target: '_blank', rel: 'noopener noreferrer' }
+                          : {})}
+                        className="break-words text-neutral-400 transition-colors hover:text-white hover:underline underline-offset-2"
+                      >
+                        {value}
+                      </a>
+                    ) : (
+                      <span>{value}</span>
+                    )}
+                  </li>
+                );
+              })}
               <li>
                 <a href="#/contact" className="font-medium text-brand-bright hover:underline">
                   Nous contacter →

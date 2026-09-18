@@ -108,3 +108,23 @@ Stage Summary:
 - Plateforme rebrandée « Réussite Magazine » (rouge #C8102E / noir / blanc), logo officiel partout, menu hamburger sans overflow, pubs compactes, composants plus fins et mieux structurés, images 100 % réelles vérifiées visuellement.
 - Accès démo inchangé côté mot de passe : admin@reussitemagazine.com / admin123 (emails mis à jour en base).
 - Fichiers clés : globals.css (thème), Header.tsx (masthead + hamburger), AdSlot.tsx (tailles appliquées), Footer.tsx (noir), ArticleCard/HeroSlider/SectionTitle/HomePage (raffinement), route.ts API (filtre rubriques parentes), layout.tsx (SEO/favicon).
+
+---
+Task ID: 6
+Agent: Lead (Z.ai Code)
+Task: Ajout des contacts réels (tel +224 / email Gmail) + audit des failles persistantes
+
+Work Log:
+- Contacts réels appliqués partout : Tel « +224 622 85 70 35 / 625 62 30 82 » + email « réussitemagazine16@gmail.com ».
+- Base live mise à jour via scripts/update-contacts.ts (idempotent) : SiteSetting contactEmail/contactPhone + 3 pages statiques (mentions-legales : tel/courriel ; politique-confidentialite : privacy@… → nouvel email ; espace-annonceurs : regie@… → nouvel email). 0 référence obsolète restante.
+- prisma/seed.ts aligné (contactEmail/contactPhone + mêmes pages statiques) + correction branding résiduel du seed (logoText BUSINESS HORIZON → Réussite Magazine, tagline alignée).
+- src/lib/server/utils.ts : DEFAULT_SETTINGS alignés (fallbacks corrects si DB vide).
+- Contacts désormais CLIQUABLES : nouveau helper contactHref(label, value) dans mag/helpers.ts (mailto: encodé, tel: sur le 1er numéro, Google Maps pour l'adresse) ; utilisé dans Footer (colonne Informations), ContactPage (Coordonnées) et Header.
+- Header : topbar noire affiche désormais tel + email cliquables (icônes Phone/Mail rouge, troncature, cachés < md/lg) ; menu hamburger (Sheet) : encart contacts tel+email au-dessus des réseaux sociaux (visible mobile).
+- FAILLE corrigée au passage : colonne footer « Rubriques » listait les labels de groupement du menu (Rubriques/Ressources/Légal, URL vide = liens morts) → filtre sur les enfants réels avec URL #/category/* + fallback catégories racines. Colonne désormais : Entrepreneuriat, Business & Économie, Startups & Innovation, Management & Leadership, Interviews & Portraits, Dossiers & Analyses, Vidéos, Podcasts.
+- Vérification navigateur (agent-browser) : topbar (tel:+224622857035, mailto: encodé), footer clair/sombre (contacts + rubriques propres), page contact (mailto/tel/Maps cliquables), menu hamburger (encart contacts), mobile 390 px sans overflow horizontal (scrollW 390=390), console propre, lint 0 erreur, mode clair restauré.
+
+Stage Summary:
+- Contacts réels visibles et cliquables sur toutes les pages : topbar, menu hamburger, page Contact, footer ; pages légales et seed alignés.
+- Failles corrigées cette passe : liens morts du footer, contacts non cliquables, branding résiduel du seed.
+- Failles restantes SIGNALÉES à l'utilisateur (non fixables sans ses infos) : adresse encore placeholder (Paris) incohérente avec le tel +224 ; emails/noms d'auteurs fictifs ; liens réseaux sociaux hypothétiques ; mention « Horizon Média SAS, RCS Paris » dans les mentions légales ; SMTP absent (formulaire contact stocké en DB, pas d'envoi d'email réel) ; mots de passe admin de démo à changer avant production ; orthographe de l'email (accent « é ») à confirmer — Gmail n'accepte techniquement pas les accents.

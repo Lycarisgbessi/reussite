@@ -76,3 +76,21 @@ export function fmtTime(seconds: number): string {
 export function isValidEmail(email: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((email || '').trim());
 }
+
+/**
+ * Lien cliquable pour une coordonnée affichée (tel:, mailto:, Google Maps).
+ * Renvoie undefined si la coordonnée n'a pas de lien naturel (ex. horaires).
+ */
+export function contactHref(label: string, value: string): string | undefined {
+  if (!value) return undefined;
+  if (label === 'Email') return `mailto:${encodeURIComponent(value)}`;
+  if (label === 'Téléphone') {
+    // Plusieurs numéros séparés par « / » : on pointe le premier.
+    const first = value.split('/')[0].replace(/[^\d+]/g, '');
+    return first ? `tel:${first}` : undefined;
+  }
+  if (label === 'Adresse') {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
+  }
+  return undefined;
+}
