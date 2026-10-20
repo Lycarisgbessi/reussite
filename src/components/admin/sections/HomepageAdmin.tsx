@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { TranslationsDialog } from '../ui/TranslationsDialog';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,7 +40,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import {
   Plus, Trash2, Star, Loader2, ArrowUp, ArrowDown, Zap, LayoutGrid,
-  MailOpen, Save, MoveVertical, ImageOff, Pencil,
+  MailOpen, Save, MoveVertical, ImageOff, Pencil, Languages,
 } from 'lucide-react';
 
 // Libellés FR des types de blocs d'accueil connus
@@ -78,6 +79,7 @@ export function HomepageAdmin() {
   const [flashEditing, setFlashEditing] = React.useState<FlashInfoItem | null>(null);
   const [flashForm, setFlashForm] = React.useState({ text: '', link: '', active: true });
   const [flashDelete, setFlashDelete] = React.useState<FlashInfoItem | null>(null);
+  const [flashTranslate, setFlashTranslate] = React.useState<FlashInfoItem | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -332,8 +334,28 @@ export function HomepageAdmin() {
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Articles à la une (ordonnés) */}
             <div className="rounded-xl border border-border/70 bg-card">
-              <div className="flex items-center justify-between border-b border-border/60 p-3">
-                <p className="text-sm font-semibold">Carrousel à la une ({featuredIds.length}/6)</p>
+              <div className="flex items-center justify-between gap-4 border-b border-border/60 p-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Carrousel à la une ({featuredIds.length}/6)</p>
+                  <label className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Switch
+                      className="scale-90"
+                      checked={settings?.autoFeature ?? true}
+                      onCheckedChange={async (v) => {
+                        setSettings((prev) => (prev ? { ...prev, autoFeature: v } : prev));
+                        try {
+                          await adminApi.saveSettings({ autoFeature: v });
+                          toast({ title: v ? 'Mise en une automatique activée' : 'Mise en une automatique désactivée' });
+                        } catch {
+                          setSettings((prev) => (prev ? { ...prev, autoFeature: !v } : prev));
+                          toast({ variant: 'destructive', title: 'Erreur', description: 'Réglage non enregistré.' });
+                        }
+                      }}
+                      aria-label="Mise en une automatique"
+                    />
+                    Chaque nouvel article publié passe automatiquement à la une (désactivable par article).
+                  </label>
+                </div>
                 <Button size="sm" onClick={saveFeaturedOrder} disabled={busy || !featuredDirty}>
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   Enregistrer
@@ -448,6 +470,30 @@ export function HomepageAdmin() {
             <Plus className="h-4 w-4" /> Nouveau message
           </Button>
         </div>
+        {/* Alimentation automatique (repli sur les derniers articles) */}
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-card p-4">
+          <div>
+            <p className="text-sm font-medium">Alimentation automatique</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Si aucun message actif n’est défini, le bandeau diffuse automatiquement les titres
+              des derniers articles publiés — le flash info tourne en permanence.
+            </p>
+          </div>
+          <Switch
+            checked={settings?.flashInfoAuto ?? true}
+            onCheckedChange={async (v) => {
+              setSettings((prev) => (prev ? { ...prev, flashInfoAuto: v } : prev));
+              try {
+                await adminApi.saveSettings({ flashInfoAuto: v });
+                toast({ title: v ? 'Alimentation automatique activée' : 'Alimentation automatique désactivée' });
+              } catch {
+                setSettings((prev) => (prev ? { ...prev, flashInfoAuto: !v } : prev));
+                toast({ variant: 'destructive', title: 'Erreur', description: 'Réglage non enregistré.' });
+              }
+            }}
+            aria-label="Alimentation automatique du flash info"
+          />
+        </div>
         <div className="rounded-xl border border-border/70 bg-card">
           {loading ? (
             <div className="space-y-3 p-4">
@@ -465,6 +511,9 @@ export function HomepageAdmin() {
                     {f.link ? <a href={`#${f.link.replace(/^#/, '')}`} className="truncate text-xs text-primary hover:underline">{f.link}</a> : null}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFlashTranslate(f)} aria-label={`Traductions ${f.text}`} title="Traductions">
+                      <Languages className="h-3.5 w-3.5" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === 0} onClick={() => moveFlash(i, -1)} aria-label="Monter">
                       <ArrowUp className="h-3.5 w-3.5" />
                     </Button>
@@ -634,6 +683,14 @@ export function HomepageAdmin() {
           </div>
         )}
       </TabsContent>
+      <TranslationsDialog
+        open={flashTranslate !== null}
+        onOpenChange={(o) => { if (!o) setFlashTranslate(null); }}
+        entityType="flashInfo"
+        entityId={flashTranslate?.id ?? null}
+        entityLabel={flashTranslate?.text.slice(0, 40)}
+        fields={[{ key: 'text', label: 'Message traduit', multiline: true }]}
+      />
     </Tabs>
   );
 }

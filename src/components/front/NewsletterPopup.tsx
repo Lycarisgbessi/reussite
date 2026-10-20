@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, Mail, Send } from 'lucide-react';
 import { useMagazineStore } from '@/lib/store';
 import { publicApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -44,6 +45,7 @@ function shouldShowAccordingToFrequency(freq: NewsletterPopupConfig['frequency']
 export function NewsletterPopup() {
   const bootstrap = useMagazineStore((s) => s.bootstrap);
   const { toast } = useToast();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -95,19 +97,19 @@ export function NewsletterPopup() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(email)) {
-      toast({ title: 'Adresse email invalide', variant: 'destructive' });
+      toast({ title: t('form.invalidEmail'), variant: 'destructive' });
       return;
     }
     setBusy(true);
     try {
       await publicApi.subscribeNewsletter({ email: email.trim(), source: 'popup' });
       setSuccess(true);
-      toast({ title: 'Bienvenue !', description: 'Votre inscription à la newsletter est confirmée.' });
+      toast({ title: t('newsletter.welcomeTitle'), description: t('newsletter.confirmDesc') });
       setTimeout(() => setOpen(false), 2200);
     } catch (err) {
       toast({
-        title: 'Erreur',
-        description: err instanceof Error ? err.message : 'Réessayez plus tard.',
+        title: t('form.error'),
+        description: err instanceof Error ? err.message : t('form.retryLater'),
         variant: 'destructive',
       });
     } finally {
@@ -119,8 +121,8 @@ export function NewsletterPopup() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="sr-only">
-          <DialogTitle>Inscription à la newsletter</DialogTitle>
-          <DialogDescription>Recevez l'essentiel de l'actu business chaque semaine.</DialogDescription>
+          <DialogTitle>{t('newsletter.dialogTitle')}</DialogTitle>
+          <DialogDescription>{t('newsletter.dialogDesc')}</DialogDescription>
         </DialogHeader>
         <div className="grid sm:grid-cols-2">
           {/* Panneau visuel */}
@@ -141,7 +143,7 @@ export function NewsletterPopup() {
                 Horizon
               </p>
               <p className="text-center text-xs uppercase tracking-[0.2em] opacity-80">
-                La newsletter des décideurs
+                {t('newsletter.tagline')}
               </p>
             </div>
           </div>
@@ -151,9 +153,9 @@ export function NewsletterPopup() {
             {success ? (
               <div className="flex flex-col items-center gap-3 py-8 text-center">
                 <DrawCheck className="size-14" />
-                <p className="font-editorial text-lg font-bold">Merci, c'est noté !</p>
+                <p className="font-editorial text-lg font-bold">{t('newsletter.successTitle')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Vous recevrez notre prochaine édition chaque semaine.
+                  {t('newsletter.successDesc')}
                 </p>
               </div>
             ) : (
@@ -170,24 +172,24 @@ export function NewsletterPopup() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="votre@email.com"
-                    aria-label="Adresse email"
+                    placeholder={t('form.emailPlaceholder')}
+                    aria-label={t('article.emailLabel')}
                     className="h-11"
                   />
                   <Button type="submit" disabled={busy} className="cta-pulse h-11 w-full rounded-full font-semibold">
                     {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                    Je m'abonne
+                    {t('home.subscribeCta')}
                   </Button>
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
                     className="w-full rounded-full py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    Non merci
+                    {t('newsletter.noThanks')}
                   </button>
                 </form>
                 <p className="mt-3 text-[11px] text-muted-foreground">
-                  Désinscription en un clic. Consultez notre politique de confidentialité.
+                  {t('newsletter.footnote')}
                 </p>
               </>
             )}

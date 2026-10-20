@@ -1,0 +1,24 @@
+{
+  "name": "Réussite Magazine — Trimestriel des décideurs africains",
+  "short_name": "Réussite Magazine",
+  "description": "Le magazine des décideurs africains : entrepreneuriat, business, management, innovation, interviews, vidéos et podcasts.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0a0a",
+  "theme_color": "#d97706",
+  "lang": "fr",
+  "categories": ["news", "business", "magazines"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Vidéos", "url": "/#/videos", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Podcasts", "url": "/#/podcasts", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Recherche", "url": "/#/search", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

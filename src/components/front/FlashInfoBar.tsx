@@ -7,10 +7,12 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useMagazineStore } from '@/lib/store';
+import { useI18n } from '@/lib/i18n';
 import type { FlashInfoItem } from '@/lib/types';
 
 export function FlashInfoBar() {
   const bootstrap = useMagazineStore((s) => s.bootstrap);
+  const { t } = useI18n();
   const [closed, setClosed] = useState(() => {
     if (typeof window === 'undefined') return true;
     return sessionStorage.getItem('bh_flash_closed') === '1';
@@ -48,12 +50,12 @@ export function FlashInfoBar() {
     <div
       className="slide-in-top bg-neutral-950 text-white dark:bg-black"
       role="region"
-      aria-label="Flash info"
+      aria-label={t('flash.region')}
     >
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5">
         <span className="flex shrink-0 items-center gap-1.5 rounded-sm bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
           <span className="size-1.5 animate-pulse rounded-full bg-white" aria-hidden="true" />
-          Flash
+          {t('flash.title')}
         </span>
         <div className="relative flex-1 overflow-hidden" aria-live="polite">
           <div className="ticker-marquee text-[13px] font-medium">
@@ -64,7 +66,7 @@ export function FlashInfoBar() {
         <button
           type="button"
           onClick={close}
-          aria-label="Masquer le flash info"
+          aria-label={t('flash.close')}
           className="flex size-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-white/10"
         >
           <X className="size-4" />

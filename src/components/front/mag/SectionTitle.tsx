@@ -6,6 +6,7 @@
 import { ArrowRight } from 'lucide-react';
 import { navigate } from '@/lib/store';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 
 interface SectionTitleProps {
   eyebrow?: string;
@@ -20,9 +21,11 @@ export function SectionTitle({
   eyebrow,
   title,
   seeAllHref,
-  seeAllLabel = 'Voir tout',
+  seeAllLabel,
   className,
 }: SectionTitleProps) {
+  const { t } = useI18n();
+  seeAllLabel = seeAllLabel ?? t('common.seeAll');
   return (
     <div className={cn('mb-5 flex items-end justify-between gap-4', className)}>
       <div>

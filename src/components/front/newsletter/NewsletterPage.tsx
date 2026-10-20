@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { Check, Loader2, Mail } from 'lucide-react';
 import { publicApi } from '@/lib/api';
 import { useMagazineStore } from '@/lib/store';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useI18n } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,6 +20,8 @@ import { DrawCheck } from '../mag/DrawCheck';
 import { isValidEmail } from '../mag/helpers';
 
 export function NewsletterPage() {
+  const { t } = useI18n();
+  useDocumentTitle(t('newsletterPage.title'));
   const bootstrap = useMagazineStore((s) => s.bootstrap);
   const settings = bootstrap?.settings;
   const { toast } = useToast();
@@ -36,7 +40,7 @@ export function NewsletterPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(email)) {
-      toast({ title: 'Adresse email invalide', variant: 'destructive' });
+      toast({ title: t('form.invalidEmail'), variant: 'destructive' });
       return;
     }
     setBusy(true);
@@ -48,11 +52,11 @@ export function NewsletterPage() {
         source: 'page',
       });
       setDone(true);
-      toast({ title: 'Bienvenue !', description: 'Votre inscription est confirmée.' });
+      toast({ title: t('newsletterPage.welcomeTitle'), description: t('newsletterPage.welcomeDesc') });
     } catch (err) {
       toast({
-        title: 'Erreur',
-        description: err instanceof Error ? err.message : 'Réessayez plus tard.',
+        title: t('form.error'),
+        description: err instanceof Error ? err.message : t('form.retryLater'),
         variant: 'destructive',
       });
     } finally {
@@ -67,17 +71,16 @@ export function NewsletterPage() {
         <div className="absolute -right-10 -top-10 size-44 rounded-full bg-white/10" aria-hidden="true" />
         <div className="absolute -bottom-14 left-1/3 size-40 rounded-full bg-white/10" aria-hidden="true" />
         <div className="relative">
-          <p className="eyebrow opacity-90">Newsletter</p>
+          <p className="eyebrow opacity-90">{t('footer.newsletter')}</p>
           <h1 className="mt-2 font-editorial text-3xl font-bold leading-tight sm:text-4xl">
-            {settings?.newsletterHeroTitle || "L'essentiel business, chaque semaine"}
+            {settings?.newsletterHeroTitle || t('newsletterPage.heroTitleFallback')}
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed opacity-90 sm:text-base">
-            {settings?.newsletterHeroText ||
-              "Recevez nos analyses, interviews et décryptages directement dans votre boîte mail. Gratuit, sans spam, désinscription en un clic."}
+            {settings?.newsletterHeroText || t('newsletterPage.heroTextFallback')}
           </p>
           <div className="mt-5 flex items-center gap-2 text-sm opacity-90">
             <Mail className="size-4" aria-hidden="true" />
-            +15 000 décideurs nous lisent déjà
+            {t('newsletterPage.readers')}
           </div>
         </div>
       </div>

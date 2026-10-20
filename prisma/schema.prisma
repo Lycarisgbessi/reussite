@@ -62,6 +62,7 @@ model Article {
   slug          String           @unique
   title         String
   subtitle      String           @default("")
+  excerpt       String           @default("")
   content       String           @default("[]")
   coverImage    String           @default("")
   coverCredit   String           @default("")
@@ -145,21 +146,36 @@ model Video {
   updatedAt    DateTime @updatedAt
 }
 
-model Podcast {
-  id          String   @id @default(cuid())
+model PodcastCollection {
+  id          String             @id @default(cuid())
   title       String
-  description String   @default("")
-  audioUrl    String
-  duration    String   @default("")
-  season      Int      @default(1)
-  episode     Int      @default(1)
-  coverImage  String   @default("")
-  guests      String   @default("")
-  published   Boolean  @default(true)
-  plays       Int      @default(0)
-  publishedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  description String             @default("")
+  parentId    String?
+  parent      PodcastCollection? @relation("PodcastCollectionTree", fields: [parentId], references: [id])
+  children    PodcastCollection[] @relation("PodcastCollectionTree")
+  order       Int                @default(0)
+  podcasts    Podcast[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model Podcast {
+  id           String             @id @default(cuid())
+  title        String
+  description  String             @default("")
+  audioUrl     String
+  duration     String             @default("")
+  season       Int                @default(1)
+  episode      Int                @default(1)
+  collectionId String?
+  collection   PodcastCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  coverImage   String             @default("")
+  guests       String             @default("")
+  published    Boolean            @default(true)
+  plays        Int                @default(0)
+  publishedAt  DateTime           @default(now())
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -251,6 +267,8 @@ model AdCampaign {
   advertiser       String
   imageUrl         String       @default("")
   htmlCode         String       @default("")
+  mediaType        String       @default("IMAGE") // IMAGE (statique/JPEG/PNG), GIF (animé), VIDEO (MP4/YouTube)
+  videoUrl         String       @default("")
   targetUrl        String       @default("")
   weight           Int          @default(1)
   deviceTargeting  String       @default("ALL") // ALL, MOBILE, DESKTOP
@@ -311,5 +329,36 @@ model AuditLog {
   userName  String
   action    String
   details   String   @default("")
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// TRADUCTIONS AUTOMATIQUES (DeepL) — FR source → EN/ES/AR/ZH
+// entityType : article, flashInfo, podcast, video, category
+// data : JSON { title, subtitle, content, text, description, name ... }
+// auto=false ⇒ traduction corrigée manuellement (non écrasée)
+// ─────────────────────────────────────────────────────────────
+model Translation {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  locale     String
+  data       String   @default("{}")
+  auto       Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([entityType, entityId, locale])
+  @@index([entityType, entityId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATIONS PUSH (Web Push VAPID) — abonnés du site.
+// ═══════════════════════════════════════════════════════════════
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
   createdAt DateTime @default(now())
 }

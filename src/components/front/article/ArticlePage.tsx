@@ -32,7 +32,9 @@ import { PageSkeleton } from '../mag/Skeletons';
 import { SmartImage } from '../mag/SmartImage';
 import { DrawCheck } from '../mag/DrawCheck';
 import { SectionTitle } from '../mag/SectionTitle';
-import { formatFrDate, formatViews, frRelative, initials, isValidEmail } from '../mag/helpers';
+import { formatViews, initials, isValidEmail } from '../mag/helpers';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useI18n, useFormatDate } from '@/lib/i18n';
 import { AdSlot } from '../ads/AdSlot';
 import { BlocksRenderer } from './BlocksRenderer';
 import { ShareButtons } from './ShareButtons';
@@ -46,8 +48,11 @@ export function ArticlePage({ slug }: { slug: string }) {
   const favorites = useMagazineStore((s) => s.favorites);
   const toggleFavoriteLocal = useMagazineStore((s) => s.toggleFavoriteLocal);
   const { toast } = useToast();
+  const { t } = useI18n();
+  const { formatDate, relative } = useFormatDate();
 
   const [article, setArticle] = useState<ArticleFull | null>(null);
+  useDocumentTitle(article?.title || undefined);
   const [related, setRelated] = useState<import('@/lib/types').ArticleSummary[]>([]);
   const [comments, setComments] = useState<import('@/lib/api').PublicComment[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +88,7 @@ export function ArticlePage({ slug }: { slug: string }) {
         publicApi.track('ARTICLE_VIEW', `/article/${slug}`, { articleId: res.article.id });
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur de chargement');
+        if (!cancelled) setError(e instanceof Error ? e.message : t('article.loadingError'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -108,7 +113,7 @@ export function ArticlePage({ slug }: { slug: string }) {
   const like = () => {
     if (!article) return;
     if (liked) {
-      toast({ title: 'Vous avez déjà réagi à cet article.' });
+      toast({ title: t('article.alreadyLiked') });
       return;
     }
     publicApi
@@ -118,21 +123,23 @@ export function ArticlePage({ slug }: { slug: string }) {
         setLiked(true);
         localStorage.setItem(`bh_liked_${article.id}`, '1');
       })
-      .catch(() => toast({ title: 'Impossible d’aimer cet article', variant: 'destructive' }));
+      .catch(() => toast({ title: t('article.likeError'), variant: 'destructive' }));
   };
 
   const isFavorite = article ? favorites.includes(article.id) : false;
 
   const toggleFavorite = async () => {
     if (!article || !readerKey) return;
+    const wasFavorite = favorites.includes(article.id);
+    toggleFavoriteLocal(article.id); // optimiste
     try {
       const res = await publicApi.toggleFavorite(readerKey, article.id);
-      toggleFavoriteLocal(article.id);
-      toast({ title: res.favorited ? 'Article ajouté à vos favoris' : 'Article retiré de vos favoris' });
+      toast({ title: res.favorited ? t('article.favorited') : t('article.unfavorited') });
     } catch (err) {
+      if (favorites.includes(article.id) === wasFavorite) toggleFavoriteLocal(article.id); // rollback
       toast({
-        title: 'Erreur',
-        description: err instanceof Error ? err.message : 'Action impossible.',
+        title: t('form.error'),
+        description: err instanceof Error ? err.message : t('form.actionImpossible'),
         variant: 'destructive',
       });
     }
@@ -143,16 +150,16 @@ export function ArticlePage({ slug }: { slug: string }) {
   if (error || !article) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <p className="font-editorial text-2xl font-bold">Article introuvable</p>
+        <p className="font-editorial text-2xl font-bold">{t('article.notFound')}</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          {error || "Cet article n'existe pas ou a été dépublié."}
+          {error || t('article.notFoundDesc')}
         </p>
         <div className="mt-6 flex justify-center gap-3">
           <Button variant="outline" onClick={() => navigate('/')} className="rounded-full">
-            Retour à l'accueil
+            {t('article.backHome')}
           </Button>
           <Button onClick={() => navigate('/search')} className="rounded-full">
-            Rechercher
+            {t('article.search')}
           </Button>
         </div>
       </div>
@@ -168,9 +175,9 @@ export function ArticlePage({ slug }: { slug: string }) {
 
       <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
         {/* Fil d'Ariane */}
-        <nav aria-label="Fil d'Ariane" className="mb-6 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+        <nav aria-label={t('article.breadcrumb')} className="mb-6 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
           <a href="#/" className="transition-colors hover:text-primary">
-            Accueil
+            {t('nav.home')}
           </a>
           <ChevronRight className="size-3" aria-hidden="true" />
           <a href={`#/category/${categorySlug}`} className="transition-colors hover:text-primary">
@@ -183,7 +190,7 @@ export function ArticlePage({ slug }: { slug: string }) {
         {/* En-tête */}
         <header>
           <CategoryBadge
-            name={article.category?.name || 'Article'}
+            name={article.category?.name || t('common.article')}
             color={article.category?.color}
             className="mb-3"
           />
@@ -193,6 +200,11 @@ export function ArticlePage({ slug }: { slug: string }) {
           {article.subtitle ? (
             <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
               {article.subtitle}
+            </p>
+          ) : null}
+          {article.excerpt ? (
+            <p className="mt-4 border-l-2 border-primary/60 pl-4 text-sm italic leading-relaxed text-foreground/80 sm:text-[15px]">
+              {article.excerpt}
             </p>
           ) : null}
 
@@ -212,16 +224,16 @@ export function ArticlePage({ slug }: { slug: string }) {
             </div>
             <span aria-hidden="true">·</span>
             <time dateTime={article.publishedAt || undefined}>
-              {formatFrDate(article.publishedAt, 'd MMMM yyyy')}
+              {formatDate(article.publishedAt, 'd MMMM yyyy')}
             </time>
             <span aria-hidden="true">·</span>
             <span className="inline-flex items-center gap-1">
               <Clock3 className="size-4" aria-hidden="true" />
-              {article.readingTime} min de lecture
+              {article.readingTime} {t('article.readingTime')}
             </span>
             <span className="inline-flex items-center gap-1">
               <Eye className="size-4" aria-hidden="true" />
-              {formatViews(article.views)} vues
+              {formatViews(article.views)} {t('article.views')}
             </span>
             <span className="inline-flex items-center gap-1">
               <MessageCircle className="size-4" aria-hidden="true" />
@@ -242,7 +254,7 @@ export function ArticlePage({ slug }: { slug: string }) {
           </div>
           {article.coverCredit ? (
             <figcaption className="mt-2 text-right text-xs text-muted-foreground">
-              Photo : {article.coverCredit}
+              {t('article.photo')} {article.coverCredit}
             </figcaption>
           ) : null}
         </figure>
@@ -255,7 +267,7 @@ export function ArticlePage({ slug }: { slug: string }) {
               onClick={like}
               aria-pressed={liked}
               className="min-h-[44px] rounded-full px-5"
-              aria-label="Aimer cet article"
+              aria-label={t('article.like')}
             >
               <motion.span
                 key={liked ? 'liked' : 'unliked'}
@@ -273,10 +285,10 @@ export function ArticlePage({ slug }: { slug: string }) {
               onClick={toggleFavorite}
               aria-pressed={isFavorite}
               className="min-h-[44px] rounded-full px-5"
-              aria-label="Ajouter à mes favoris"
+              aria-label={t('article.addFavorites')}
             >
               <Bookmark className={cn('size-4', isFavorite && 'fill-current')} aria-hidden="true" />
-              Favori
+              {t('article.favorite')}
             </Button>
           </div>
           <ShareButtons title={article.title} />
@@ -294,7 +306,7 @@ export function ArticlePage({ slug }: { slug: string }) {
         {/* Tags */}
         {article.tags && article.tags.length > 0 ? (
           <div className="mt-10 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold">Tags :</span>
+            <span className="text-sm font-semibold">{t('article.tags')}</span>
             {article.tags.map((tag) => (
               <Badge
                 key={tag}
@@ -324,7 +336,7 @@ export function ArticlePage({ slug }: { slug: string }) {
       {related.length > 0 ? (
         <div className="border-t bg-secondary/30">
           <div className="mx-auto max-w-7xl px-4 py-12">
-            <SectionTitle eyebrow="Pour aller plus loin" title="À lire aussi" />
+            <SectionTitle eyebrow={t('article.relatedEyebrow')} title={t('article.relatedTitle')} />
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {related.slice(0, 4).map((a) => (
                 <a key={a.id} href={`#/article/${a.slug}`} className="article-card group overflow-hidden rounded-xl border bg-card">
@@ -340,7 +352,7 @@ export function ArticlePage({ slug }: { slug: string }) {
                     <h3 className="mt-2 font-editorial text-base font-bold leading-snug transition-colors group-hover:text-primary">
                       <span className="line-clamp-2">{a.title}</span>
                     </h3>
-                    <p className="mt-1 text-xs text-muted-foreground">{frRelative(a.publishedAt)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{relative(a.publishedAt)}</p>
                   </div>
                 </a>
               ))}
@@ -351,7 +363,7 @@ export function ArticlePage({ slug }: { slug: string }) {
                 onClick={() => navigate(`/category/${categorySlug}`)}
                 className="rounded-full text-primary"
               >
-                Tous les articles {article.category?.name}
+                {t('article.allCategoryArticles')} {article.category?.name}
                 <ArrowRight className="size-4" />
               </Button>
             </div>
@@ -365,6 +377,7 @@ export function ArticlePage({ slug }: { slug: string }) {
 // ─── Newsletter inline fin d'article ────────────────────────────
 function InlineNewsletter() {
   const { toast } = useToast();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -372,18 +385,18 @@ function InlineNewsletter() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(email)) {
-      toast({ title: 'Adresse email invalide', variant: 'destructive' });
+      toast({ title: t('form.invalidEmail'), variant: 'destructive' });
       return;
     }
     setBusy(true);
     try {
       await publicApi.subscribeNewsletter({ email: email.trim(), source: 'article' });
       setDone(true);
-      toast({ title: 'Inscription confirmée', description: 'À très vite !' });
+      toast({ title: t('form.subscribedTitle'), description: t('form.seeYouSoon') });
     } catch (err) {
       toast({
-        title: 'Erreur',
-        description: err instanceof Error ? err.message : 'Réessayez plus tard.',
+        title: t('form.error'),
+        description: err instanceof Error ? err.message : t('form.retryLater'),
         variant: 'destructive',
       });
     } finally {
@@ -394,15 +407,12 @@ function InlineNewsletter() {
   return (
     <Card className="mt-10 flex flex-col items-center gap-4 border-primary/25 bg-accent/40 p-6 text-center sm:p-8">
       <Mail className="size-8 text-primary" aria-hidden="true" />
-      <p className="font-editorial text-xl font-bold">Ne manquez aucune analyse</p>
-      <p className="max-w-md text-sm text-muted-foreground">
-        Recevez chaque semaine l'essentiel de l'actu business et les meilleurs articles de la
-        rédaction.
-      </p>
+      <p className="font-editorial text-xl font-bold">{t('article.missAnalysis')}</p>
+      <p className="max-w-md text-sm text-muted-foreground">{t('article.newsletterInline')}</p>
       {done ? (
         <div className="flex items-center gap-3">
           <DrawCheck className="size-9" />
-          <p className="text-sm font-medium">Inscription confirmée. Merci !</p>
+          <p className="text-sm font-medium">{t('footer.subscribed')}</p>
         </div>
       ) : (
         <form onSubmit={submit} className="flex w-full max-w-md flex-col gap-2 sm:flex-row">
@@ -410,13 +420,13 @@ function InlineNewsletter() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="votre@email.com"
-            aria-label="Adresse email"
+            placeholder={t('form.emailPlaceholder')}
+            aria-label={t('article.emailLabel')}
             className="h-11 flex-1 rounded-full"
           />
           <Button type="submit" disabled={busy} className="h-11 rounded-full px-6">
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            S'inscrire
+            {t('footer.subscribe')}
           </Button>
         </form>
       )}

@@ -1,61 +1,151 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// PODCASTS PAGE — liste des épisodes + lecteur audio HTML5 persistant
-// (play/pause, progression, vitesse), comptage des écoutes,
-// « Écouter plus tard », lien flux RSS.
+// PODCASTS PAGE — épisodes hiérarchisés par COLLECTION mère/fille
+// (arbre via publicApi.podcastCollections, épisodes groupés côté
+// client par collectionId). Épisodes sans collection regroupés par
+// saison (« Saison N »). Lecture via le lecteur GLOBAL usePlayerStore
+// (barre flottante montée dans FrontOffice) : plus d'<audio> local.
 // ═══════════════════════════════════════════════════════════════
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BookmarkPlus, Check, Headphones, Pause, Play, Rss } from 'lucide-react';
-import { publicApi, type PaginatedPodcasts } from '@/lib/api';
+import { publicApi } from '@/lib/api';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useI18n, useFormatDate } from '@/lib/i18n';
+import { usePlayerStore } from '@/lib/playerStore';
 import { useToast } from '@/hooks/use-toast';
-import type { PodcastItem } from '@/lib/types';
+import type { PodcastCollection, PodcastItem } from '@/lib/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { SmartImage } from '../mag/SmartImage';
-import { Pagination } from '../mag/Pagination';
-import { fmtTime, frRelative } from '../mag/helpers';
 
 const LATER_KEY = 'bh_listen_later';
 
-export function PodcastsPage() {
+interface CollectionNode extends PodcastCollection {
+  episodes: PodcastItem[];
+  children: (CollectionNode & { episodes: PodcastItem[] })[];
+}
+
+interface SeasonGroup {
+  key: string;
+  label: string;
+  episodes: PodcastItem[];
+}
+
+/** Carte épisode (design conservé) — lecture via le lecteur global. */
+function EpisodeRow({ ep }: { ep: PodcastItem }) {
+  const { t } = useI18n();
+  useDocumentTitle(t('podcasts.title'));
+  const { relative } = useFormatDate();
   const { toast } = useToast();
-  const [data, setData] = useState<PaginatedPodcasts | null>(null);
-  const [page, setPage] = useState(1);
+  const current = usePlayerStore((s) => s.current);
+  const playing = usePlayerStore((s) => s.playing);
+  const closed = usePlayerStore((s) => s.closed);
+  const playEp = usePlayerStore((s) => s.play);
+  const [later, setLater] = useState(false);
+
+  useEffect(() => {
+    try {
+      setLater(JSON.parse(localStorage.getItem(LATER_KEY) || '[]').includes(ep.id));
+    } catch {
+      /* ignore */
+    }
+  }, [ep.id]);
+
+  const toggleLater = () => {
+    let ids: string[] = [];
+    try {
+      ids = JSON.parse(localStorage.getItem(LATER_KEY) || '[]');
+    } catch {
+      /* ignore */
+    }
+    const has = ids.includes(ep.id);
+    const next = has ? ids.filter((id) => id !== ep.id) : [...ids, ep.id];
+    localStorage.setItem(LATER_KEY, JSON.stringify(next));
+    setLater(!has);
+    toast({ title: has ? t('podcasts.removedLater') : t('podcasts.addedLater') });
+  };
+
+  const isCurrent = current?.id === ep.id && !closed;
+  const isPlaying = isCurrent && playing;
+
+  return (
+    <li className={isCurrent ? 'rounded-xl border border-primary/40 bg-card p-4 shadow-sm' : 'rounded-xl border bg-card p-4'}>
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="relative size-20 shrink-0 overflow-hidden rounded-lg sm:size-24">
+          <SmartImage
+            src={ep.coverImage}
+            alt={ep.title}
+            className="h-full w-full object-cover"
+            fallbackLabel={t('podcasts.fallback')}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+            {t('podcasts.season')} {ep.season} · {t('podcasts.episode')} {ep.episode}
+          </p>
+          <h3 className="mt-0.5 font-editorial text-lg font-bold leading-snug">{ep.title}</h3>
+          {ep.guests ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('podcasts.with')} {ep.guests}</p>
+          ) : null}
+          {ep.description ? (
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground line-clamp-2">{ep.description}</p>
+          ) : null}
+          <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>{ep.duration || '—'}</span>
+            <span aria-hidden="true">·</span>
+            <span>{relative(ep.publishedAt)}</span>
+            <span aria-hidden="true">·</span>
+            <span>{ep.plays} {t('podcasts.listens')}</span>
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleLater}
+            aria-label={later ? t('podcasts.removedLater') : t('podcasts.listenLater')}
+            title={t('podcasts.listenLater')}
+            className="size-11 rounded-full"
+          >
+            {later ? <Check className="size-5 text-primary" /> : <BookmarkPlus className="size-5" />}
+          </Button>
+          <Button
+            onClick={() => playEp(ep)}
+            className="size-11 rounded-full p-0"
+            aria-label={isPlaying ? `${t('podcasts.pauseEpisode')} ${ep.title}` : `${t('podcasts.play')} ${ep.title}`}
+          >
+            {isPlaying ? <Pause className="size-5" /> : <Play className="ml-0.5 size-5" />}
+          </Button>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+export function PodcastsPage() {
+  const { t } = useI18n();
+  const [collections, setCollections] = useState<PodcastCollection[] | null>(null);
+  const [episodes, setEpisodes] = useState<PodcastItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [current, setCurrent] = useState<PodcastItem | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [time, setTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [rate, setRate] = useState(1);
-  const [later, setLater] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      return JSON.parse(localStorage.getItem(LATER_KEY) || '[]');
-    } catch {
-      return [];
-    }
-  });
-
-  // Reset du chargement quand la page change (pattern React : reset au rendu)
-  const [prevPage, setPrevPage] = useState(page);
-  if (prevPage !== page) {
-    setPrevPage(page);
-    setLoading(true);
-    setError(null);
-  }
-
+  // Chargement : arbre des collections + tous les épisodes (groupés côté client)
   useEffect(() => {
     let cancelled = false;
-    publicApi
-      .podcasts({ page, limit: 8 })
-      .then((res) => {
-        if (!cancelled) setData(res);
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      publicApi.podcastCollections().catch(() => ({ collections: [] as PodcastCollection[] })),
+      publicApi.podcasts({ page: 1, limit: 200 }),
+    ])
+      .then(([cols, pods]) => {
+        if (cancelled) return;
+        setCollections(cols.collections);
+        setEpisodes(pods.items);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur de chargement');
+        if (!cancelled) setError(e instanceof Error ? e.message : t('article.loadingError'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -64,64 +154,62 @@ export function PodcastsPage() {
     return () => {
       cancelled = true;
     };
-  }, [page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Lecture automatique au changement d'épisode
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !current) return;
-    audio.playbackRate = rate;
-    audio
-      .play()
-      .then(() => setPlaying(true))
-      .catch(() => setPlaying(false));
-  }, [current]);
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.playbackRate = rate;
-  }, [rate]);
-
-  const togglePlay = (ep: PodcastItem) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (current?.id === ep.id) {
-      if (audio.paused) {
-        audio.play().catch(() => {});
-      } else {
-        audio.pause();
-      }
-      return;
+  // Hiérarchie mère/fille : épisodes groupés par collectionId
+  const tree = useMemo<CollectionNode[]>(() => {
+    if (!collections || !episodes) return [];
+    const byParent = new Map<string | null, PodcastCollection[]>();
+    for (const c of collections) {
+      const list = byParent.get(c.parentId ?? null) ?? [];
+      list.push(c);
+      byParent.set(c.parentId ?? null, list);
     }
-    setCurrent(ep);
-    setTime(0);
-    setDuration(0);
-    publicApi.incrementPodcastPlay(ep.id).catch(() => {});
-  };
+    const build = (col: PodcastCollection): CollectionNode => {
+      const children = (byParent.get(col.id) ?? []).sort((a, b) => a.order - b.order).map(build);
+      const direct = episodes.filter((e) => e.collectionId === col.id);
+      return { ...col, episodes: direct, children };
+    };
+    return (byParent.get(null) ?? []).sort((a, b) => a.order - b.order).map(build);
+  }, [collections, episodes]);
 
-  const togglePlayCurrent = () => {
-    const audio = audioRef.current;
-    if (!audio || !current) return;
-    if (audio.paused) audio.play().catch(() => {});
-    else audio.pause();
-  };
+  // Épisodes hors hiérarchie → regroupés par saison (« Saison N »)
+  const seasonGroups = useMemo<SeasonGroup[]>(() => {
+    if (!collections || !episodes) return [];
+    const known = new Set<string>();
+    const walk = (cols: PodcastCollection[]) => {
+      for (const c of cols) {
+        known.add(c.id);
+        if (c.children) walk(c.children);
+      }
+    };
+    walk(collections);
+    const orphans = episodes.filter((e) => !e.collectionId || !known.has(e.collectionId));
+    const bySeason = new Map<number, PodcastItem[]>();
+    for (const e of orphans) {
+      const list = bySeason.get(e.season) ?? [];
+      list.push(e);
+      bySeason.set(e.season, list);
+    }
+    return Array.from(bySeason.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([season, eps]) => ({
+        key: `season-${season}`,
+        label: `${t('podcasts.season')} ${season}`,
+        episodes: eps.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
+      }));
+  }, [collections, episodes, t]);
 
-  const toggleLater = (ep: PodcastItem) => {
-    const has = later.includes(ep.id);
-    const next = has ? later.filter((id) => id !== ep.id) : [...later, ep.id];
-    setLater(next);
-    localStorage.setItem(LATER_KEY, JSON.stringify(next));
-    toast({ title: has ? 'Retiré de « Écouter plus tard »' : 'Ajouté à « Écouter plus tard »' });
-  };
+  const hasContent = tree.length > 0 || seasonGroups.length > 0;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow text-primary">Format audio</p>
-          <h1 className="font-editorial text-3xl font-bold sm:text-4xl">Podcasts</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Les grands entretiens et analyses du magazine, à écouter où que vous soyez.
-          </p>
+          <p className="eyebrow text-primary">{t('podcasts.eyebrow')}</p>
+          <h1 className="font-editorial text-3xl font-bold sm:text-4xl">{t('podcasts.title')}</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t('podcasts.intro')}</p>
         </div>
         <a
           href="/api/rss"
@@ -130,7 +218,7 @@ export function PodcastsPage() {
           className="inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
         >
           <Rss className="size-4 text-primary" aria-hidden="true" />
-          Flux RSS
+          {t('podcasts.rss')}
         </a>
       </header>
 
@@ -151,160 +239,91 @@ export function PodcastsPage() {
             </div>
           ))}
         </div>
-      ) : !data || data.items.length === 0 ? (
+      ) : !hasContent ? (
         <div className="rounded-xl border border-dashed py-16 text-center">
           <Headphones className="mx-auto size-10 text-muted-foreground/50" aria-hidden="true" />
-          <p className="mt-3 font-editorial text-xl font-bold">Aucun épisode disponible</p>
-          <p className="mt-2 text-sm text-muted-foreground">Le premier épisode arrive bientôt.</p>
+          <p className="mt-3 font-editorial text-xl font-bold">{t('podcasts.none')}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('podcasts.noneDesc')}</p>
         </div>
       ) : (
-        <>
-          <ul className="space-y-4">
-            {data.items.map((ep) => {
-              const isCurrent = current?.id === ep.id;
-              return (
-                <li
-                  key={ep.id}
-                  className={
-                    isCurrent
-                      ? 'rounded-xl border border-primary/40 bg-card p-4 shadow-sm'
-                      : 'rounded-xl border bg-card p-4'
-                  }
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row">
-                    <div className="relative size-20 shrink-0 overflow-hidden rounded-lg sm:size-24">
-                      <SmartImage
-                        src={ep.coverImage}
-                        alt={ep.title}
-                        className="h-full w-full object-cover"
-                        fallbackLabel="Podcast"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
-                        Saison {ep.season} · Épisode {ep.episode}
-                      </p>
-                      <h2 className="mt-0.5 font-editorial text-lg font-bold leading-snug">{ep.title}</h2>
-                      {ep.guests ? (
-                        <p className="mt-0.5 text-xs text-muted-foreground">Avec : {ep.guests}</p>
-                      ) : null}
-                      {ep.description ? (
-                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground line-clamp-2">
-                          {ep.description}
-                        </p>
-                      ) : null}
-                      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        <span>{ep.duration || '—'}</span>
-                        <span aria-hidden="true">·</span>
-                        <span>{frRelative(ep.publishedAt)}</span>
-                        <span aria-hidden="true">·</span>
-                        <span>{ep.plays} écoutes</span>
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleLater(ep)}
-                        aria-label={later.includes(ep.id) ? 'Retirer de « Écouter plus tard »' : 'Écouter plus tard'}
-                        title="Écouter plus tard"
-                        className="size-11 rounded-full"
-                      >
-                        {later.includes(ep.id) ? (
-                          <Check className="size-5 text-primary" />
-                        ) : (
-                          <BookmarkPlus className="size-5" />
-                        )}
-                      </Button>
-                      <Button
-                        onClick={() => togglePlay(ep)}
-                        className="size-11 rounded-full p-0"
-                        aria-label={isCurrent && playing ? `Mettre en pause ${ep.title}` : `Écouter ${ep.title}`}
-                      >
-                        {isCurrent && playing ? <Pause className="size-5" /> : <Play className="ml-0.5 size-5" />}
-                      </Button>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <Pagination page={data.page} totalPages={data.totalPages} onPageChange={setPage} />
-        </>
-      )}
+        <div className="space-y-8">
+          {/* Navigation collections (accordion mère/fille) */}
+          {tree.length > 0 ? (
+            <section aria-label={t('podcasts.collections')}>
+              <p className="eyebrow mb-1 text-primary">{t('podcasts.collections')}</p>
+              <Accordion type="multiple" defaultValue={tree.map((c) => c.id)}>
+                {tree.map((col) => {
+                  const total =
+                    col.episodes.length + col.children.reduce((n, ch) => n + ch.episodes.length, 0);
+                  return (
+                    <AccordionItem key={col.id} value={col.id}>
+                      <AccordionTrigger className="text-left">
+                        <span>
+                          <span className="font-editorial text-lg font-bold">{col.title}</span>
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            {total} {t('podcasts.episodes')}
+                          </span>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {col.description ? (
+                          <p className="mb-4 text-sm text-muted-foreground">{col.description}</p>
+                        ) : null}
+                        {col.episodes.length > 0 ? (
+                          <ul className="space-y-4">
+                            {col.episodes.map((ep) => (
+                              <EpisodeRow key={ep.id} ep={ep} />
+                            ))}
+                          </ul>
+                        ) : null}
+                        {col.children.length > 0 ? (
+                          <div className={col.episodes.length > 0 ? 'mt-6 space-y-4' : 'space-y-4'}>
+                            {col.children.map((child) => (
+                              <div key={child.id} className="rounded-xl border bg-background/40 p-4">
+                                <p className="eyebrow text-primary">{child.title}</p>
+                                {child.description ? (
+                                  <p className="mt-1 text-sm text-muted-foreground">{child.description}</p>
+                                ) : null}
+                                <ul className="mt-4 space-y-4">
+                                  {child.episodes.map((ep) => (
+                                    <EpisodeRow key={ep.id} ep={ep} />
+                                  ))}
+                                </ul>
+                                {child.episodes.length === 0 ? (
+                                  <p className="mt-3 text-sm text-muted-foreground">{t('podcasts.noneDesc')}</p>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                        {col.episodes.length === 0 && col.children.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">{t('podcasts.noneDesc')}</p>
+                        ) : null}
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            </section>
+          ) : null}
 
-      {/* Lecteur persistant */}
-      {current ? (
-        <div
-          className="sticky bottom-4 z-30 mt-8 flex items-center gap-3 rounded-xl border bg-card/95 p-3 shadow-xl backdrop-blur"
-          role="region"
-          aria-label="Lecteur audio"
-        >
-          <div className="relative size-12 shrink-0 overflow-hidden rounded-lg">
-            <SmartImage
-              src={current.coverImage}
-              alt={current.title}
-              className="h-full w-full object-cover"
-              fallbackLabel="♪"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{current.title}</p>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
-                {fmtTime(time)}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                step={0.1}
-                value={Math.min(time, duration || 0)}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setTime(v);
-                  if (audioRef.current) audioRef.current.currentTime = v;
-                }}
-                className="h-1.5 flex-1 cursor-pointer accent-[var(--primary)]"
-                aria-label="Progression de la lecture"
-              />
-              <span className="w-10 shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                {fmtTime(duration)}
-              </span>
-            </div>
-          </div>
-          <Button
-            size="icon"
-            onClick={togglePlayCurrent}
-            aria-label={playing ? 'Mettre en pause' : 'Reprendre la lecture'}
-            className="size-10 shrink-0 rounded-full"
-          >
-            {playing ? <Pause className="size-4" /> : <Play className="ml-0.5 size-4" />}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setRate((r) => (r === 1 ? 1.5 : 1))}
-            aria-label="Vitesse de lecture"
-            className="h-10 shrink-0 rounded-full px-3 text-xs font-semibold"
-          >
-            {rate}×
-          </Button>
+          {/* Épisodes hors collection, regroupés par saison */}
+          {seasonGroups.length > 0 ? (
+            seasonGroups.map((g) => (
+              <section key={g.key} aria-label={g.label}>
+                <p className="eyebrow mb-1 text-primary">{g.label}</p>
+                <h2 className="font-editorial text-xl font-bold leading-tight sm:text-2xl">{g.label}</h2>
+                <div className="mt-1.5 mb-5 h-0.5 w-10 rounded-full bg-primary" aria-hidden="true" />
+                <ul className="space-y-4">
+                  {g.episodes.map((ep) => (
+                    <EpisodeRow key={ep.id} ep={ep} />
+                  ))}
+                </ul>
+              </section>
+            ))
+          ) : null}
         </div>
-      ) : null}
-
-      {/* Élément audio réel */}
-      <audio
-        ref={audioRef}
-        src={current?.audioUrl || undefined}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-        onEnded={() => setPlaying(false)}
-        preload="metadata"
-        className="hidden"
-      />
+      )}
     </div>
   );
 }

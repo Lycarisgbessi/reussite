@@ -13,6 +13,7 @@ import { publicApi } from '@/lib/api';
 import { useMagazineStore } from '@/lib/store';
 import type { AdBanner, SiteSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useBottomLayers } from '@/lib/bottomLayers';
 import { SmartImage } from '../mag/SmartImage';
 
 /** Flag de settings correspondant à chaque emplacement. */
@@ -89,28 +90,52 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
     publicApi.adClick(banner.id).catch(() => {});
   };
 
-  const creative = banner.imageUrl ? (
-    <a
-      href={banner.targetUrl || '#'}
-      target="_blank"
-      rel="sponsored noopener noreferrer"
-      onClick={onClick}
-      className="block h-full w-full overflow-hidden rounded-lg"
-      aria-label={`Publicité ${banner.advertiser || ''}`}
-    >
-      <SmartImage
-        src={banner.imageUrl}
-        alt={`Publicité ${banner.advertiser || ''}`}
-        className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+  const adLabel = `Publicité ${banner.advertiser || ''}`.trim();
+
+  // Créative vidéo (MP4 autoplay muet) — clic = URL de destination.
+  const creative =
+    banner.mediaType === 'VIDEO' && banner.videoUrl ? (
+      <a
+        href={banner.targetUrl || '#'}
+        target="_blank"
+        rel="sponsored noopener noreferrer"
+        onClick={onClick}
+        className="block h-full w-full overflow-hidden rounded-lg"
+        aria-label={adLabel}
+      >
+        <video
+          src={banner.videoUrl}
+          muted
+          loop
+          autoPlay
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+          aria-label={adLabel}
+        />
+      </a>
+    ) : banner.imageUrl ? (
+      <a
+        href={banner.targetUrl || '#'}
+        target="_blank"
+        rel="sponsored noopener noreferrer"
+        onClick={onClick}
+        className="block h-full w-full overflow-hidden rounded-lg"
+        aria-label={adLabel}
+      >
+        <SmartImage
+          src={banner.imageUrl}
+          alt={adLabel}
+          className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+        />
+      </a>
+    ) : banner.htmlCode ? (
+      <div
+        className="h-full w-full overflow-hidden"
+        onClick={onClick}
+        dangerouslySetInnerHTML={{ __html: banner.htmlCode }}
       />
-    </a>
-  ) : banner.htmlCode ? (
-    <div
-      className="h-full w-full overflow-hidden"
-      onClick={onClick}
-      dangerouslySetInnerHTML={{ __html: banner.htmlCode }}
-    />
-  ) : null;
+    ) : null;
 
   if (!creative) return null;
 
@@ -146,11 +171,13 @@ export function StickyMobileAd() {
       .catch(() => {});
   }, [enabled]);
 
-  if (!enabled || closed || !banner || !banner.imageUrl) return null;
+  const playerVisible = useBottomLayers((st) => st.playerVisible);
+  if (!enabled || closed || !banner || (!banner.imageUrl && !banner.videoUrl)) return null;
+  const stickyLabel = `Publicité ${banner.advertiser || ''}`.trim();
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur md:hidden"
+      className={cn("fixed inset-x-0 z-30 border-t bg-card/95 backdrop-blur md:hidden transition-[bottom]", playerVisible ? "bottom-[86px]" : "bottom-0")}
       role="complementary"
       aria-label="Publicité"
     >
@@ -160,13 +187,26 @@ export function StickyMobileAd() {
         rel="sponsored noopener noreferrer"
         onClick={() => publicApi.adClick(banner.id).catch(() => {})}
         className="block h-[50px] w-full overflow-hidden"
-        aria-label={`Publicité ${banner.advertiser || ''}`}
+        aria-label={stickyLabel}
       >
-        <SmartImage
-          src={banner.imageUrl}
-          alt={`Publicité ${banner.advertiser || ''}`}
-          className="h-[50px] w-full object-cover"
-        />
+        {banner.mediaType === 'VIDEO' && banner.videoUrl ? (
+          <video
+            src={banner.videoUrl}
+            muted
+            loop
+            autoPlay
+            playsInline
+            preload="metadata"
+            className="h-[50px] w-full object-cover"
+            aria-label={stickyLabel}
+          />
+        ) : (
+          <SmartImage
+            src={banner.imageUrl}
+            alt={stickyLabel}
+            className="h-[50px] w-full object-cover"
+          />
+        )}
       </a>
       <span className="pointer-events-none absolute left-1.5 top-1.5 rounded bg-black/45 px-1 py-0.5 text-[8px] font-medium uppercase tracking-wider text-white/90">
         Publicité
@@ -201,7 +241,7 @@ export function InterstitialAd() {
       publicApi
         .ad('INTERSTITIAL')
         .then((res) => {
-          if (res.banner && (res.banner.imageUrl || res.banner.htmlCode)) {
+          if (res.banner && (res.banner.imageUrl || res.banner.htmlCode || res.banner.videoUrl)) {
             setBanner(res.banner);
             setOpen(true);
             sessionStorage.setItem('bh_interstitial_seen', '1');
@@ -221,7 +261,28 @@ export function InterstitialAd() {
           <DialogTitle>Publicité</DialogTitle>
           <DialogDescription>Annonce de notre partenaire</DialogDescription>
         </DialogHeader>
-        {banner.imageUrl ? (
+        {banner.mediaType === 'VIDEO' && banner.videoUrl ? (
+          <a
+            href={banner.targetUrl || '#'}
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            onClick={() => publicApi.adClick(banner.id).catch(() => {})}
+            className="block w-full overflow-hidden"
+            aria-label={`Publicité ${banner.advertiser || ''}`}
+          >
+            <video
+              src={banner.videoUrl}
+              muted
+              loop
+              autoPlay
+              playsInline
+              controls
+              preload="metadata"
+              className="max-h-[70vh] w-full bg-black object-contain"
+              aria-label={`Publicité ${banner.advertiser || ''}`}
+            />
+          </a>
+        ) : banner.imageUrl ? (
           <a
             href={banner.targetUrl || '#'}
             target="_blank"

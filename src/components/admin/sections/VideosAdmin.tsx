@@ -27,7 +27,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { MoreHorizontal, Pencil, Trash2, Plus, Loader2, Youtube, Eye, ExternalLink } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Plus, Loader2, Youtube, Eye, ExternalLink, Languages, FolderPen } from 'lucide-react';
+import { TranslationsDialog } from '../ui/TranslationsDialog';
 
 const EMPTY_FORM = {
   title: '',
@@ -52,6 +53,9 @@ export function VideosAdmin() {
   const [loading, setLoading] = React.useState(true);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [translateTarget, setTranslateTarget] = React.useState<VideoItem | null>(null);
+  const [renamePlaylist, setRenamePlaylist] = React.useState<{ from: string; to: string } | null>(null);
+  const [renaming, setRenaming] = React.useState(false);
   const [editing, setEditing] = React.useState<VideoItem | null>(null);
   const [form, setForm] = React.useState({ ...EMPTY_FORM });
   const [saving, setSaving] = React.useState(false);
@@ -234,6 +238,9 @@ export function VideosAdmin() {
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(v)} aria-label={`Modifier ${v.title}`}>
             <Pencil className="h-4 w-4" />
           </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTranslateTarget(v)} aria-label={`Traductions ${v.title}`} title="Traductions">
+            <Languages className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(v)} aria-label={`Supprimer ${v.title}`}>
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -241,6 +248,24 @@ export function VideosAdmin() {
       ),
     },
   ];
+
+  const doRenamePlaylist = async () => {
+    if (!renamePlaylist) return;
+    const next = renamePlaylist.to.trim();
+    if (!next || next === renamePlaylist.from) return;
+    setRenaming(true);
+    try {
+      const r = await adminApi.renamePlaylist(renamePlaylist.from, next);
+      toast({ title: 'Playlist renommée', description: `« ${renamePlaylist.from} » → « ${next} » (${r.updated} vidéo(s)).` });
+      setRenamePlaylist(null);
+      load(page);
+    } catch (e) {
+      if (isAuthError(e)) { clearAdminSession(); navigate('/'); return; }
+      toast({ variant: 'destructive', title: 'Erreur', description: e instanceof Error ? e.message : 'Renommage impossible.' });
+    } finally {
+      setRenaming(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -253,6 +278,34 @@ export function VideosAdmin() {
           <Plus className="h-4 w-4" /> Nouvelle vidéo
         </Button>
       </div>
+
+      {/* ─── Playlists (renommage) ─── */}
+      {playlists.length > 0 ? (
+        <div className="rounded-xl border border-border/70 bg-card p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Playlists ({playlists.length}) — le nom est utilisé pour les sections de la page Vidéos
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {playlists.map((p) => (
+              <span
+                key={p}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 py-1 pl-3 pr-1.5 text-xs"
+              >
+                {p}
+                <button
+                  type="button"
+                  className="flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  aria-label={`Renommer la playlist ${p}`}
+                  title="Renommer la playlist"
+                  onClick={() => setRenamePlaylist({ from: p, to: p })}
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <DataTable
         columns={columns}
@@ -365,6 +418,47 @@ export function VideosAdmin() {
         confirmLabel="Supprimer"
         onConfirm={doDelete}
       />
+      {/* ─── Dialog Traductions ─── */}
+      <TranslationsDialog
+        open={translateTarget !== null}
+        onOpenChange={(o) => { if (!o) setTranslateTarget(null); }}
+        entityType="video"
+        entityId={translateTarget?.id ?? null}
+        entityLabel={translateTarget?.title}
+        fields={[
+          { key: 'title', label: 'Titre traduit' },
+          { key: 'description', label: 'Description traduite', multiline: true },
+        ]}
+      />
+
+      {/* ─── Dialog Renommage playlist ─── */}
+      <Dialog open={renamePlaylist !== null} onOpenChange={(o) => { if (!o) setRenamePlaylist(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-editorial flex items-center gap-2">
+              <FolderPen className="h-4 w-4 text-primary" /> Renommer la playlist
+            </DialogTitle>
+            <DialogDescription>
+              Le nouveau nom s’applique à toutes les vidéos de « {renamePlaylist?.from} » et devient
+              le titre de la section sur la page publique Vidéos.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renamePlaylist?.to ?? ''}
+            onChange={(e) => setRenamePlaylist((prev) => (prev ? { ...prev, to: e.target.value } : prev))}
+            placeholder="Nouveau nom"
+            aria-label="Nouveau nom de la playlist"
+            onKeyDown={(e) => { if (e.key === 'Enter') void doRenamePlaylist(); }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenamePlaylist(null)}>Annuler</Button>
+            <Button onClick={doRenamePlaylist} disabled={renaming || !(renamePlaylist?.to ?? '').trim() || renamePlaylist?.to === renamePlaylist?.from}>
+              {renaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+              Renommer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

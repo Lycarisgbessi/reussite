@@ -53,7 +53,7 @@ export type ContentBlock =
   | { id: string; type: 'quote'; text: string; author?: string }
   | { id: string; type: 'image'; url: string; alt?: string; caption?: string }
   | { id: string; type: 'video'; youtubeId: string; title?: string }
-  | { id: string; type: 'list'; items: string[] }
+  | { id: string; type: 'list'; items: string[]; ordered?: boolean }
   | { id: string; type: 'callout'; title?: string; text: string }
   | { id: string; type: 'divider' };
 
@@ -90,6 +90,7 @@ export interface ArticleSummary {
 }
 
 export interface ArticleFull extends ArticleSummary {
+  excerpt: string;
   content: ContentBlock[];
   coverCredit: string;
   seoTitle: string;
@@ -152,11 +153,24 @@ export interface PodcastItem {
   duration: string;
   season: number;
   episode: number;
+  collectionId: string | null;
+  collectionTitle: string | null;
   coverImage: string;
   guests: string;
   published: boolean;
   plays: number;
   publishedAt: string;
+}
+
+/** Collection de podcasts (hiérarchie mère/fille renommable). */
+export interface PodcastCollection {
+  id: string;
+  title: string;
+  description: string;
+  parentId: string | null;
+  order: number;
+  podcastCount?: number;
+  children?: PodcastCollection[];
 }
 
 // ─── Pages statiques ───────────────────────────────────────────
@@ -243,6 +257,8 @@ export interface AdPlacement {
   campaignCount?: number;
 }
 
+export type AdMediaType = 'IMAGE' | 'GIF' | 'VIDEO';
+
 export interface AdCampaign {
   id: string;
   placementId: string;
@@ -251,6 +267,8 @@ export interface AdCampaign {
   advertiser: string;
   imageUrl: string;
   htmlCode: string;
+  mediaType: AdMediaType;
+  videoUrl: string;
   targetUrl: string;
   weight: number;
   deviceTargeting: 'ALL' | 'MOBILE' | 'DESKTOP';
@@ -268,6 +286,8 @@ export interface AdBanner {
   id: string;
   imageUrl: string;
   htmlCode: string;
+  mediaType: AdMediaType;
+  videoUrl: string;
   targetUrl: string;
   advertiser: string;
 }
@@ -293,6 +313,8 @@ export interface SiteSettings {
   darkModeEnabled: boolean;
   readerAccountsEnabled: boolean;
   flashInfoEnabled: boolean;
+  flashInfoAuto: boolean;
+  autoFeature: boolean;
   newsletterPopupEnabled: boolean;
   newsletterPopupTitle: string;
   newsletterPopupText: string;
@@ -409,6 +431,7 @@ export interface AdminStats {
   topArticles: TopArticleRow[];
   adStats: AdStatRow[];
   trafficSources: TrafficSourceRow[];
+  devices?: { device: string; count: number }[];
 }
 
 // ─── Journal d'audit ───────────────────────────────────────────

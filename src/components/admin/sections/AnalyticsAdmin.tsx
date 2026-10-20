@@ -62,7 +62,7 @@ export function AnalyticsAdmin() {
     [stats],
   );
   const trafficData = React.useMemo(
-    () => (stats?.trafficSources ?? []).map((t) => ({ source: EVENT_LABELS[t.source] ?? t.source, count: t.count })),
+    () => (stats?.trafficSources ?? []).map((t) => ({ source: t.source, count: t.count })),
     [stats],
   );
   const totalVisits = (stats?.chart ?? []).reduce((s, p) => s + p.visits, 0);
@@ -139,12 +139,40 @@ export function AnalyticsAdmin() {
                 data={trafficData}
                 xKey="source"
                 layout="vertical"
-                bars={[{ key: 'count', label: 'Événements', color: 'var(--primary)' }]}
+                bars={[{ key: 'count', label: 'Visites', color: 'var(--primary)' }]}
                 height={300}
               />
             )}
           </CardContent>
         </Card>
+
+        {/* Appareils (mobile / desktop / tablette — réels) */}
+        {(stats?.devices ?? []).length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Appareils (30 derniers jours)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {(() => {
+                  const total = (stats?.devices ?? []).reduce((s, d) => s + d.count, 0) || 1;
+                  const labels: Record<string, string> = { mobile: 'Mobile', desktop: 'Ordinateur', tablet: 'Tablette', inconnu: 'Non identifié' };
+                  return (stats?.devices ?? []).map((d) => (
+                    <div key={d.device} className="flex items-center gap-3">
+                      <span className="w-28 shrink-0 text-sm text-muted-foreground">{labels[d.device] ?? d.device}</span>
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-secondary">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((d.count / total) * 100)}%` }} />
+                      </div>
+                      <span className="w-24 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                        {Math.round((d.count / total) * 100)} % ({d.count})
+                      </span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {/* Top articles */}
         <Card>

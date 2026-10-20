@@ -93,8 +93,18 @@ export function youtubeThumb(id: string): string {
 
 // ─── Google Drive → lien audio direct ──────────────────────────
 export function parseDriveAudioLink(url: string): string {
-  const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{10,})/);
-  if (m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  // Toutes les variantes de lien Google Drive → URL de téléchargement direct
+  // (le proxy /api/audio-proxy gère ensuite lecture + seek + confirmation).
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([\w-]{10,})/,
+    /drive\.google\.com\/d\/([\w-]{10,})/,
+    /drive\.google\.com\/(?:open|uc)\?[^#]*id=([\w-]{10,})/,
+    /docs\.google\.com\/[^?]*[?&]id=([\w-]{10,})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  }
   return url;
 }
 

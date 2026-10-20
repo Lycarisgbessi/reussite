@@ -4,11 +4,12 @@
 // STORE GLOBAL — navigation SPA (hash routing), thème, session admin
 // ═══════════════════════════════════════════════════════════════
 import { create } from 'zustand';
+import { initLocale } from './i18n';
 import type { SiteBootstrap, AdminUser } from './types';
 
 // ─── Routing par hash ──────────────────────────────────────────
 export interface Route {
-  view: 'home' | 'article' | 'category' | 'videos' | 'podcasts' | 'search'
+  view: 'home' | 'article' | 'category' | 'videos' | 'video' | 'podcasts' | 'search'
     | 'contact' | 'page' | 'newsletter' | 'announcers' | 'favorites' | 'admin';
   param: string;
   query: Record<string, string>;
@@ -23,7 +24,7 @@ export function parseHash(hash: string): Route {
   if (segs.length === 0) return { view: 'home', param: '', query };
   const view = segs[0];
   const param = segs.slice(1).join('/');
-  const knownViews = ['article', 'category', 'videos', 'podcasts', 'search', 'contact', 'page', 'newsletter', 'announcers', 'favorites', 'admin'];
+  const knownViews = ['article', 'category', 'videos', 'video', 'podcasts', 'search', 'contact', 'page', 'newsletter', 'announcers', 'favorites', 'admin'];
   if (knownViews.includes(view)) return { view: view as Route['view'], param, query };
   return { view: 'home', param: '', query };
 }
@@ -150,6 +151,7 @@ export const useMagazineStore = create<MagazineState>((set, get) => ({
 // ─── Init client (thème, hash, favoris) ────────────────────────
 export function initClient() {
   if (typeof window === 'undefined') return;
+  initLocale();
   const store = useMagazineStore.getState();
   if (!store.readerKey) {
     useMagazineStore.setState({ readerKey: getReaderKey() });

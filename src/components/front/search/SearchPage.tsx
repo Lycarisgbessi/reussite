@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { FileText, Headphones, Loader2, Play, Search, SearchX } from 'lucide-react';
 import { publicApi, type SearchResults } from '@/lib/api';
 import { useMagazineStore } from '@/lib/store';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useI18n, useFormatDate } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +18,11 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArticleCard } from '../mag/ArticleCard';
 import { SmartImage } from '../mag/SmartImage';
 import { CategoryBadge } from '../mag/ArticleCard';
-import { frRelative } from '../mag/helpers';
 
 export function SearchPage({ query }: { query: string }) {
+  const { t } = useI18n();
+  useDocumentTitle(query ? `${t('nav.search')} : ${query}` : t('nav.search'));
+  const { relative } = useFormatDate();
   const bootstrap = useMagazineStore((s) => s.bootstrap);
   const [term, setTerm] = useState(query);
   const [category, setCategory] = useState('all');
@@ -71,8 +75,8 @@ export function SearchPage({ query }: { query: string }) {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <header className="mb-8">
-        <p className="eyebrow text-primary">Recherche</p>
-        <h1 className="font-editorial text-3xl font-bold sm:text-4xl">Explorer le magazine</h1>
+        <p className="eyebrow text-primary">{t('searchPage.eyebrow')}</p>
+        <h1 className="font-editorial text-3xl font-bold sm:text-4xl">{t('searchPage.title')}</h1>
       </header>
 
       {/* Barre de recherche */}
@@ -85,14 +89,14 @@ export function SearchPage({ query }: { query: string }) {
           <Input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
-            placeholder="Mot-clé, auteur, thème…"
+            placeholder={t('searchPage.placeholder')}
             className="h-12 rounded-full pl-11 text-base"
-            aria-label="Terme de recherche"
+            aria-label={t('searchPage.termLabel')}
           />
         </div>
         <Button type="submit" className="h-12 rounded-full px-8" disabled={loading}>
           {loading ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
-          Rechercher
+          {t('article.search')}
         </Button>
       </form>
 
@@ -100,19 +104,19 @@ export function SearchPage({ query }: { query: string }) {
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={type} onValueChange={setType}>
           <TabsList className="h-auto flex-wrap justify-start gap-1">
-            <TabsTrigger value="all" className="min-h-[40px]">Tout</TabsTrigger>
-            <TabsTrigger value="ARTICLE" className="min-h-[40px]">Articles</TabsTrigger>
-            <TabsTrigger value="VIDEO" className="min-h-[40px]">Vidéos</TabsTrigger>
-            <TabsTrigger value="PODCAST" className="min-h-[40px]">Podcasts</TabsTrigger>
-            <TabsTrigger value="PAGE" className="min-h-[40px]">Pages</TabsTrigger>
+            <TabsTrigger value="all" className="min-h-[40px]">{t('searchPage.all')}</TabsTrigger>
+            <TabsTrigger value="ARTICLE" className="min-h-[40px]">{t('searchPage.articles')}</TabsTrigger>
+            <TabsTrigger value="VIDEO" className="min-h-[40px]">{t('videos.title')}</TabsTrigger>
+            <TabsTrigger value="PODCAST" className="min-h-[40px]">{t('podcasts.title')}</TabsTrigger>
+            <TabsTrigger value="PAGE" className="min-h-[40px]">{t('searchPage.pages')}</TabsTrigger>
           </TabsList>
         </Tabs>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="h-11 w-full rounded-lg sm:w-56" aria-label="Filtrer par rubrique">
-            <SelectValue placeholder="Toutes les rubriques" />
+          <SelectTrigger className="h-11 w-full rounded-lg sm:w-56" aria-label={t('searchPage.filterCategory')}>
+            <SelectValue placeholder={t('searchPage.allCategories')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes les rubriques</SelectItem>
+            <SelectItem value="all">{t('searchPage.allCategories')}</SelectItem>
             {roots.map((cat) => (
               <SelectItem key={cat.id} value={cat.slug}>
                 {cat.name}
@@ -140,25 +144,23 @@ export function SearchPage({ query }: { query: string }) {
           <div className="rounded-xl border border-dashed py-16 text-center">
             <SearchX className="mx-auto size-12 text-muted-foreground/50" aria-hidden="true" />
             <p className="mt-4 font-editorial text-xl font-bold">
-              {query ? 'Aucun résultat trouvé' : 'Saisissez un terme de recherche'}
+              {query ? t('searchPage.noResults') : t('searchPage.enterTerm')}
             </p>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              {query
-                ? `Essayez avec d'autres mots-clés ou modifiez les filtres.`
-                : 'Retrouvez articles, vidéos, podcasts et pages en un instant.'}
+              {query ? t('searchPage.noResultsDesc') : t('searchPage.enterTermDesc')}
             </p>
           </div>
         ) : (
           <div className="space-y-12">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">{results.total}</strong> résultat
-              {results.total === 1 ? '' : 's'} pour « <strong className="text-foreground">{query.trim()}</strong> »
+              <strong className="text-foreground">{results.total}</strong>{' '}
+              {results.total === 1 ? t('searchPage.resultSingle') : t('searchPage.resultPlural')} « <strong className="text-foreground">{query.trim()}</strong> »
             </p>
 
             {/* Articles */}
             {results.articles.length > 0 ? (
-              <section aria-label="Articles trouvés">
-                <GroupHeader Icon={FileText} title="Articles" count={results.articles.length} />
+              <section aria-label={t('searchPage.articlesFound')}>
+                <GroupHeader Icon={FileText} title={t('searchPage.articles')} count={results.articles.length} />
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {results.articles.map((a) => (
                     <ArticleCard key={a.id} article={a} variant="grid" showExcerpt={false} />
@@ -169,8 +171,8 @@ export function SearchPage({ query }: { query: string }) {
 
             {/* Vidéos */}
             {results.videos.length > 0 ? (
-              <section aria-label="Vidéos trouvées">
-                <GroupHeader Icon={Play} title="Vidéos" count={results.videos.length} />
+              <section aria-label={t('searchPage.videosFound')}>
+                <GroupHeader Icon={Play} title={t('videos.title')} count={results.videos.length} />
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {results.videos.map((v) => (
                     <a key={v.id} href="#/videos" className="article-card group overflow-hidden rounded-xl border bg-card">
@@ -179,7 +181,7 @@ export function SearchPage({ query }: { query: string }) {
                           src={v.thumbnailUrl || (v.youtubeId ? `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg` : '')}
                           alt={v.title}
                           className="h-full w-full object-cover"
-                          fallbackLabel="Vidéo"
+                          fallbackLabel={t('videos.fallback')}
                         />
                         {v.duration ? (
                           <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-[11px] text-white">
@@ -200,8 +202,8 @@ export function SearchPage({ query }: { query: string }) {
 
             {/* Podcasts */}
             {results.podcasts.length > 0 ? (
-              <section aria-label="Podcasts trouvés">
-                <GroupHeader Icon={Headphones} title="Podcasts" count={results.podcasts.length} />
+              <section aria-label={t('searchPage.podcastsFound')}>
+                <GroupHeader Icon={Headphones} title={t('podcasts.title')} count={results.podcasts.length} />
                 <ul className="space-y-3">
                   {results.podcasts.map((p) => (
                     <li key={p.id}>
@@ -218,7 +220,7 @@ export function SearchPage({ query }: { query: string }) {
                           </p>
                           <h3 className="font-editorial text-base font-bold line-clamp-1">{p.title}</h3>
                           <p className="text-xs text-muted-foreground">
-                            {p.duration || '—'} · {frRelative(p.publishedAt)}
+                            {p.duration || '—'} · {relative(p.publishedAt)}
                           </p>
                         </div>
                       </a>
@@ -230,8 +232,8 @@ export function SearchPage({ query }: { query: string }) {
 
             {/* Pages */}
             {results.pages.length > 0 ? (
-              <section aria-label="Pages trouvées">
-                <GroupHeader Icon={FileText} title="Pages" count={results.pages.length} />
+              <section aria-label={t('searchPage.pagesFound')}>
+                <GroupHeader Icon={FileText} title={t('searchPage.pages')} count={results.pages.length} />
                 <ul className="divide-y overflow-hidden rounded-xl border bg-card">
                   {results.pages.map((p) => (
                     <li key={p.slug}>
@@ -240,7 +242,7 @@ export function SearchPage({ query }: { query: string }) {
                         className="flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors hover:bg-secondary"
                       >
                         {p.title}
-                        <Badge variant="secondary" className="rounded-full">Page</Badge>
+                        <Badge variant="secondary" className="rounded-full">{t('search.typePage')}</Badge>
                       </a>
                     </li>
                   ))}

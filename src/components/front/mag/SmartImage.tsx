@@ -25,6 +25,7 @@ export function SmartImage({
   ...props
 }: SmartImageProps) {
   const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   if (!src || error) {
     return (
@@ -49,8 +50,10 @@ export function SmartImage({
       src={src}
       alt={alt}
       loading="lazy"
+      decoding="async"
       onError={() => setError(true)}
-      className={className}
+      onLoad={() => setLoaded(true)}
+      className={cn('smart-fade', loaded && 'is-loaded', className)}
       {...props}
     />
   );

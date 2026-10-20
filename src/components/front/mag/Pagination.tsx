@@ -4,6 +4,7 @@
 // PAGINATION — précédent / suivant + numéros (composants ui/pagination)
 // ═══════════════════════════════════════════════════════════════
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 import {
   Pagination as UIPagination,
   PaginationContent,
@@ -34,6 +35,7 @@ function pageList(page: number, total: number): (number | '…')[] {
 }
 
 export function Pagination({ page, totalPages, onPageChange, className }: PaginationProps) {
+  const { t } = useI18n();
   if (totalPages <= 1) return null;
 
   const go = (p: number) => (e: React.MouseEvent) => {
@@ -49,11 +51,11 @@ export function Pagination({ page, totalPages, onPageChange, className }: Pagina
             href={`#page-${page - 1}`}
             onClick={go(page - 1)}
             aria-disabled={page <= 1}
-            aria-label="Page précédente"
+            aria-label={t('pagination.prev')}
             className={cn('min-h-[44px] cursor-pointer gap-1 px-3', page <= 1 && 'pointer-events-none opacity-40')}
           >
             <ChevronLeft className="size-4" />
-            <span className="hidden sm:inline">Précédent</span>
+            <span className="hidden sm:inline">{t('pagination.prevShort')}</span>
           </PaginationLink>
         </PaginationItem>
 
@@ -84,10 +86,10 @@ export function Pagination({ page, totalPages, onPageChange, className }: Pagina
             href={`#page-${page + 1}`}
             onClick={go(page + 1)}
             aria-disabled={page >= totalPages}
-            aria-label="Page suivante"
+            aria-label={t('pagination.next')}
             className={cn('min-h-[44px] cursor-pointer gap-1 px-3', page >= totalPages && 'pointer-events-none opacity-40')}
           >
-            <span className="hidden sm:inline">Suivant</span>
+            <span className="hidden sm:inline">{t('pagination.nextShort')}</span>
             <ChevronRight className="size-4" />
           </PaginationLink>
         </PaginationItem>

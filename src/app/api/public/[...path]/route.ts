@@ -13,6 +13,7 @@ import {
   serializeAdBanner, serializeArticleFull, serializeArticleSummary, serializePodcast,
   serializeVideo, type ArticleWithRelations,
 } from '@/lib/server/utils';
+import { applyTranslations } from '@/lib/server/translate';
 import type { AdBanner, ArticleSummary } from '@/lib/types';
 import type { PublicComment } from '@/lib/api';
 
@@ -46,6 +47,34 @@ function approvedComments(articleId: string) {
     where: { articleId, status: 'APPROVED' },
     orderBy: { createdAt: 'desc' },
   });
+}
+
+/** Texte traduit d'un article (recherche multilingue) — repli FR. */
+async function translatedHaystacks<T extends { id: string }>(
+  rows: T[],
+  haystacks: (r: T) => string[],
+  lang: string,
+): Promise<(r: T) => string[]> {
+  if (lang === 'fr' || rows.length === 0) return haystacks;
+  const trs = await db.translation.findMany({
+    where: { entityType: 'article', entityId: { in: rows.map((r) => r.id) }, locale: lang },
+    select: { entityId: true, data: true },
+  });
+  const map = new Map(trs.map((t) => [t.entityId, JSON.parse(t.data || '{}')]));
+  return (r: T) => {
+    const base = haystacks(r);
+    const t = map.get(r.id) as Record<string, unknown> | undefined;
+    if (!t) return base;
+    const extra = [t.title, t.subtitle, t.excerpt, t.content];
+    // content = blocs JSON traduits : on extrait leurs textes.
+    if (Array.isArray(t.content)) {
+      for (const b of t.content as { type?: string; text?: string; items?: string[] }[]) {
+        if (typeof b?.text === 'string') extra.push(b.text);
+        if (Array.isArray(b?.items)) extra.push(...b.items);
+      }
+    }
+    return [...base, ...extra.filter((x): x is string => typeof x === 'string' && Boolean(x))];
+  };
 }
 
 function sortArticles(list: ArticleWithRelations[], sort: string): ArticleWithRelations[] {
@@ -109,8 +138,13 @@ async function listPublishedArticles(sp: URLSearchParams) {
 
   sortArticles(filtered, sort);
   const total = filtered.length;
+  const pageItems = await applyTranslations(
+    filtered.slice(skip, skip + take).map(serializeArticleSummary),
+    'article',
+    sp.get('lang') || 'fr',
+  );
   return {
-    articles: filtered.slice(skip, skip + take).map(serializeArticleSummary),
+    articles: pageItems,
     total,
     page,
     totalPages: Math.max(1, Math.ceil(total / limit)),
@@ -164,9 +198,10 @@ async function pickAd(placementKey: string, category: string | null, userAgent: 
 
 // ─── Handlers par ressource ───────────────────────────────────
 
-async function handleHomepage() {
+async function handleHomepage(sp: URLSearchParams) {
   const now = new Date();
   const base = publishedFilter();
+  const lang = sp.get('lang') || 'fr';
 
   const [featuredRaw, latestRaw, popularRaw, categories, videos, podcasts, nativeCampaigns] =
     await Promise.all([
@@ -234,29 +269,55 @@ async function handleHomepage() {
         showInMenu: category.showInMenu,
         showInHome: category.showInHome,
       },
-      articles: (
-        await db.article.findMany({
-          where: { ...base, categoryId: category.id },
-          include: articleInclude,
-          orderBy: { publishedAt: 'desc' },
-          take: 4,
-        })
-      ).map(serializeArticleSummary),
+      articles: await applyTranslations(
+        (
+          await db.article.findMany({
+            where: { ...base, categoryId: category.id },
+            include: articleInclude,
+            orderBy: { publishedAt: 'desc' },
+            take: 4,
+          })
+        ).map(serializeArticleSummary),
+        'article',
+        lang,
+      ),
     })),
   );
 
+  const [featured, latest, popularT, latestVideos, latestPodcasts] = await Promise.all([
+    applyTranslations(featuredRaw.map(serializeArticleSummary), 'article', lang),
+    applyTranslations(latestRaw.map(serializeArticleSummary), 'article', lang),
+    applyTranslations(popular.map(serializeArticleSummary), 'article', lang),
+    applyTranslations(videos.map(serializeVideo), 'video', lang),
+    applyTranslations(podcasts.map(serializePodcast), 'podcast', lang),
+  ]);
+  const translatedCategories = await applyTranslations(
+    categoryBlocks.map((b) => ({ ...b.category, articles: [] as ArticleSummary[] })),
+    'category',
+    lang,
+  );
+  const catNameMap = new Map(translatedCategories.map((c) => [c.id, c]));
+  for (const block of categoryBlocks) {
+    const tc = catNameMap.get(block.category.id);
+    if (tc && tc.name) {
+      block.category.name = tc.name;
+      if (tc.description) block.category.description = tc.description;
+    }
+  }
+
   return ok({
-    featured: featuredRaw.map(serializeArticleSummary),
-    latest: latestRaw.map(serializeArticleSummary),
-    popular: popular.map(serializeArticleSummary),
+    featured,
+    latest,
+    popular: popularT,
     categoryBlocks,
-    latestVideos: videos.map(serializeVideo),
-    latestPodcasts: podcasts.map(serializePodcast),
+    latestVideos,
+    latestPodcasts,
     partners: nativeCampaigns.map(serializeAdBanner),
   });
 }
 
-async function handleArticleDetail(slug: string) {
+async function handleArticleDetail(slug: string, sp: URLSearchParams) {
+  const lang = sp.get('lang') || 'fr';
   const article = await db.article.findUnique({ where: { slug }, include: articleInclude });
   if (!article || article.status !== 'PUBLISHED') throw new HttpError(404, 'Article introuvable.');
   if (article.publishedAt && article.publishedAt > new Date()) throw new HttpError(404, 'Article introuvable.');
@@ -274,8 +335,8 @@ async function handleArticleDetail(slug: string) {
   ]);
 
   return ok({
-    article: serializeArticleFull(article),
-    related: related.map(serializeArticleSummary),
+    article: (await applyTranslations([serializeArticleFull(article)], 'article', lang))[0],
+    related: await applyTranslations(related.map(serializeArticleSummary), 'article', lang),
     approvedComments: comments.map(publicComment),
   });
 }
@@ -284,6 +345,7 @@ async function handleSearch(sp: URLSearchParams) {
   const q = (sp.get('q') ?? '').trim();
   const category = sp.get('category');
   const type = sp.get('type');
+  const lang = sp.get('lang') || 'fr';
 
   if (!q) return ok({ articles: [], videos: [], podcasts: [], pages: [], total: 0 });
 
@@ -325,11 +387,14 @@ async function handleSearch(sp: URLSearchParams) {
       : Promise.resolve([]),
   ]);
 
-  // Affinage insensible à la casse (SQLite LIKE est sensible hors ASCII).
+  // Affinage insensible à la casse — inclut les TRADUCTIONS (lang≠fr).
+  const articleHaystacks = await translatedHaystacks(
+    articleRows,
+    (a: ArticleWithRelations) => [a.title, a.subtitle, contentToText(a.content), a.tags.map((t) => t.tag.name).join(' ')],
+    lang,
+  );
   const articles = articleRows
-    .filter((a) =>
-      matchesSearch([a.title, a.subtitle, contentToText(a.content), a.tags.map((t) => t.tag.name).join(' ')], q),
-    )
+    .filter((a, i) => matchesSearch(articleHaystacks[i] ?? [], q))
     .slice(0, 20)
     .map(serializeArticleSummary);
   const videos = videoRows
@@ -350,12 +415,13 @@ async function handleSearch(sp: URLSearchParams) {
 
 async function handleSuggest(sp: URLSearchParams) {
   const q = (sp.get('q') ?? '').trim();
+  const lang = sp.get('lang') || 'fr';
   if (!q) return ok({ suggestions: [] });
 
   const [articles, videos, podcasts] = await Promise.all([
     db.article.findMany({
       where: { ...publishedFilter(), title: { contains: q } },
-      select: { slug: true, title: true },
+      select: { id: true, slug: true, title: true },
       take: 6,
       orderBy: { publishedAt: 'desc' },
     }),
@@ -373,10 +439,23 @@ async function handleSuggest(sp: URLSearchParams) {
     }),
   ]);
 
+  // Titres traduits pour la langue courante (repli FR).
+  let titleById = new Map<string, string>();
+  if (lang !== 'fr' && articles.length > 0) {
+    const trs = await db.translation.findMany({
+      where: { entityType: 'article', entityId: { in: articles.map((a) => a.id) }, locale: lang },
+      select: { entityId: true, data: true },
+    });
+    titleById = new Map(
+      trs
+        .map((t): [string, string] => [t.entityId, String((JSON.parse(t.data || '{}') as { title?: string }).title ?? '')])
+        .filter(([, v]) => Boolean(v)),
+    );
+  }
   const suggestions = [
     ...articles
-      .filter((a) => matchesSearch([a.title], q))
-      .map((a) => ({ slug: a.slug, title: a.title, type: 'ARTICLE' as const })),
+      .filter((a) => matchesSearch([a.title, titleById.get(a.id) ?? ''], q))
+      .map((a) => ({ slug: a.slug, title: titleById.get(a.id) || a.title, type: 'ARTICLE' as const })),
     ...videos
       .filter((v) => matchesSearch([v.title], q))
       .map((v) => ({ slug: v.id, title: v.title, type: 'VIDEO' as const })),
@@ -397,17 +476,101 @@ async function handleVideos(sp: URLSearchParams) {
     db.video.findMany({ where, orderBy: { publishedAt: 'desc' }, skip, take }),
     db.video.count({ where }),
   ]);
-  return ok({ items: rows.map(serializeVideo), total, page, totalPages: Math.max(1, Math.ceil(total / limit)) });
+  const items = await applyTranslations(rows.map(serializeVideo), 'video', sp.get('lang') || 'fr');
+  return ok({ items, total, page, totalPages: Math.max(1, Math.ceil(total / limit)) });
+}
+
+/** Détail d'une vidéo publique + vidéos liées (même playlist). */
+async function handleVideoDetail(id: string, sp: URLSearchParams) {
+  const lang = sp.get('lang') || 'fr';
+  const video = await db.video.findUnique({ where: { id } });
+  if (!video || !video.published) throw new HttpError(404, 'Vidéo introuvable.');
+  void db.video
+    .update({ where: { id: video.id }, data: { views: { increment: 1 } } })
+    .catch(() => {});
+  const relatedRows = await db.video.findMany({
+    where: { published: true, playlist: video.playlist, id: { not: video.id } },
+    orderBy: { publishedAt: 'desc' },
+    take: 8,
+  });
+  const [me] = await applyTranslations([serializeVideo(video)], 'video', lang);
+  const related = await applyTranslations(relatedRows.map(serializeVideo), 'video', lang);
+  return ok({ video: me, related });
+}
+
+/** Liste complète des playlists (hiérarchisation de la page vidéos). */
+async function handleVideoPlaylists(sp: URLSearchParams) {
+  const rows = await db.video.findMany({
+    where: { published: true },
+    select: { playlist: true },
+    distinct: ['playlist'],
+    orderBy: { playlist: 'asc' },
+  });
+  return ok({ playlists: rows.map((r) => r.playlist).filter(Boolean) });
+}
+
+/** Liens audio Google Drive → proxy local (lecture fiable, seek inclus). */
+function proxiedAudioUrl(url: string): string {
+  if (!url) return url;
+  if (/drive\.google\.com|docs\.google\.com/i.test(url)) {
+    return `/api/audio-proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
 }
 
 async function handlePodcasts(sp: URLSearchParams) {
   const { page, limit, skip, take } = getPageParams(sp, 12);
+  const collectionId = sp.get('collection');
   const where: Prisma.PodcastWhereInput = { published: true };
+  if (collectionId) where.collectionId = collectionId;
   const [rows, total] = await Promise.all([
-    db.podcast.findMany({ where, orderBy: { publishedAt: 'desc' }, skip, take }),
+    db.podcast.findMany({
+      where,
+      include: { collection: true },
+      orderBy: [{ season: 'asc' }, { episode: 'asc' }, { publishedAt: 'desc' }],
+      skip,
+      take,
+    }),
     db.podcast.count({ where }),
   ]);
-  return ok({ items: rows.map(serializePodcast), total, page, totalPages: Math.max(1, Math.ceil(total / limit)) });
+  const items = (await applyTranslations(rows.map(serializePodcast), 'podcast', sp.get('lang') || 'fr')).map(
+    (p) => ({ ...p, audioUrl: proxiedAudioUrl(p.audioUrl) }),
+  );
+  return ok({ items, total, page, totalPages: Math.max(1, Math.ceil(total / limit)) });
+}
+
+/** Arborescence des collections de podcasts (mère/fille, renommables). */
+async function handlePodcastCollections() {
+  const rows = await db.podcastCollection.findMany({
+    orderBy: { order: 'asc' },
+    include: { _count: { select: { podcasts: true } } },
+  });
+  interface Node {
+    id: string;
+    title: string;
+    description: string;
+    parentId: string | null;
+    order: number;
+    podcastCount: number;
+    children: Node[];
+  }
+  const flat = rows.map((c): Omit<Node, 'children'> => ({
+    id: c.id,
+    title: c.title,
+    description: c.description,
+    parentId: c.parentId,
+    order: c.order,
+    podcastCount: c._count.podcasts,
+  }));
+  const byParent = new Map<string | null, Omit<Node, 'children'>[]>();
+  for (const c of flat) {
+    const list = byParent.get(c.parentId) ?? [];
+    list.push(c);
+    byParent.set(c.parentId, list);
+  }
+  const build = (parent: string | null): Node[] =>
+    (byParent.get(parent) ?? []).map((c) => ({ ...c, children: build(c.id) }));
+  return ok({ collections: build(null) });
 }
 
 async function handleFavoritesGet(sp: URLSearchParams) {
@@ -418,10 +581,14 @@ async function handleFavoritesGet(sp: URLSearchParams) {
     include: { article: { include: articleInclude } },
     orderBy: { createdAt: 'desc' },
   });
-  const articles: ArticleSummary[] = rows
-    .map((f) => f.article)
-    .filter((a) => a && a.status === 'PUBLISHED')
-    .map(serializeArticleSummary);
+  const articles: ArticleSummary[] = await applyTranslations(
+    rows
+      .map((f) => f.article)
+      .filter((a) => a && a.status === 'PUBLISHED')
+      .map(serializeArticleSummary),
+    'article',
+    sp.get('lang') || 'fr',
+  );
   return ok({ articles });
 }
 
@@ -455,7 +622,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: stri
     switch (root) {
       case undefined:
       case 'homepage':
-        return handleHomepage();
+        return handleHomepage(sp);
 
       case 'articles':
         // /articles | /articles/:slug | /articles/:articleId/comments
@@ -464,24 +631,36 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: stri
           const comments = await approvedComments(second);
           return ok({ comments: comments.map(publicComment) });
         }
-        return handleArticleDetail(second);
+        return handleArticleDetail(second, sp);
 
       case 'videos':
+        if (second === 'playlists') return handleVideoPlaylists(sp);
+        if (second) return handleVideoDetail(second, sp);
         return handleVideos(sp);
 
       case 'podcasts':
+        if (second === 'collections') return handlePodcastCollections();
         return handlePodcasts(sp);
 
       case 'pages': {
         if (!second) throw new HttpError(400, 'Slug de page manquant.');
         const page = await db.staticPage.findUnique({ where: { slug: second } });
         if (!page || !page.published) throw new HttpError(404, 'Page introuvable.');
+        let pageTitle = page.title;
+        let pageContent = page.content;
+        const lang = sp.get('lang') || 'fr';
+        if (lang !== 'fr') {
+          const [tr] = await applyTranslations([{ id: page.id }], 'page', lang);
+          const overlay = tr as unknown as Record<string, string>;
+          if (overlay.title) pageTitle = overlay.title;
+          if (overlay.content) pageContent = overlay.content;
+        }
         return ok({
           page: {
             id: page.id,
             slug: page.slug,
-            title: page.title,
-            content: page.content,
+            title: pageTitle,
+            content: pageContent,
             seoTitle: page.seoTitle,
             seoDescription: page.seoDescription,
             published: page.published,

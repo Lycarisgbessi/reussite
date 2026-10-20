@@ -16,11 +16,14 @@ import { ArticleCard } from '../mag/ArticleCard';
 import { Pagination } from '../mag/Pagination';
 import { SmartImage } from '../mag/SmartImage';
 import { ArticleCardSkeleton } from '../mag/Skeletons';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useI18n } from '@/lib/i18n';
 
 type SortKey = 'RECENT' | 'POPULAR' | 'AZ';
 
 export function CategoryPage({ slug }: { slug: string }) {
   const bootstrap = useMagazineStore((s) => s.bootstrap);
+  const { t } = useI18n();
   const [sort, setSort] = useState<SortKey>('RECENT');
   const [page, setPage] = useState(1);
   const [activeCat, setActiveCat] = useState(slug);
@@ -31,6 +34,7 @@ export function CategoryPage({ slug }: { slug: string }) {
 
   // Trouve la catégorie (racine ou sous-catégorie) dans le bootstrap
   const info = findCategory(bootstrap?.categories || [], slug);
+  useDocumentTitle(info?.cat.name || t('nav.home'));
 
   // Reset au changement de rubrique (pattern React : reset au rendu)
   const [prevSlug, setPrevSlug] = useState(slug);
@@ -58,7 +62,7 @@ export function CategoryPage({ slug }: { slug: string }) {
         if (!cancelled) setData(res);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur de chargement');
+        if (!cancelled) setError(e instanceof Error ? e.message : t('article.loadingError'));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -77,7 +81,7 @@ export function CategoryPage({ slug }: { slug: string }) {
       <section
         className="relative mt-6 overflow-hidden"
         style={!info?.cat.imageUrl ? { backgroundColor: info?.cat.color || '#b45309' } : undefined}
-        aria-label={`Rubrique ${info?.cat.name || slug}`}
+        aria-label={`${t('category.eyebrow')} ${info?.cat.name || slug}`}
       >
         {info?.cat.imageUrl ? (
           <>
@@ -92,12 +96,12 @@ export function CategoryPage({ slug }: { slug: string }) {
           <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
         )}
         <div className="relative mx-auto max-w-7xl px-4 py-10 sm:py-12">
-          <nav aria-label="Fil d'Ariane" className="mb-3 flex items-center gap-1 text-xs text-white/70">
+          <nav aria-label={t('article.breadcrumb')} className="mb-3 flex items-center gap-1 text-xs text-white/70">
             <a href="#/" className="transition-colors hover:text-white">
-              Accueil
+              {t('nav.home')}
             </a>
             <ChevronRight className="size-3" aria-hidden="true" />
-            <span>{info?.cat.name || 'Rubrique'}</span>
+            <span>{info?.cat.name || t('category.eyebrow')}</span>
           </nav>
           <h1 className="font-editorial text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
             {info?.cat.name || slug}
@@ -109,7 +113,8 @@ export function CategoryPage({ slug }: { slug: string }) {
           ) : null}
           {info?.cat.articleCount !== undefined ? (
             <p className="mt-3 text-xs uppercase tracking-widest text-white/60">
-              {info.cat.articleCount} article{info.cat.articleCount === 1 ? '' : 's'}
+              {info.cat.articleCount}{' '}
+              {info.cat.articleCount === 1 ? t('category.articleCount') : t('category.articleCountPlural')}
             </p>
           ) : null}
         </div>
@@ -122,7 +127,7 @@ export function CategoryPage({ slug }: { slug: string }) {
             <Tabs value={activeCat} onValueChange={(v) => { setActiveCat(v); setPage(1); }}>
               <TabsList className="h-auto flex-wrap justify-start gap-1">
                 <TabsTrigger value={slug} className="min-h-[40px]">
-                  Tout
+                  {t('category.all')}
                 </TabsTrigger>
                 {children.map((child) => (
                   <TabsTrigger key={child.id} value={child.slug} className="min-h-[40px]">
@@ -136,13 +141,13 @@ export function CategoryPage({ slug }: { slug: string }) {
           )}
           <div className="shrink-0">
             <Select value={sort} onValueChange={(v) => { setSort(v as SortKey); setPage(1); }}>
-              <SelectTrigger className="h-11 w-full rounded-lg sm:w-48" aria-label="Trier les articles">
+              <SelectTrigger className="h-11 w-full rounded-lg sm:w-48" aria-label={t('category.sortAria')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="RECENT">Plus récents</SelectItem>
-                <SelectItem value="POPULAR">Populaires</SelectItem>
-                <SelectItem value="AZ">A → Z</SelectItem>
+                <SelectItem value="RECENT">{t('category.sortRecent')}</SelectItem>
+                <SelectItem value="POPULAR">{t('category.sortPopular')}</SelectItem>
+                <SelectItem value="AZ">{t('category.sortAZ')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -153,7 +158,7 @@ export function CategoryPage({ slug }: { slug: string }) {
           <div className="py-16 text-center">
             <p className="text-sm text-muted-foreground">{error}</p>
             <Button variant="outline" className="mt-4 rounded-full" onClick={() => setReloadKey((k) => k + 1)}>
-              Réessayer
+              {t('retry')}
             </Button>
           </div>
         ) : loading ? (
@@ -167,12 +172,10 @@ export function CategoryPage({ slug }: { slug: string }) {
           </div>
         ) : !data || data.articles.length === 0 ? (
           <div className="rounded-xl border border-dashed py-16 text-center">
-            <p className="font-editorial text-xl font-bold">Aucun article pour le moment</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Cette rubrique sera bientôt alimentée par la rédaction.
-            </p>
+            <p className="font-editorial text-xl font-bold">{t('category.emptyTitle')}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t('category.emptyDesc')}</p>
             <Button variant="outline" className="mt-5 rounded-full" onClick={() => (window.location.hash = '#/')}>
-              Explorer l'accueil
+              {t('category.exploreHome')}
             </Button>
           </div>
         ) : (

@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { MediaPicker } from '../ui/MediaPicker';
 import { Field } from '../ui/Field';
+import { TranslationsDialog } from '../ui/TranslationsDialog';
 import { SortableItem } from '../ui/SortableItem';
 import { slugify, isAuthError } from '../ui/helpers';
 import { cn } from '@/lib/utils';
@@ -36,7 +37,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import {
-  Plus, Pencil, Trash2, FolderTree, Loader2, Eye, Home as HomeIcon, FolderOpen,
+  Plus, Pencil, Trash2, FolderTree, Loader2, Eye, Home as HomeIcon, FolderOpen, Languages,
 } from 'lucide-react';
 
 // Palette de couleurs presets (ambre/vert/rouge/orange/violet/teal/zinc)
@@ -71,6 +72,7 @@ export function CategoriesAdmin() {
 
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [translateTarget, setTranslateTarget] = React.useState<Category | null>(null);
   const [busy, setBusy] = React.useState(false);
 
   // Dialog édition
@@ -263,6 +265,9 @@ export function CategoriesAdmin() {
                           {c.articleCount ?? 0} article(s)
                         </Badge>
                         <div className="flex shrink-0 gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTranslateTarget(c)} aria-label={`Traductions ${c.name}`} title="Traductions">
+                            <Languages className="h-3.5 w-3.5" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)} aria-label={`Modifier ${c.name}`}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -393,6 +398,17 @@ export function CategoriesAdmin() {
         confirmLabel="Supprimer"
         loading={busy}
         onConfirm={doDelete}
+      />
+      <TranslationsDialog
+        open={translateTarget !== null}
+        onOpenChange={(o) => { if (!o) setTranslateTarget(null); }}
+        entityType="category"
+        entityId={translateTarget?.id ?? null}
+        entityLabel={translateTarget?.name}
+        fields={[
+          { key: 'name', label: 'Nom traduit' },
+          { key: 'description', label: 'Description traduite', multiline: true },
+        ]}
       />
     </div>
   );

@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Field } from '../ui/Field';
 import { useDebounced, isAuthError, copyToClipboard, formatDate } from '../ui/helpers';
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Pager } from '../ui/DataTable';
 import {
-  Search, Plus, Loader2, Trash2, Copy, Link2, ImageOff, Check, CalendarDays,
+  Search, Plus, Loader2, Trash2, Copy, Link2, ImageOff, Check, CalendarDays, UploadCloud, FileImage,
 } from 'lucide-react';
 
 function filenameFromUrl(url: string): string {
@@ -54,6 +55,44 @@ export function MediaAdmin() {
   const [addUrl, setAddUrl] = React.useState('');
   const [addFilename, setAddFilename] = React.useState('');
   const [adding, setAdding] = React.useState(false);
+
+  // Import de fichier (Cloudinary)
+  const [uploadOpen, setUploadOpen] = React.useState(false);
+  const [uploadFile, setUploadFile] = React.useState<File | null>(null);
+  const [dragOver, setDragOver] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadMeta, setUploadMeta] = React.useState({ alt: '', caption: '', credit: '', tags: '' });
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const resetUpload = () => {
+    setUploadFile(null);
+    setUploadMeta({ alt: '', caption: '', credit: '', tags: '' });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile) {
+      toast({ variant: 'destructive', title: 'Fichier requis', description: 'Sélectionnez ou déposez une image à importer.' });
+      return;
+    }
+    setUploading(true);
+    try {
+      const { media } = await adminApi.uploadMedia(uploadFile, {
+        alt: uploadMeta.alt.trim() || undefined,
+        caption: uploadMeta.caption.trim() || undefined,
+        credit: uploadMeta.credit.trim() || undefined,
+        tags: uploadMeta.tags.trim() || undefined,
+      });
+      toast({ title: 'Image importée', description: `« ${media.filename} » a été ajoutée à la bibliothèque.` });
+      setUploadOpen(false);
+      resetUpload();
+      load(1, debounced);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Import impossible', description: e instanceof Error ? e.message : 'Vérifiez le fichier (type autorisé, 15 Mo max).' });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Détail / édition
   const [detail, setDetail] = React.useState<MediaItem | null>(null);
@@ -159,9 +198,14 @@ export function MediaAdmin() {
             aria-label="Rechercher un média"
           />
         </div>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4" /> Ajouter un média
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
+            <UploadCloud className="h-4 w-4" /> Importer une image
+          </Button>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" /> Ajouter par URL
+          </Button>
+        </div>
       </div>
 
       {/* ─── Grille ─── */}
@@ -209,6 +253,76 @@ export function MediaAdmin() {
           <Pager page={page} totalPages={totalPages} total={total} onPageChange={(p) => load(p, debounced)} />
         </>
       )}
+
+      {/* ─── Dialog import de fichier ─── */}
+      <Dialog open={uploadOpen} onOpenChange={(o) => { if (o) setUploadOpen(true); else { setUploadOpen(false); resetUpload(); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="font-editorial">Importer une image</DialogTitle>
+            <DialogDescription>Déposez un fichier (PNG, JPEG, WebP, GIF, AVIF, SVG — 15 Mo max).</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => !uploading && fileInputRef.current?.click()}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f && f.type.startsWith('image/')) setUploadFile(f);
+                else if (f) toast({ variant: 'destructive', title: 'Fichier non pris en charge', description: 'Seules les images peuvent être importées.' });
+              }}
+              className={cn(
+                'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors',
+                dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent/40',
+              )}
+              aria-label="Zone de dépôt d'image"
+            >
+              {uploading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : (
+                <FileImage className="h-8 w-8 text-muted-foreground" />
+              )}
+              {uploadFile ? (
+                <p className="text-sm font-medium">{uploadFile.name}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Glissez-déposez une image ici<br />ou cliquez pour parcourir vos fichiers</p>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              aria-hidden="true"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) setUploadFile(f); }}
+            />
+            <Field label="Texte alternatif (alt)" hint="Optionnel — décrit l'image pour l'accessibilité et le SEO.">
+              <Input value={uploadMeta.alt} onChange={(e) => setUploadMeta({ ...uploadMeta, alt: e.target.value })} placeholder="Description de l'image" />
+            </Field>
+            <Field label="Légende (optionnelle)">
+              <Input value={uploadMeta.caption} onChange={(e) => setUploadMeta({ ...uploadMeta, caption: e.target.value })} placeholder="Légende affichée sous l'image" />
+            </Field>
+            <Field label="Crédit (optionnel)">
+              <Input value={uploadMeta.credit} onChange={(e) => setUploadMeta({ ...uploadMeta, credit: e.target.value })} placeholder="Photo : auteur / source" />
+            </Field>
+            <Field label="Tags (optionnels)" hint="Séparez les tags par des virgules.">
+              <Input value={uploadMeta.tags} onChange={(e) => setUploadMeta({ ...uploadMeta, tags: e.target.value })} placeholder="entreprise, portrait" />
+            </Field>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setUploadOpen(false); resetUpload(); }} disabled={uploading}>Annuler</Button>
+            <Button onClick={handleUpload} disabled={uploading || !uploadFile}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+              Importer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── Dialog ajout par URL ─── */}
       <Dialog open={addOpen} onOpenChange={(o) => { if (!o) setAddOpen(false); }}>

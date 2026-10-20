@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { initials } from '../mag/helpers';
+import { useI18n } from '@/lib/i18n';
 import type { ArticleAuthor } from '@/lib/types';
 
 function socialHref(value: string, base: string): string {
@@ -19,6 +20,7 @@ function socialHref(value: string, base: string): string {
 }
 
 export function AuthorBox({ author }: { author?: ArticleAuthor | null }) {
+  const { t } = useI18n();
   if (!author) return null;
 
   return (
@@ -30,7 +32,7 @@ export function AuthorBox({ author }: { author?: ArticleAuthor | null }) {
         </AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <p className="eyebrow text-primary">L'auteur</p>
+        <p className="eyebrow text-primary">{t('author.eyebrow')}</p>
         <h3 className="font-editorial text-lg font-bold">{author.name}</h3>
         {author.bio ? (
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{author.bio}</p>
@@ -41,7 +43,7 @@ export function AuthorBox({ author }: { author?: ArticleAuthor | null }) {
               href={socialHref(author.twitter, 'https://twitter.com')}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`${author.name} sur X (Twitter)`}
+              aria-label={`${author.name} ${t('author.onTwitter')}`}
               className="flex size-9 items-center justify-center rounded-full border bg-card transition-colors hover:bg-secondary hover:text-primary"
             >
               <Twitter className="size-4" />
@@ -52,7 +54,7 @@ export function AuthorBox({ author }: { author?: ArticleAuthor | null }) {
               href={socialHref(author.linkedin, 'https://www.linkedin.com/in')}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`${author.name} sur LinkedIn`}
+              aria-label={`${author.name} ${t('author.onLinkedIn')}`}
               className="flex size-9 items-center justify-center rounded-full border bg-card transition-colors hover:bg-secondary hover:text-primary"
             >
               <Linkedin className="size-4" />
@@ -64,7 +66,7 @@ export function AuthorBox({ author }: { author?: ArticleAuthor | null }) {
             className="ml-auto rounded-full"
             onClick={() => navigate(`/search?q=${encodeURIComponent(author.name)}`)}
           >
-            Ses articles
+            {t('author.articles')}
           </Button>
         </div>
       </div>

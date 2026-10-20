@@ -9,6 +9,7 @@ import { useMagazineStore, navigate } from '@/lib/store';
 import { adminApi } from '@/lib/api';
 import type { StaticPageItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { BetaLock } from '../ui/BetaLock';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Field } from '../ui/Field';
 import { DataTable, type Column } from '../ui/DataTable';
@@ -201,6 +202,8 @@ export function PagesAdmin() {
   ];
 
   return (
+    <BetaLock sectionName="Pages statiques">
+    <>
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm text-muted-foreground">
@@ -298,5 +301,7 @@ export function PagesAdmin() {
         onConfirm={doDelete}
       />
     </div>
+    </>
+    </BetaLock>
   );
 }

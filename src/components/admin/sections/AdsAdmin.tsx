@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/select';
 import {
   Plus, Pencil, Trash2, Loader2, Megaphone, MousePointerClick, Eye,
-  BarChart3, Download, Globe, Smartphone, Monitor, ImageIcon, Code2, Save,
+  BarChart3, Download, Globe, Smartphone, Monitor, ImageIcon, Code2, Save, Youtube,
 } from 'lucide-react';
 
 const PLACEMENT_LABELS: Record<string, string> = {
@@ -61,9 +61,10 @@ const EMPTY_FORM = {
   name: '',
   advertiser: '',
   placementId: '',
-  mode: 'image' as 'image' | 'html',
+  mode: 'image' as 'image' | 'gif' | 'video' | 'html',
   imageUrl: '',
   htmlCode: '',
+  videoUrl: '',
   targetUrl: '',
   weight: 1,
   deviceTargeting: 'ALL' as AdCampaign['deviceTargeting'],
@@ -117,6 +118,7 @@ export function AdsAdmin() {
   React.useEffect(() => { load(); }, [load]);
 
   const placementById = React.useMemo(() => new Map(placements.map((p) => [p.id, p])), [placements]);
+  const selectedPlacement = form.placementId ? placementById.get(form.placementId) : null;
 
   // ─── Emplacements ─────────────────────────────────────────────
   const updatePlacement = async (p: AdPlacement, patch: Partial<AdPlacement>) => {
@@ -143,9 +145,10 @@ export function AdsAdmin() {
       name: c.name,
       advertiser: c.advertiser,
       placementId: c.placementId,
-      mode: c.htmlCode ? 'html' : 'image',
+      mode: c.htmlCode ? 'html' : (c.mediaType ?? 'IMAGE').toLowerCase() as 'image' | 'gif' | 'video',
       imageUrl: c.imageUrl,
       htmlCode: c.htmlCode,
+      videoUrl: c.videoUrl || '',
       targetUrl: c.targetUrl,
       weight: c.weight || 1,
       deviceTargeting: c.deviceTargeting,
@@ -162,8 +165,16 @@ export function AdsAdmin() {
       toast({ variant: 'destructive', title: 'Champs requis', description: 'Renseignez le nom, l’annonceur et l’emplacement.' });
       return;
     }
-    if (form.mode === 'image' && !form.imageUrl) {
-      toast({ variant: 'destructive', title: 'Visuel requis', description: 'Choisissez une image ou passez en mode code HTML.' });
+    if ((form.mode === 'image' || form.mode === 'gif') && !form.imageUrl) {
+      toast({ variant: 'destructive', title: 'Visuel requis', description: 'Choisissez une image / un GIF ou changez de type de créatif.' });
+      return;
+    }
+    if (form.mode === 'video' && !/^https:\/\/.+/i.test(form.videoUrl.trim())) {
+      toast({ variant: 'destructive', title: 'URL vidéo requise', description: 'Renseignez l’URL de la vidéo (https://…fichier .mp4).' });
+      return;
+    }
+    if (form.targetUrl.trim() && !/^https?:\/\//i.test(form.targetUrl.trim())) {
+      toast({ variant: 'destructive', title: 'URL de destination invalide', description: 'L’URL doit commencer par http:// ou https://.' });
       return;
     }
     setBusy(true);
@@ -171,9 +182,11 @@ export function AdsAdmin() {
       name: form.name.trim(),
       advertiser: form.advertiser.trim(),
       placementId: form.placementId,
-      imageUrl: form.mode === 'image' ? form.imageUrl : '',
+      mediaType: form.mode === 'html' ? 'IMAGE' : (form.mode === 'image' ? 'IMAGE' : form.mode === 'gif' ? 'GIF' : 'VIDEO'),
+      imageUrl: form.mode === 'image' || form.mode === 'gif' ? form.imageUrl : '',
       htmlCode: form.mode === 'html' ? form.htmlCode : '',
-      targetUrl: form.targetUrl,
+      videoUrl: form.mode === 'video' ? form.videoUrl.trim() : '',
+      targetUrl: form.targetUrl.trim(),
       weight: form.weight,
       deviceTargeting: form.deviceTargeting,
       categoryTargeting: form.categoryTargeting === 'all' ? '' : form.categoryTargeting,
@@ -389,19 +402,48 @@ export function AdsAdmin() {
                   <SelectTrigger aria-label="Emplacement"><SelectValue placeholder="Choisir un emplacement" /></SelectTrigger>
                   <SelectContent>
                     {placements.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{PLACEMENT_LABELS[p.key] ?? p.label}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>
+                        {PLACEMENT_LABELS[p.key] ?? p.label} — {p.format}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </Field>
+              {selectedPlacement ? (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs leading-relaxed">
+                  <p className="font-bold text-primary">Dimensions attendues : {selectedPlacement.format}px</p>
+                  {selectedPlacement.key === 'NATIVE' ? (
+                    <p className="mt-1 text-muted-foreground">Format natif éditorial : visuel recommandé 1200×900 (ratio 4:3), rendu fluide dans la grille.</p>
+                  ) : form.mode === 'video' ? (
+                    <p className="mt-1 text-muted-foreground">Vidéo {selectedPlacement.key === 'STICKY_MOBILE' ? '320×50 (bandeau)' : selectedPlacement.format} — MP4 (H.264), ≤ 5 Mo, lecture automatique en muet.</p>
+                  ) : (
+                    <p className="mt-1 text-muted-foreground">
+                      Préparez votre {form.mode === 'gif' ? 'GIF animé' : 'visuel'} exactement à {selectedPlacement.format} pixels (JPG/PNG/{form.mode === 'gif' ? 'GIF' : 'WebP'}, ≤ 300 Ko recommandé)
+                      {form.mode === 'gif' ? ', animation ≤ 15 s' : ''} pour un affichage net sans déformation (le visuel est recadré en « cover »).
+                    </p>
+                  )}
+                </div>
+              ) : null}
 
               <Field label="Créatif publicitaire">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button" size="sm" variant={form.mode === 'image' ? 'default' : 'outline'}
                     onClick={() => setForm({ ...form, mode: 'image' })}
                   >
                     <ImageIcon className="h-4 w-4" /> Image
+                  </Button>
+                  <Button
+                    type="button" size="sm" variant={form.mode === 'gif' ? 'default' : 'outline'}
+                    onClick={() => setForm({ ...form, mode: 'gif' })}
+                  >
+                    <ImageIcon className="h-4 w-4" /> GIF animé
+                  </Button>
+                  <Button
+                    type="button" size="sm" variant={form.mode === 'video' ? 'default' : 'outline'}
+                    onClick={() => setForm({ ...form, mode: 'video' })}
+                  >
+                    <Youtube className="h-4 w-4" /> Vidéo
                   </Button>
                   <Button
                     type="button" size="sm" variant={form.mode === 'html' ? 'default' : 'outline'}
@@ -411,11 +453,20 @@ export function AdsAdmin() {
                   </Button>
                 </div>
               </Field>
-              {form.mode === 'image' ? (
-                <Field label="Image (via médiathèque)">
+              {form.mode === 'video' ? (
+                <Field label="URL de la vidéo" hint="Lien direct vers un fichier .mp4 (lecture automatique en muet, clic = URL de destination).">
+                  <Input
+                    value={form.videoUrl}
+                    onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+                    placeholder="https://cdn.exemple.com/pub.mp4"
+                    aria-label="URL de la vidéo publicitaire"
+                  />
+                </Field>
+              ) : form.mode === 'image' || form.mode === 'gif' ? (
+                <Field label={form.mode === 'gif' ? 'GIF animé (via médiathèque)' : 'Image (via médiathèque)'}>
                   <div className="flex items-center gap-3">
                     {form.imageUrl ? (
-                       
+
                       <img src={form.imageUrl} alt="Visuel" className="h-16 w-28 rounded-md border border-border/60 object-cover" />
                     ) : (
                       <div className="flex h-16 w-28 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground">
@@ -423,7 +474,7 @@ export function AdsAdmin() {
                       </div>
                     )}
                     <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
-                      {form.imageUrl ? 'Changer l’image' : 'Choisir une image'}
+                      {form.imageUrl ? 'Changer le visuel' : 'Choisir un visuel'}
                     </Button>
                     {form.imageUrl ? (
                       <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => setForm({ ...form, imageUrl: '' })}>Retirer</Button>

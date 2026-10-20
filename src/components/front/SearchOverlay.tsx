@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Loader2, Search } from 'lucide-react';
 import { navigate, useMagazineStore } from '@/lib/store';
 import { publicApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -17,16 +18,17 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
-const TYPE_LABELS: Record<string, string> = {
-  ARTICLE: 'Article',
-  VIDEO: 'Vidéo',
-  PODCAST: 'Podcast',
-  PAGE: 'Page',
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  ARTICLE: 'search.typeArticle',
+  VIDEO: 'search.typeVideo',
+  PODCAST: 'search.typePodcast',
+  PAGE: 'search.typePage',
 };
 
 export function SearchOverlay() {
   const open = useMagazineStore((s) => s.searchOpen);
   const setSearchOpen = useMagazineStore((s) => s.setSearchOpen);
+  const { t } = useI18n();
   const [q, setQ] = useState('');
   const [suggestions, setSuggestions] = useState<{ slug: string; title: string; type: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -81,10 +83,8 @@ export function SearchOverlay() {
     <Dialog open={open} onOpenChange={setSearchOpen}>
       <DialogContent className="top-[12%] gap-0 p-0 sm:max-w-2xl">
         <DialogHeader className="px-5 pb-0 pt-5">
-          <DialogTitle className="font-editorial text-xl font-bold">Rechercher</DialogTitle>
-          <DialogDescription>
-            Articles, vidéos, podcasts et pages du magazine.
-          </DialogDescription>
+          <DialogTitle className="font-editorial text-xl font-bold">{t('article.search')}</DialogTitle>
+          <DialogDescription>{t('search.desc')}</DialogDescription>
         </DialogHeader>
         <div className="p-5">
           <div className="relative">
@@ -99,27 +99,30 @@ export function SearchOverlay() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submit();
               }}
-              placeholder="Rechercher un article, une vidéo, un podcast…"
+              placeholder={t('search.placeholder')}
               className="h-12 rounded-xl pl-11 pr-11 text-base"
-              aria-label="Terme de recherche"
+              aria-label={t('search.inputLabel')}
             />
             {loading ? (
               <Loader2 className="absolute right-4 top-1/2 size-5 -translate-y-1/2 animate-spin text-muted-foreground" />
             ) : null}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Appuyez sur <kbd className="rounded border bg-secondary px-1.5 py-0.5 font-mono text-[10px]">Entrée</kbd> pour
-            lancer la recherche complète.
+            {t('search.pressEnter')}{' '}
+            <kbd className="rounded border bg-secondary px-1.5 py-0.5 font-mono text-[10px]">
+              {t('search.enterKey')}
+            </kbd>{' '}
+            {t('search.fullSearch')}
           </p>
 
           {q.trim().length >= 2 && !loading && suggestions.length === 0 ? (
             <p className="mt-4 rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-              Aucune suggestion pour « {q.trim()} ».
+              {t('search.noSuggestions').replace('{q}', q.trim())}
             </p>
           ) : null}
 
           {suggestions.length > 0 ? (
-            <ul className="mt-4 divide-y overflow-hidden rounded-xl border" aria-label="Suggestions">
+            <ul className="mt-4 divide-y overflow-hidden rounded-xl border" aria-label={t('search.suggestionsAria')}>
               {suggestions.map((s, i) => (
                 <li key={`${s.type}-${s.slug}-${i}`}>
                   <button
@@ -128,7 +131,7 @@ export function SearchOverlay() {
                     className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary"
                   >
                     <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-                      {TYPE_LABELS[s.type] || s.type}
+                      {TYPE_LABEL_KEYS[s.type] ? t(TYPE_LABEL_KEYS[s.type]) : s.type}
                     </span>
                     <span className="flex-1 truncate text-sm font-medium">{s.title}</span>
                     <ArrowRight className="size-4 shrink-0 text-muted-foreground" />

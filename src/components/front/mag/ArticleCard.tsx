@@ -8,8 +8,9 @@
 import { Clock3, Eye } from 'lucide-react';
 import type { ArticleSummary } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useI18n, useFormatDate } from '@/lib/i18n';
 import { SmartImage } from './SmartImage';
-import { contrastText, formatViews, frRelative } from './helpers';
+import { contrastText, formatViews } from './helpers';
 
 export function CategoryBadge({
   name,
@@ -52,13 +53,15 @@ export function ArticleCard({
   showMeta = true,
   className,
 }: ArticleCardProps) {
+  const { t } = useI18n();
+  const { relative } = useFormatDate();
   const href = `#/article/${article.slug}`;
   const badge = (
-    <CategoryBadge name={article.category?.name || 'Article'} color={article.category?.color} />
+    <CategoryBadge name={article.category?.name || t('common.article')} color={article.category?.color} />
   );
   const metaRow = showMeta ? (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-      <span>{frRelative(article.publishedAt)}</span>
+      <span>{relative(article.publishedAt)}</span>
       <span className="inline-flex items-center gap-1">
         <Eye className="size-3" aria-hidden="true" />
         {formatViews(article.views)}
@@ -66,12 +69,12 @@ export function ArticleCard({
       {article.readingTime ? (
         <span className="inline-flex items-center gap-1">
           <Clock3 className="size-3" aria-hidden="true" />
-          {article.readingTime} min
+          {article.readingTime} {t('common.min')}
         </span>
       ) : null}
     </div>
   ) : (
-    <div className="text-[11px] text-muted-foreground">{frRelative(article.publishedAt)}</div>
+    <div className="text-[11px] text-muted-foreground">{relative(article.publishedAt)}</div>
   );
 
   if (variant === 'hero') {
@@ -153,7 +156,7 @@ export function ArticleCard({
           <h4 className="font-editorial text-[13px] font-semibold leading-snug transition-colors group-hover:text-primary sm:text-sm">
             <span className="line-clamp-2">{article.title}</span>
           </h4>
-          <p className="mt-1 text-[11px] text-muted-foreground">{frRelative(article.publishedAt)}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{relative(article.publishedAt)}</p>
         </div>
       </a>
     );
@@ -173,7 +176,7 @@ export function ArticleCard({
             <span className="line-clamp-2">{article.title}</span>
           </h4>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {article.category?.name} · {frRelative(article.publishedAt)}
+            {article.category?.name} · {relative(article.publishedAt)}
           </p>
         </div>
       </a>

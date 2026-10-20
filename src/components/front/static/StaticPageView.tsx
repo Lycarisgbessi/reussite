@@ -5,6 +5,7 @@
 // À propos…). Contenu texte (\n\n) ou blocs JSON.
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { publicApi } from '@/lib/api';
 import { useMagazineStore } from '@/lib/store';
 import type { ContentBlock, StaticPageItem } from '@/lib/types';
@@ -15,6 +16,7 @@ import { formatFrDate } from '../mag/helpers';
 
 export function StaticPageView({ slug }: { slug: string }) {
   const [page, setPage] = useState<StaticPageItem | null>(null);
+  useDocumentTitle(page?.title);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

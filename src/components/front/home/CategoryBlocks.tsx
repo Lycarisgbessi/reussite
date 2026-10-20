@@ -9,12 +9,14 @@ import type { ArticleSummary, Category } from '@/lib/types';
 import { ArticleCard } from '../mag/ArticleCard';
 import { Reveal } from '../mag/Reveal';
 import { SectionTitle } from '../mag/SectionTitle';
+import { useI18n } from '@/lib/i18n';
 
 interface CategoryBlocksProps {
   blocks: { category: Category; articles: ArticleSummary[] }[];
 }
 
 export function CategoryBlocks({ blocks }: CategoryBlocksProps) {
+  const { t } = useI18n();
   if (!blocks || blocks.length === 0) return null;
 
   return (
@@ -26,12 +28,12 @@ export function CategoryBlocks({ blocks }: CategoryBlocksProps) {
 
         return (
           <Reveal key={block.category.id} delay={index * 60}>
-            <section aria-label={`Rubrique ${block.category.name}`}>
+            <section aria-label={`${t('category.eyebrow')} ${block.category.name}`}>
               <SectionTitle
-                eyebrow="Rubrique"
+                eyebrow={t('category.eyebrow')}
                 title={block.category.name}
                 seeAllHref={`/category/${block.category.slug}`}
-                seeAllLabel="Voir la rubrique"
+                seeAllLabel={t('category.seeCategory')}
               />
               {index % 2 === 0 ? (
                 // Layout LARGE : 1 grande carte + colonne de 3 mini

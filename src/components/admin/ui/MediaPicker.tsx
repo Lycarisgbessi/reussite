@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { adminApi } from '@/lib/api';
 import type { MediaItem } from '@/lib/types';
 import { useDebounced } from './helpers';
-import { ImagePlus, Search, Link2, Loader2, ImageIcon } from 'lucide-react';
+import { ImagePlus, Search, Link2, Loader2, ImageIcon, UploadCloud } from 'lucide-react';
 
 interface MediaPickerProps {
   open: boolean;
@@ -47,6 +47,28 @@ export function MediaPicker({ open, onOpenChange, onSelect, title = 'Choisir un 
   const debouncedSearch = useDebounced(search, 350);
   const [urlValue, setUrlValue] = React.useState('');
   const [adding, setAdding] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
+  const uploadInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (file: File | undefined | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: 'destructive', title: 'Fichier non pris en charge', description: 'Seules les images peuvent être importées.' });
+      return;
+    }
+    setUploading(true);
+    try {
+      const { media } = await adminApi.uploadMedia(file, { alt: file.name.replace(/\.[^.]+$/, '') });
+      toast({ title: 'Image importée', description: `« ${media.filename} » a été ajoutée à la bibliothèque.` });
+      onSelect(media);
+      onOpenChange(false);
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Import impossible', description: e instanceof Error ? e.message : 'Vérifiez le fichier (type autorisé, 15 Mo max).' });
+    } finally {
+      setUploading(false);
+      if (uploadInputRef.current) uploadInputRef.current.value = '';
+    }
+  };
 
   const load = React.useCallback(async (p: number, q: string) => {
     setLoading(true);
@@ -187,10 +209,22 @@ export function MediaPicker({ open, onOpenChange, onSelect, title = 'Choisir un 
                 onKeyDown={(e) => { if (e.key === 'Enter') handleAddByUrl(); }}
               />
             </div>
-            <Button type="button" onClick={handleAddByUrl} disabled={adding}>
+            <Button type="button" onClick={handleAddByUrl} disabled={adding || uploading}>
               {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ajouter'}
             </Button>
+            <Button type="button" variant="outline" onClick={() => uploadInputRef.current?.click()} disabled={adding || uploading}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+              Importer un fichier
+            </Button>
           </div>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            aria-hidden="true"
+            onChange={(e) => { void handleFileUpload(e.target.files?.[0]); }}
+          />
         </div>
 
         <DialogFooter className="sm:justify-start">

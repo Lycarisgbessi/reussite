@@ -9,6 +9,7 @@ import { useMagazineStore, navigate } from '@/lib/store';
 import { adminApi } from '@/lib/api';
 import type { Category, MenuItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { BetaLock } from '../ui/BetaLock';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { SortableItem } from '../ui/SortableItem';
 import { Field } from '../ui/Field';
@@ -267,6 +268,7 @@ export function MenusAdmin() {
   };
 
   return (
+    <BetaLock sectionName="Menus de navigation">
     <Tabs value={tab} onValueChange={(v) => { setTab(v as Location); setOrder(null); }} className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <TabsList>
@@ -368,5 +370,6 @@ export function MenusAdmin() {
         onConfirm={doDelete}
       />
     </Tabs>
+    </BetaLock>
   );
 }

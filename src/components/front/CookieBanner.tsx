@@ -6,11 +6,13 @@
 // ═══════════════════════════════════════════════════════════════
 import { useState } from 'react';
 import { Cookie } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 
 const KEY = 'bh_cookie_consent';
 
 export function CookieBanner() {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(() => {
     if (typeof window === 'undefined') return false;
     return !localStorage.getItem(KEY);
@@ -27,16 +29,15 @@ export function CookieBanner() {
     <div
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur"
       role="dialog"
-      aria-label="Consentement aux cookies"
+      aria-label={t('cookie.consentAria')}
     >
       <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 px-4 py-4 sm:flex-row sm:items-center">
         <div className="flex flex-1 items-start gap-3">
           <Cookie className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
           <p className="text-sm text-muted-foreground">
-            Nous utilisons des cookies pour améliorer votre expérience de lecture et mesurer notre
-            audience. Consultez notre{' '}
+            {t('cookie.text')}{' '}
             <a href="#/page/politique-confidentialite" className="text-primary underline underline-offset-2">
-              politique de confidentialité
+              {t('cookie.privacyLink')}
             </a>
             .
           </p>
@@ -47,13 +48,13 @@ export function CookieBanner() {
             className="min-h-[44px] flex-1 rounded-full sm:flex-none"
             onClick={() => decide('refused')}
           >
-            Refuser
+            {t('cookie.refuse')}
           </Button>
           <Button
             className="min-h-[44px] flex-1 rounded-full px-6 sm:flex-none"
             onClick={() => decide('accepted')}
           >
-            Tout accepter
+            {t('cookie.acceptAll')}
           </Button>
         </div>
       </div>

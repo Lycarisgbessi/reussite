@@ -9,6 +9,7 @@ import { Fragment } from 'react';
 import { Check, Info, Sparkles } from 'lucide-react';
 import type { ContentBlock } from '@/lib/types';
 import { SmartImage } from '../mag/SmartImage';
+import { renderInline } from '../mag/richText';
 
 interface BlocksRendererProps {
   blocks: ContentBlock[];
@@ -21,18 +22,18 @@ interface BlocksRendererProps {
 function renderBlock(block: ContentBlock) {
   switch (block.type) {
     case 'paragraph':
-      return <p className="whitespace-pre-line">{block.text}</p>;
+      return <p className="whitespace-pre-line">{renderInline(block.text)}</p>;
 
     case 'heading':
       return block.level === 2 ? (
         <h2 className="mb-4 mt-10 flex items-center gap-3 font-editorial text-2xl font-bold sm:text-[1.7rem]">
           <span className="h-7 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-          {block.text}
+          {renderInline(block.text)}
         </h2>
       ) : (
         <h3 className="mb-3 mt-8 flex items-center gap-2.5 font-editorial text-xl font-bold">
           <span className="h-5 w-1 shrink-0 rounded-full bg-primary/70" aria-hidden="true" />
-          {block.text}
+          {renderInline(block.text)}
         </h3>
       );
 
@@ -40,10 +41,10 @@ function renderBlock(block: ContentBlock) {
       return (
         <blockquote className="my-8 border-l-4 border-primary py-1 pl-5">
           <p className="font-editorial text-xl italic leading-relaxed text-foreground/90">
-            « {block.text} »
+            « {renderInline(block.text)} »
           </p>
           {block.author ? (
-            <footer className="mt-2 text-sm font-medium text-muted-foreground">— {block.author}</footer>
+            <footer className="mt-2 text-sm font-medium text-muted-foreground">— {renderInline(block.author)}</footer>
           ) : null}
         </blockquote>
       );
@@ -82,14 +83,22 @@ function renderBlock(block: ContentBlock) {
       );
 
     case 'list':
-      return (
+      return block.ordered ? (
+        <ol className="my-6 list-decimal space-y-2.5 pl-7 marker:font-semibold marker:text-primary">
+          {block.items.map((item, i) => (
+            <li key={i} className="leading-relaxed">
+              {renderInline(item)}
+            </li>
+          ))}
+        </ol>
+      ) : (
         <ul className="my-6 space-y-2.5">
           {block.items.map((item, i) => (
             <li key={i} className="flex items-start gap-3">
               <span className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
                 <Check className="size-3" aria-hidden="true" />
               </span>
-              <span className="leading-relaxed">{item}</span>
+              <span className="leading-relaxed">{renderInline(item)}</span>
             </li>
           ))}
         </ul>
@@ -102,9 +111,9 @@ function renderBlock(block: ContentBlock) {
           <Icon className="mt-0.5 size-6 shrink-0 text-primary" aria-hidden="true" />
           <div>
             <p className="font-editorial text-base font-bold">
-              {block.title || 'À retenir'}
+              {renderInline(block.title || 'À retenir')}
             </p>
-            <p className="mt-1 text-sm leading-relaxed text-foreground/90">{block.text}</p>
+            <p className="mt-1 text-sm leading-relaxed text-foreground/90">{renderInline(block.text)}</p>
           </div>
         </aside>
       );

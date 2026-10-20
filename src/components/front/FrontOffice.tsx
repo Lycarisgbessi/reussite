@@ -11,7 +11,9 @@ import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { publicApi } from '@/lib/api';
 import { useMagazineStore } from '@/lib/store';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { FlashInfoBar } from './FlashInfoBar';
@@ -19,13 +21,16 @@ import { SearchOverlay } from './SearchOverlay';
 import { NewsletterPopup } from './NewsletterPopup';
 import { CookieBanner } from './CookieBanner';
 import { ScrollToTop } from './ScrollToTop';
+import { InstallBanner } from './InstallBanner';
 import { AdSlot, InterstitialAd, StickyMobileAd } from './ads/AdSlot';
 import { HomeSkeleton } from './mag/Skeletons';
 import { HomePage } from './home/HomePage';
 import { ArticlePage } from './article/ArticlePage';
 import { CategoryPage } from './category/CategoryPage';
 import { VideosPage } from './videos/VideosPage';
+import { VideoPage } from './videos/VideoPage';
 import { PodcastsPage } from './podcasts/PodcastsPage';
+import { GlobalPodcastPlayer } from './podcasts/GlobalPodcastPlayer';
 import { SearchPage } from './search/SearchPage';
 import { ContactPage } from './contact/ContactPage';
 import { StaticPageView } from './static/StaticPageView';
@@ -40,6 +45,7 @@ export default function FrontOffice() {
   const loadBootstrap = useMagazineStore((s) => s.loadBootstrap);
   const readerKey = useMagazineStore((s) => s.readerKey);
   const setFavorites = useMagazineStore((s) => s.setFavorites);
+  const { t } = useI18n();
 
   // Remonte en haut de page à chaque navigation
   useEffect(() => {
@@ -66,13 +72,10 @@ export default function FrontOffice() {
     }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
-        <p className="font-editorial text-2xl font-bold">Impossible de charger le site</p>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          Une erreur est survenue lors de la récupération de la configuration. Vérifiez votre
-          connexion puis réessayez.
-        </p>
+        <p className="font-editorial text-2xl font-bold">{t('loadError')}</p>
+        <p className="mt-2 max-w-md text-sm text-muted-foreground">{t('loadErrorDesc')}</p>
         <Button className="mt-6 rounded-full px-8" onClick={() => loadBootstrap()}>
-          Réessayer
+          {t('retry')}
         </Button>
       </div>
     );
@@ -87,6 +90,8 @@ export default function FrontOffice() {
         return route.param ? <CategoryPage slug={route.param} /> : <HomePage />;
       case 'videos':
         return <VideosPage />;
+      case 'video':
+        return route.param ? <VideoPage id={route.param} /> : <VideosPage />;
       case 'podcasts':
         return <PodcastsPage />;
       case 'search':
@@ -118,17 +123,19 @@ export default function FrontOffice() {
       </div>
 
       <main className="flex-1" id="main-content">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={route.view}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-          >
-            {renderView()}
-          </motion.div>
-        </AnimatePresence>
+        <ErrorBoundary key={`${route.view}-${route.param}`} label={`view:${route.view}`}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${route.view}-${route.param}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              {renderView()}
+            </motion.div>
+          </AnimatePresence>
+        </ErrorBoundary>
       </main>
 
       {/* Bannière publicitaire compacte avant le pied de page (CDC §6.1) */}
@@ -139,6 +146,8 @@ export default function FrontOffice() {
       <Footer />
 
       {/* Overlays et éléments flottants */}
+      <GlobalPodcastPlayer />
+      <InstallBanner />
       <SearchOverlay />
       <NewsletterPopup />
       <CookieBanner />

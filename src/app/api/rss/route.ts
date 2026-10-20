@@ -39,7 +39,10 @@ export async function GET(req: NextRequest) {
         const pubDate = p.publishedAt.toUTCString();
         const guid = xmlEscape(p.id);
         const cover = p.coverImage ? xmlEscape(new URL(p.coverImage, origin).toString()) : '';
-        const audioUrl = p.audioUrl ? xmlEscape(new URL(p.audioUrl, origin).toString()) : '';
+        const rawAudio = /drive\.google\.com|docs\.google\.com/i.test(p.audioUrl)
+          ? `${origin}/api/audio-proxy?url=${encodeURIComponent(p.audioUrl)}`
+          : p.audioUrl;
+        const audioUrl = rawAudio ? xmlEscape(new URL(rawAudio, origin).toString()) : '';
         const itunesDuration = p.duration ? xmlEscape(p.duration) : '';
         return [
           '    <item>',

@@ -40,8 +40,11 @@ import {
   ArrowLeft, ArrowUp, ArrowDown, Copy, Trash2, Plus, Save, UploadCloud,
   Eye, History, ImagePlus, X, Quote, Heading2, List as ListIcon,
   Type, Image as ImageIcon, Youtube, SquareDashed, Sparkles, Loader2,
-  Undo2,
+  Undo2, Bold, Italic, Underline, Strikethrough, Highlighter, Link2,
+  ListOrdered, Languages, RefreshCw,
 } from 'lucide-react';
+import { wrapSelection, insertLink, renderInline } from '@/components/front/mag/richText';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ─── Utilitaires locaux ────────────────────────────────────────
 function uid(): string {
@@ -56,7 +59,7 @@ function newBlock(type: ContentBlock['type']): ContentBlock {
     case 'quote': return { id: uid(), type, text: '', author: '' };
     case 'image': return { id: uid(), type, url: '', alt: '', caption: '' };
     case 'video': return { id: uid(), type, youtubeId: '', title: '' };
-    case 'list': return { id: uid(), type, items: [''] };
+    case 'list': return { id: uid(), type, items: [''], ordered: false };
     case 'callout': return { id: uid(), type, title: 'À retenir', text: '' };
     case 'divider': return { id: uid(), type };
     default: return { id: uid(), type: 'paragraph', text: '' };
@@ -75,18 +78,20 @@ const BLOCK_LABELS: Record<ContentBlock['type'], string> = {
 };
 
 /** Textarea à hauteur automatique pour l'édition inline des blocs. */
-function AutoTextarea({ value, onChange, placeholder, ariaLabel, className }: {
+function AutoTextarea({ value, onChange, placeholder, ariaLabel, className, textareaRef }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   ariaLabel: string;
   className?: string;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
-  const ref = React.useRef<HTMLTextAreaElement>(null);
+  const localRef = React.useRef<HTMLTextAreaElement>(null);
+  const ref = textareaRef ?? localRef;
   React.useEffect(() => {
     const el = ref.current;
     if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
-  }, [value]);
+  }, [value, ref]);
   return (
     <textarea
       ref={ref}
@@ -100,15 +105,73 @@ function AutoTextarea({ value, onChange, placeholder, ariaLabel, className }: {
   );
 }
 
+// ─── Barre d'outils de mise en forme (gras, italique, liens…) ──
+// Balisage inséré : **gras** *italique* __souligné__ ==surligné~~
+// ~~barré~~ [texte](url) — rendu par BlocksRenderer côté site public.
+function RichToolbar({ target }: { target: React.RefObject<HTMLTextAreaElement | HTMLInputElement | null> }) {
+  const btn = (
+    label: string,
+    Icon: typeof Bold,
+    action: () => void,
+    title: string,
+  ) => (
+    <button
+      key={label}
+      type="button"
+      title={title}
+      aria-label={title}
+      onMouseDown={(e) => e.preventDefault()} // conserve la sélection
+      onClick={() => {
+        const el = target.current;
+        if (el) action();
+      }}
+      className="flex size-6.5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-0.5" role="toolbar" aria-label="Mise en forme du texte">
+      {btn('bold', Bold, () => target.current && wrapSelection(target.current, '**', '**', 'gras'), 'Gras (**texte**)')}
+      {btn('italic', Italic, () => target.current && wrapSelection(target.current, '*', '*', 'italique'), 'Italique (*texte*)')}
+      {btn('underline', Underline, () => target.current && wrapSelection(target.current, '__', '__', 'souligné'), 'Souligné (__texte__)')}
+      {btn('highlight', Highlighter, () => target.current && wrapSelection(target.current, '==', '==', 'surligné'), 'Surligné (==texte==)')}
+      {btn('strike', Strikethrough, () => target.current && wrapSelection(target.current, '~~', '~~', 'barré'), 'Barré (~~texte~~)')}
+      <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+      {btn('link', Link2, () => target.current && insertLink(target.current), 'Insérer un lien')}
+    </div>
+  );
+}
+
+/** Textarea riche : barre de mise en forme + zone de texte. */
+function RichTextarea(props: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  ariaLabel: string;
+  className?: string;
+}) {
+  const ref = React.useRef<HTMLTextAreaElement>(null);
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/40 px-1.5 py-1">
+        <RichToolbar target={ref} />
+        <span className="text-[10px] text-muted-foreground/70">**gras** · *italique* · __souligné__ · ==surligné== · ~~barré~~ · lien</span>
+      </div>
+      <AutoTextarea {...props} textareaRef={ref} />
+    </div>
+  );
+}
+
 // ─── Rendu d'un bloc (aperçu fidèle au front) ──────────────────
 function BlockPreview({ block, isFirst }: { block: ContentBlock; isFirst: boolean }) {
   switch (block.type) {
     case 'paragraph':
-      return <p className={cn(isFirst && '[&::first-letter]:float-left [&::first-letter]:font-editorial [&::first-letter]:text-[3rem] [&::first-letter]:leading-[0.85] [&::first-letter]:pr-2 [&::first-letter]:pt-1 [&::first-letter]:font-bold [&::first-letter]:text-primary')}>{block.text}</p>;
+      return <p className={cn(isFirst && '[&::first-letter]:float-left [&::first-letter]:font-editorial [&::first-letter]:text-[3rem] [&::first-letter]:leading-[0.85] [&::first-letter]:pr-2 [&::first-letter]:pt-1 [&::first-letter]:font-bold [&::first-letter]:text-primary')}>{renderInline(block.text)}</p>;
     case 'heading':
       return block.level === 2
-        ? <h2 className="mt-8 font-editorial text-2xl font-bold">{block.text}</h2>
-        : <h3 className="mt-6 font-editorial text-xl font-semibold">{block.text}</h3>;
+        ? <h2 className="mt-8 font-editorial text-2xl font-bold">{renderInline(block.text)}</h2>
+        : <h3 className="mt-6 font-editorial text-xl font-semibold">{renderInline(block.text)}</h3>;
     case 'quote':
       return (
         <blockquote className="my-6 border-l-4 border-primary pl-5">
@@ -140,7 +203,11 @@ function BlockPreview({ block, isFirst }: { block: ContentBlock; isFirst: boolea
         </figure>
       );
     case 'list':
-      return (
+      return block.ordered ? (
+        <ol className="my-4 list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-primary">
+          {block.items.filter((it) => it.trim()).map((it, i) => <li key={i}>{it}</li>)}
+        </ol>
+      ) : (
         <ul className="my-4 list-disc space-y-1.5 pl-6 marker:text-primary">
           {block.items.filter((it) => it.trim()).map((it, i) => <li key={i}>{it}</li>)}
         </ul>
@@ -176,6 +243,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
   // Champs principaux
   const [title, setTitle] = React.useState('');
   const [subtitle, setSubtitle] = React.useState('');
+  const [excerpt, setExcerpt] = React.useState('');
   const [slug, setSlug] = React.useState('');
   const [slugTouched, setSlugTouched] = React.useState(false);
   const [coverImage, setCoverImage] = React.useState('');
@@ -210,6 +278,83 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
   const [restoreVersionId, setRestoreVersionId] = React.useState<string | null>(null);
   const [restoring, setRestoring] = React.useState(false);
   const [publishing, setPublishing] = React.useState(false);
+
+  // Éléments de liste : suivi de l'input actif pour la barre riche
+  const listInputRefs = React.useRef<Record<string, HTMLInputElement | null>>({});
+  const listActiveInput = React.useRef<HTMLInputElement | null>(null);
+
+  // Traductions (EN/ES/AR/ZH)
+  const [translationsOpen, setTranslationsOpen] = React.useState(false);
+  const [translations, setTranslations] = React.useState<Record<string, { auto: boolean; title: string; subtitle: string }>>({});
+  const [translationsLoading, setTranslationsLoading] = React.useState(false);
+  const [translationSavingLocale, setTranslationSavingLocale] = React.useState<string | null>(null);
+  const [retranslating, setRetranslating] = React.useState(false);
+  const TRANSLATE_LOCALES: { code: string; label: string }[] = [
+    { code: 'en', label: 'Anglais' },
+    { code: 'es', label: 'Espagnol' },
+    { code: 'ar', label: 'Arabe' },
+    { code: 'zh', label: 'Chinois' },
+  ];
+
+  const loadTranslations = async () => {
+    if (!currentId) {
+      toast({ title: 'Aucune traduction', description: 'Enregistrez d’abord l’article pour générer ses traductions.' });
+      return;
+    }
+    setTranslationsOpen(true);
+    setTranslationsLoading(true);
+    try {
+      const { translations: rows } = await adminApi.translations('article', currentId);
+      const map: Record<string, { auto: boolean; title: string; subtitle: string }> = {};
+      for (const r of rows) {
+        map[r.locale] = {
+          auto: r.auto,
+          title: String((r.data as { title?: unknown }).title ?? ''),
+          subtitle: String((r.data as { subtitle?: unknown }).subtitle ?? ''),
+        };
+      }
+      setTranslations(map);
+    } catch (e) {
+      handleError(e, 'Traductions indisponibles.');
+    } finally {
+      setTranslationsLoading(false);
+    }
+  };
+
+  const saveTranslationLocale = async (locale: string) => {
+    if (!currentId) return;
+    const entry = translations[locale] ?? { auto: true, title: '', subtitle: '' };
+    setTranslationSavingLocale(locale);
+    try {
+      // data minimale : on préserve le contenu traduit existant, on ne sauvegarde
+      // que title/subtitle éditables ici.
+      await adminApi.saveTranslation({
+        entityType: 'article',
+        entityId: currentId,
+        locale,
+        data: { title: entry.title, subtitle: entry.subtitle },
+      });
+      toast({ title: 'Traduction enregistrée', description: `Version ${locale.toUpperCase()} mise à jour (manuelle, non écrasée par l’automatique).` });
+    } catch (e) {
+      handleError(e, 'Enregistrement impossible.');
+    } finally {
+      setTranslationSavingLocale(null);
+    }
+  };
+
+  const retranslateAll = async () => {
+    if (!currentId) return;
+    setRetranslating(true);
+    try {
+      await adminApi.retranslate({ entityType: 'article', entityId: currentId });
+      await loadTranslations();
+      toast({ title: 'Re-traduction lancée', description: 'Les traductions automatiques ont été régénérées (les corrections manuelles sont conservées si elles existent).' });
+    } catch (e) {
+      handleError(e, 'Re-traduction impossible.');
+    } finally {
+      setRetranslating(false);
+    }
+  };
 
   const autoReadingTime = React.useCallback(() => {
     const words = countBlockWords(content);
@@ -246,6 +391,8 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
             if (!mounted) return;
             setTitle(article.title);
             setSubtitle(article.subtitle);
+      setExcerpt(article.excerpt || '');
+            setExcerpt(article.excerpt || '');
             setSlug(article.slug);
             setSlugTouched(true);
             setCoverImage(article.coverImage);
@@ -367,6 +514,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
         title: title.trim(),
         slug: slug || slugify(title),
         subtitle,
+        excerpt,
         content: content.map((b) => (b.type === 'paragraph' && !b.text.trim()) ? { ...b, text: '' } : b),
         coverImage,
         coverCredit,
@@ -437,6 +585,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
       const { article } = await adminApi.restoreVersion(currentId, restoreVersionId);
       setTitle(article.title);
       setSubtitle(article.subtitle);
+      setExcerpt(article.excerpt || '');
       setContent(article.content?.length ? article.content : [newBlock('paragraph')]);
       setVersionsOpen(false);
       setRestoreVersionId(null);
@@ -486,6 +635,9 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
           <Button variant="outline" size="sm" onClick={loadVersions}>
             <History className="h-4 w-4" /> Versions
           </Button>
+          <Button variant="outline" size="sm" onClick={loadTranslations}>
+            <Languages className="h-4 w-4" /> Traductions
+          </Button>
           <Button size="sm" onClick={() => save()} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Enregistrer
@@ -511,10 +663,20 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
           <input
             value={subtitle}
             onChange={(e) => { setSubtitle(e.target.value); setDirty(true); }}
-            placeholder="Sous-titre / chapeau d’introduction…"
+            placeholder="Sous-titre…"
             aria-label="Sous-titre de l’article"
             className="w-full bg-transparent text-lg leading-relaxed text-muted-foreground outline-none placeholder:text-muted-foreground/40"
           />
+          <div className="rounded-xl border border-border/70 bg-card p-3">
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Chapeau / résumé rapide</p>
+            <Textarea
+              value={excerpt}
+              onChange={(e) => { setExcerpt(e.target.value); setDirty(true); }}
+              placeholder="Résumé en 2-3 phrases, affiché en tête d’article et repris dans les partages (distinct du sous-titre)."
+              aria-label="Chapeau de l’article"
+              className="min-h-16 border-none bg-transparent text-sm leading-relaxed focus-visible:ring-0"
+            />
+          </div>
 
           {/* Image de couverture */}
           <div className="rounded-xl border border-border/70 bg-card p-4">
@@ -696,10 +858,10 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
                   {/* Corps du bloc selon son type */}
                   <div className="p-3">
                     {block.type === 'paragraph' ? (
-                      <AutoTextarea
+                      <RichTextarea
                         value={block.text}
                         onChange={(v) => patchBlock(block.id, 'paragraph', { text: v })}
-                        placeholder="Votre texte…"
+                        placeholder="Votre texte… (sélectionnez du texte puis utilisez la barre de mise en forme)"
                         ariaLabel={`Texte du bloc paragraphe ${index + 1}`}
                       />
                     ) : null}
@@ -716,7 +878,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
 
                     {block.type === 'quote' ? (
                       <div className="space-y-2 border-l-4 border-primary/50 pl-3">
-                        <AutoTextarea
+                        <RichTextarea
                           value={block.text}
                           onChange={(v) => patchBlock(block.id, 'quote', { text: v })}
                           placeholder="Texte de la citation…"
@@ -807,18 +969,49 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
 
                     {block.type === 'list' ? (
                       <div className="space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1" role="group" aria-label="Type de liste">
+                          <Button
+                            variant={block.ordered ? 'ghost' : 'secondary'}
+                            size="sm"
+                            className="h-7 gap-1.5 px-2 text-xs"
+                            onClick={() => patchBlock(block.id, 'list', { ordered: false })}
+                            aria-pressed={!block.ordered}
+                          >
+                            <ListIcon className="h-3.5 w-3.5" /> Puces
+                          </Button>
+                          <Button
+                            variant={block.ordered ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="h-7 gap-1.5 px-2 text-xs"
+                            onClick={() => patchBlock(block.id, 'list', { ordered: true })}
+                            aria-pressed={Boolean(block.ordered)}
+                          >
+                            <ListOrdered className="h-3.5 w-3.5" /> Numérotée
+                          </Button>
+                          <span className="ml-1 text-[10px] text-muted-foreground/70">Mise en forme : sélectionnez dans un élément puis utilisez B / I / lien</span>
+                          </div>
+                          <RichToolbar target={listActiveInput} />
+                        </div>
                         {block.items.map((item, i) => (
                           <div key={i} className="flex items-center gap-2">
-                            <span className="text-xs tabular-nums text-muted-foreground">{i + 1}.</span>
-                            <Input
+                            <span className="w-4 text-xs tabular-nums text-muted-foreground">
+                              {block.ordered ? `${i + 1}.` : '•'}
+                            </span>
+                            <input
+                              ref={(el) => { if (el) listInputRefs.current[`${block.id}-${i}`] = el; }}
                               value={item}
+                              onFocus={() => { listActiveInput.current = listInputRefs.current[`${block.id}-${i}`] ?? null; }}
                               onChange={(e) => {
                                 const items = [...block.items];
                                 items[i] = e.target.value;
                                 patchBlock(block.id, 'list', { items });
                               }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') { e.preventDefault(); patchBlock(block.id, 'list', { items: [...block.items, ''] }); }
+                              }}
                               placeholder={`Élément ${i + 1}`}
-                              className="h-8 text-sm"
+                              className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                               aria-label={`Élément ${i + 1} de la liste`}
                             />
                             <Button
@@ -846,7 +1039,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
                           className="h-8 border-none bg-transparent text-sm font-bold text-primary"
                           aria-label="Titre de l’encadré"
                         />
-                        <AutoTextarea
+                        <RichTextarea
                           value={block.text}
                           onChange={(v) => patchBlock(block.id, 'callout', { text: v })}
                           placeholder="Message clé à mettre en avant…"
@@ -1052,6 +1245,98 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setVersionsOpen(false)}>Fermer</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Dialog Traductions ─── */}
+      <Dialog open={translationsOpen} onOpenChange={setTranslationsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-editorial">Traductions de l’article</DialogTitle>
+            <DialogDescription>
+              Générées automatiquement (DeepL) à la publication. Corrigez-les ici : une
+              traduction corrigée n’est plus jamais écrasée par l’automatique.
+            </DialogDescription>
+          </DialogHeader>
+          {translationsLoading ? (
+            <div className="space-y-2 py-2">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
+          ) : (
+            <>
+              <Tabs defaultValue="en">
+                <TabsList className="w-full">
+                  {TRANSLATE_LOCALES.map((l) => (
+                    <TabsTrigger key={l.code} value={l.code} className="flex-1">
+                      {l.label}
+                      {translations[l.code] && !translations[l.code].auto ? ' ✎' : ''}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {TRANSLATE_LOCALES.map((l) => {
+                  const entry = translations[l.code];
+                  return (
+                    <TabsContent key={l.code} value={l.code} className="space-y-3 pt-3">
+                      {entry ? (
+                        <p className="text-xs text-muted-foreground">
+                          {entry.auto ? 'Traduction automatique' : 'Traduction corrigée manuellement'} · le titre, le sous-titre et le contenu sont traduits.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Pas encore de traduction — publiez l’article ou cliquez sur « Re-traduire ».
+                        </p>
+                      )}
+                      <Field label="Titre traduit">
+                        <Input
+                          value={entry?.title ?? ''}
+                          onChange={(e) =>
+                            setTranslations((prev) => ({
+                              ...prev,
+                              [l.code]: { auto: prev[l.code]?.auto ?? true, title: e.target.value, subtitle: prev[l.code]?.subtitle ?? '' },
+                            }))
+                          }
+                          placeholder={title || 'Titre…'}
+                          className="h-9"
+                          aria-label={`Titre traduit (${l.label})`}
+                        />
+                      </Field>
+                      <Field label="Sous-titre traduit">
+                        <Textarea
+                          value={entry?.subtitle ?? ''}
+                          onChange={(e) =>
+                            setTranslations((prev) => ({
+                              ...prev,
+                              [l.code]: { auto: prev[l.code]?.auto ?? true, title: prev[l.code]?.title ?? '', subtitle: e.target.value },
+                            }))
+                          }
+                          placeholder={subtitle || 'Sous-titre…'}
+                          className="min-h-16 text-sm"
+                          aria-label={`Sous-titre traduit (${l.label})`}
+                        />
+                      </Field>
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          disabled={translationSavingLocale === l.code || !entry}
+                          onClick={() => saveTranslationLocale(l.code)}
+                        >
+                          {translationSavingLocale === l.code ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                          Enregistrer cette correction
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" size="sm" onClick={retranslateAll} disabled={retranslating}>
+                  {retranslating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Re-traduire (auto)
+                </Button>
+                <Button variant="outline" onClick={() => setTranslationsOpen(false)}>Fermer</Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

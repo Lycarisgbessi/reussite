@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,14 +13,30 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#d97706",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: "Réussite Magazine — Trimestriel des décideurs africains",
   description:
     "Le magazine des décideurs africains : entrepreneuriat, business, management, innovation, interviews et analyses exclusives.",
   keywords: ["Réussite Magazine", "décideurs africains", "entrepreneuriat", "business", "Afrique", "magazine"],
   authors: [{ name: "Réussite Magazine" }],
-  icons: { icon: "/images/favicon-reussite.png" },
+  icons: {
+    icon: "/images/favicon-reussite.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
+  manifest: "/manifest.webmanifest",
+  applicationName: "Réussite Magazine",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Réussite Magazine",
+  },
   openGraph: {
     title: "Réussite Magazine — Trimestriel des décideurs africains",
     description: "Entrepreneuriat, business, management et innovation : articles, dossiers, interviews, vidéos et podcasts.",

@@ -21,7 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Save, Building2, Phone, MapPin, Clock, Share2, Search, SlidersHorizontal, Handshake, Facebook, Twitter, Linkedin, Youtube, MessageCircle } from 'lucide-react';
+import { Loader2, Save, Building2, Phone, MapPin, Clock, Share2, Search, SlidersHorizontal, Handshake, Facebook, Twitter, Linkedin, Youtube, MessageCircle, Bell, Send } from 'lucide-react';
 
 const THEME_PRESETS = ['#d97706', '#16a34a', '#dc2626', '#ea580c', '#7c3aed', '#0d9488', '#52525b'];
 
@@ -108,6 +108,7 @@ export function SettingsAdmin() {
           <TabsTrigger value="seo" className="gap-1.5"><Search className="h-3.5 w-3.5" /> SEO</TabsTrigger>
           <TabsTrigger value="features" className="gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5" /> Fonctionnalités</TabsTrigger>
           <TabsTrigger value="partners" className="gap-1.5"><Handshake className="h-3.5 w-3.5" /> Partenaires</TabsTrigger>
+          <TabsTrigger value="push" className="gap-1.5"><Bell className="h-3.5 w-3.5" /> Notifications</TabsTrigger>
         </TabsList>
         <Button size="sm" className="ml-auto" onClick={save} disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -297,7 +298,94 @@ export function SettingsAdmin() {
         </div>
       </TabsContent>
 
+      <TabsContent value="push" className="mt-0">
+        <PushPanel />
+      </TabsContent>
+
       <MediaPicker open={pickerOpen} onOpenChange={setPickerOpen} onSelect={(m) => { patch({ ogImage: m.url }); setPickerOpen(false); }} title="Image Open Graph" />
     </Tabs>
+  );
+}
+
+// ─── Onglet Notifications push ────────────────────────────────
+function PushPanel() {
+  const { toast } = useToast();
+  const [form, setForm] = React.useState({ title: '', body: '', url: '' });
+  const [busy, setBusy] = React.useState(false);
+
+  const send = async () => {
+    if (!form.title.trim() || !form.body.trim()) {
+      toast({ variant: 'destructive', title: 'Champs requis', description: 'Le titre et le message sont obligatoires.' });
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await adminApi.sendPush({
+        title: form.title.trim(),
+        body: form.body.trim(),
+        url: form.url.trim() || undefined,
+      });
+      toast({
+        title: 'Notification envoyée',
+        description: r.sent > 0
+          ? `Diffusée à ${r.sent} abonné(s)${r.removed > 0 ? ` (${r.removed} abonnement(s) obsolète(s) purgé(s))` : ''}.`
+          : 'Aucun abonné pour le moment — les visiteurs peuvent s’abonner depuis la bannière de l’application.',
+      });
+      setForm({ title: '', body: '', url: '' });
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Envoi impossible',
+        description:
+          e instanceof Error && e.message.includes('503')
+            ? 'Notifications non configurées : générez les clés VAPID (voir CONFIGURATION.md) puis redémarrez.'
+            : e instanceof Error
+              ? e.message
+              : 'Réessayez plus tard.',
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="max-w-xl space-y-4">
+      <div className="rounded-xl border border-border/70 bg-card p-4">
+        <p className="text-sm font-semibold">Notifications push</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Chaque nouvelle publication (article, vidéo, podcast) est envoyée automatiquement aux
+          abonnés. Utilisez ce formulaire pour diffuser un message manuel (annonce, événement…).
+        </p>
+      </div>
+      <Field label="Titre">
+        <Input
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          placeholder="Réussite Magazine"
+          aria-label="Titre de la notification"
+        />
+      </Field>
+      <Field label="Message">
+        <Textarea
+          value={form.body}
+          onChange={(e) => setForm({ ...form, body: e.target.value })}
+          placeholder="Le nouveau numéro est disponible !"
+          className="min-h-20"
+          aria-label="Message de la notification"
+        />
+      </Field>
+      <Field label="URL d’ouverture (optionnel)" hint="Page ouverte lorsque l’abonné clique sur la notification.">
+        <Input
+          value={form.url}
+          onChange={(e) => setForm({ ...form, url: e.target.value })}
+          placeholder="/#/article/mon-article"
+          aria-label="URL d’ouverture de la notification"
+        />
+      </Field>
+      <Button onClick={send} disabled={busy} className="rounded-full">
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        Envoyer la notification
+      </Button>
+    </div>
   );
 }

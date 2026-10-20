@@ -34,7 +34,15 @@ export function jsonError(status: number, message: string): NextResponse {
 }
 
 export function handleRouteError(err: unknown): NextResponse {
-  if (err instanceof HttpError) return jsonError(err.status, err.message);
+  // instanceof + duck-typing : en dev, le module peut être chargé en
+  // double instance (HMR) et faire échouer instanceof.
+  if (
+    err instanceof HttpError ||
+    (err instanceof Error && 'status' in err && Number((err as { status?: unknown }).status) >= 400 && Number((err as { status?: unknown }).status) < 600)
+  ) {
+    const e = err as HttpError;
+    return jsonError(Number(e.status) || 500, e.message);
+  }
   console.error('[API]', err);
   return jsonError(500, 'Une erreur interne est survenue. Veuillez réessayer.');
 }
@@ -285,6 +293,7 @@ export function serializeArticleFull(a: ArticleWithRelations): ArticleFull {
   };
   return {
     ...serializeArticleSummary(a),
+    excerpt: a.excerpt,
     content: parseJsonSafe<ContentBlock[]>(a.content, []),
     coverCredit: a.coverCredit,
     seoTitle: a.seoTitle,
@@ -380,7 +389,7 @@ export function serializeVideo(v: Prisma.VideoGetPayload<null>): VideoItem {
   };
 }
 
-export function serializePodcast(p: Prisma.PodcastGetPayload<null>) {
+export function serializePodcast(p: Prisma.PodcastGetPayload<null> & { collection?: { title: string } | null }) {
   return {
     id: p.id,
     title: p.title,
@@ -389,6 +398,8 @@ export function serializePodcast(p: Prisma.PodcastGetPayload<null>) {
     duration: p.duration,
     season: p.season,
     episode: p.episode,
+    collectionId: p.collectionId,
+    collectionTitle: p.collection?.title ?? null,
     coverImage: p.coverImage,
     guests: p.guests,
     published: p.published,
@@ -499,6 +510,8 @@ export function serializeAdCampaign(
     advertiser: c.advertiser,
     imageUrl: c.imageUrl,
     htmlCode: c.htmlCode,
+    mediaType: (['IMAGE', 'GIF', 'VIDEO'].includes(c.mediaType) ? c.mediaType : 'IMAGE') as AdCampaign['mediaType'],
+    videoUrl: c.videoUrl,
     targetUrl: c.targetUrl,
     weight: c.weight,
     deviceTargeting: c.deviceTargeting as AdCampaign['deviceTargeting'],
@@ -517,6 +530,8 @@ export function serializeAdBanner(c: Prisma.AdCampaignGetPayload<null>): AdBanne
     id: c.id,
     imageUrl: c.imageUrl,
     htmlCode: c.htmlCode,
+    mediaType: (['IMAGE', 'GIF', 'VIDEO'].includes(c.mediaType) ? c.mediaType : 'IMAGE') as AdBanner['mediaType'],
+    videoUrl: c.videoUrl,
     targetUrl: c.targetUrl,
     advertiser: c.advertiser,
   };
@@ -540,8 +555,9 @@ export const SETTINGS_KEY_BLOCKS = 'homeBlocks';
 
 const BOOLEAN_SETTINGS = new Set<string>([
   'commentsEnabled', 'darkModeEnabled', 'readerAccountsEnabled', 'flashInfoEnabled',
-  'newsletterPopupEnabled', 'adsHeaderEnabled', 'adsSidebarEnabled', 'adsInArticleEnabled',
-  'adsFooterEnabled', 'adsStickyMobileEnabled', 'adsNativeEnabled', 'adsInterstitialEnabled',
+  'flashInfoAuto', 'autoFeature', 'newsletterPopupEnabled', 'adsHeaderEnabled', 'adsSidebarEnabled',
+  'adsInArticleEnabled', 'adsFooterEnabled', 'adsStickyMobileEnabled', 'adsNativeEnabled',
+  'adsInterstitialEnabled',
 ]);
 const NUMBER_SETTINGS = new Set<string>(['newsletterPopupDelay', 'newsletterPopupScroll']);
 
@@ -566,6 +582,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   darkModeEnabled: true,
   readerAccountsEnabled: true,
   flashInfoEnabled: true,
+  flashInfoAuto: true,
+  autoFeature: true,
   newsletterPopupEnabled: true,
   newsletterPopupTitle: 'Rejoignez la communauté Réussite Magazine',
   newsletterPopupText:
@@ -706,4 +724,18 @@ export async function ensureDefaultPlacements(): Promise<void> {
   await db.adPlacement.createMany({
     data: DEFAULT_PLACEMENTS.map((p) => ({ key: p.key, label: p.label, format: p.format, active: true })),
   });
+}
+
+// ─── Sanitizer HTML publicitaire (anti-XSS) ───────────────────
+// Retire scripts, iframes/script srcs dynamiques, handlers on* et
+// URLs javascript: du code HTML fourni par les régies/rédacteurs.
+export function sanitizeAdHtml(html: string): string {
+  return (html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<script[^>]*\/?>/gi, '')
+    .replace(/ on[a-z]+\s*=\s*"[^"]*"/gi, '')
+    .replace(/ on[a-z]+\s*=\s*'[^']*'/gi, '')
+    .replace(/ on[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(/data\s*:\s*text\/html/gi, '');
 }

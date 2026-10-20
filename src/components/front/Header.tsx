@@ -7,9 +7,9 @@
 // menu hamburger sur TOUS les écrans (aucun overflow horizontal).
 // Le menu latéral contient la navigation complète avec accordéon.
 // ═══════════════════════════════════════════════════════════════
-import { useState } from 'react';
 import {
   Facebook,
+  Globe,
   Linkedin,
   Mail,
   Menu,
@@ -21,7 +21,14 @@ import {
   Youtube,
 } from 'lucide-react';
 import { navigate, useMagazineStore } from '@/lib/store';
+import { LOCALES, useFormatDate, useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Accordion,
   AccordionContent,
@@ -36,24 +43,23 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { contactHref, formatFrDate } from './mag/helpers';
+import { contactHref } from './mag/helpers';
 import { cn } from '@/lib/utils';
 
-export function Header() {
-  const bootstrap = useMagazineStore((s) => s.bootstrap);
+export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstrap);
   const theme = useMagazineStore((s) => s.theme);
   const toggleTheme = useMagazineStore((s) => s.toggleTheme);
   const setSearchOpen = useMagazineStore((s) => s.setSearchOpen);
   const mobileMenuOpen = useMagazineStore((s) => s.mobileMenuOpen);
   const setMobileMenuOpen = useMagazineStore((s) => s.setMobileMenuOpen);
 
+  const { t, setLocale, locale } = useI18n();
+  const { formatDate } = useFormatDate();
+
   const settings = bootstrap?.settings;
   // Le composant n'est rendu qu'après hydratation (page.tsx attend « ready »)
-  const [today] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    const d = formatFrDate(new Date(), 'EEEE d MMMM yyyy');
-    return d.charAt(0).toUpperCase() + d.slice(1);
-  });
+  const todayRaw = formatDate(new Date(), 'EEEE d MMMM yyyy');
+  const today = todayRaw ? todayRaw.charAt(0).toUpperCase() + todayRaw.slice(1) : '';
 
   const roots = (bootstrap?.categories || []).filter((c) => !c.parentId && c.showInMenu);
   const tagline = settings?.tagline || 'Trimestriel des décideurs africains';
@@ -76,7 +82,7 @@ export function Header() {
               <a
                 href={contactHref('Téléphone', settings.contactPhone)}
                 className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white md:flex"
-                aria-label="Téléphone de la rédaction"
+                aria-label={t('nav.phoneLabel')}
               >
                 <Phone className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
                 <span className="truncate">{settings.contactPhone}</span>
@@ -86,7 +92,7 @@ export function Header() {
               <a
                 href={contactHref('Email', settings.contactEmail)}
                 className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white lg:flex"
-                aria-label="Email de la rédaction"
+                aria-label={t('nav.emailLabel')}
               >
                 <Mail className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
                 <span className="truncate">{settings.contactEmail}</span>
@@ -108,25 +114,48 @@ export function Header() {
             ))}
             <span className="mx-2 h-3.5 w-px bg-white/15" aria-hidden="true" />
             <a href="#/announcers" className="rounded px-1.5 py-0.5 transition-colors hover:text-white">
-              Espace annonceurs
+              {t('nav.announcers')}
             </a>
             <span className="mx-1.5 h-3.5 w-px bg-white/15" aria-hidden="true" />
             {settings?.darkModeEnabled !== false && (
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+                aria-label={theme === 'dark' ? t('nav.themeLight') : t('nav.themeDark')}
                 className="flex size-6.5 items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white"
               >
                 {theme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />}
               </button>
             )}
+            {/* Sélecteur de langue (desktop) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t('common.language')}
+                  className="flex size-6.5 items-center justify-center gap-1 rounded-full transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Globe className="size-3" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {LOCALES.map((l) => (
+                  <DropdownMenuItem
+                    key={l}
+                    onClick={() => setLocale(l)}
+                    className={l === locale ? 'font-semibold' : undefined}
+                  >
+                    {t(`lang.${l}`)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <a
               href="#/admin"
-              className="ml-1.5 rounded px-1.5 py-0.5 opacity-50 transition-opacity hover:opacity-100"
-              title="Espace rédaction"
+              className="ml-1.5 rounded px-1.5 py-0.5 opacity-70 transition-opacity hover:opacity-100"
+              title={t('nav.adminSpace')}
             >
-              Pro
+              {t('nav.pro')}
             </a>
           </div>
         </div>
@@ -138,12 +167,12 @@ export function Header() {
           <a
             href="#/"
             className="flex shrink-0 items-center gap-3"
-            aria-label="Réussite Magazine — Accueil"
+            aria-label={t('header.homeAria')}
           >
             {/* png transparent : rouge du logo sur fond noir permanent */}
             <img
               src="/images/logo-reussite.png"
-              alt="Réussite Magazine — Trimestriel des décideurs africains"
+              alt={t('header.logoAlt')}
               className="h-7 w-auto sm:h-8 md:h-9"
             />
             <span className="hidden border-l border-white/15 pl-3 text-[10px] font-medium uppercase leading-relaxed tracking-[0.22em] text-white/55 md:block">
@@ -155,7 +184,7 @@ export function Header() {
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              aria-label="Rechercher"
+              aria-label={t('nav.search')}
               className="flex size-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             >
               <Search className="size-[18px]" />
@@ -164,7 +193,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+                aria-label={theme === 'dark' ? t('nav.themeLight') : t('nav.themeDark')}
                 className="flex size-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:hidden"
               >
                 {theme === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
@@ -175,7 +204,7 @@ export function Header() {
               className="ml-1 hidden h-9 rounded-full px-4 text-[13px] font-semibold sm:inline-flex"
               onClick={() => navigate('/newsletter')}
             >
-              S'abonner
+              {t('nav.subscribe')}
             </Button>
 
             {/* Menu hamburger — tous les écrans */}
@@ -183,7 +212,7 @@ export function Header() {
               <SheetTrigger asChild>
                 <button
                   type="button"
-                  aria-label="Ouvrir le menu"
+                  aria-label={t('nav.menu')}
                   className="flex size-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
                 >
                   <Menu className="size-5" />
@@ -201,7 +230,7 @@ export function Header() {
                     href="#/"
                     className="rounded-md px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-secondary hover:text-primary"
                   >
-                    Accueil
+                    {t('nav.home')}
                   </a>
                   {roots.map((cat) =>
                     cat.children && cat.children.length > 0 ? (
@@ -215,7 +244,7 @@ export function Header() {
                               href={`#/category/${cat.slug}`}
                               className="block rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-secondary"
                             >
-                              Tous les articles
+                              {t('nav.allArticles')}
                             </a>
                             {cat.children.map((child) => (
                               <a
@@ -243,21 +272,60 @@ export function Header() {
                   )}
                   <div className="my-2 h-px bg-border" aria-hidden="true" />
                   <a href="#/videos" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
-                    Vidéos
+                    {t('nav.videos')}
                   </a>
                   <a href="#/podcasts" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
-                    Podcasts
+                    {t('nav.podcasts')}
                   </a>
                   <a href="#/favorites" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
-                    Mes favoris
+                    {t('nav.favorites')}
                   </a>
                   <a href="#/announcers" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
-                    Espace annonceurs
+                    {t('nav.announcers')}
                   </a>
                   <a href="#/contact" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
-                    Contact
+                    {t('nav.contact')}
                   </a>
+                  {/* Liens personnalisés du menu « header » gérés dans le
+                      tableau de bord (Menus) — incohérence d'origine corrigée :
+                      ils sont désormais réellement consommés par la navigation. */}
+                  {(bootstrap?.menus.header || [])
+                    .filter((m) => m.active && !m.parentId && m.url)
+                    .map((m) => (
+                      <a
+                        key={m.id}
+                        href={m.url.startsWith('#') ? m.url : `#${m.url}`}
+                        className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary"
+                      >
+                        {m.label}
+                      </a>
+                    ))}
                 </nav>
+                {/* Sélecteur de langue (mobile) */}
+                <div className="border-t px-4 py-3">
+                  <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <Globe className="size-3" aria-hidden="true" />
+                    {t('common.language')}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LOCALES.map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setLocale(l)}
+                        aria-pressed={l === locale}
+                        className={cn(
+                          'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                          l === locale
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border text-muted-foreground hover:bg-secondary hover:text-foreground',
+                        )}
+                      >
+                        {t(`lang.${l}`)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="mt-auto border-t p-4">
                   <Button
                     className="w-full rounded-full"
@@ -266,7 +334,7 @@ export function Header() {
                       navigate('/newsletter');
                     }}
                   >
-                    S'abonner à la newsletter
+                    {t('nav.subscribeNewsletter')}
                   </Button>
                   {(settings?.contactPhone || settings?.contactEmail) && (
                     <div className="mt-3 space-y-1.5 rounded-lg border bg-secondary/40 p-3">
@@ -274,7 +342,7 @@ export function Header() {
                         <a
                           href={contactHref('Téléphone', settings.contactPhone)}
                           className="flex items-center gap-2.5 text-sm transition-colors hover:text-primary"
-                          aria-label="Téléphone de la rédaction"
+                          aria-label={t('nav.phoneLabel')}
                         >
                           <Phone className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
                           <span className="min-w-0 break-words">{settings.contactPhone}</span>
@@ -284,7 +352,7 @@ export function Header() {
                         <a
                           href={contactHref('Email', settings.contactEmail)}
                           className="flex items-center gap-2.5 text-sm transition-colors hover:text-primary"
-                          aria-label="Email de la rédaction"
+                          aria-label={t('nav.emailLabel')}
                         >
                           <Mail className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
                           <span className="min-w-0 break-words">{settings.contactEmail}</span>

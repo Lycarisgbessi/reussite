@@ -11,12 +11,14 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ArticleSummary } from '@/lib/types';
 import { SmartImage } from '../mag/SmartImage';
 import { CategoryBadge } from '../mag/ArticleCard';
+import { useI18n } from '@/lib/i18n';
 
 interface HeroSliderProps {
   articles: ArticleSummary[];
 }
 
 export function HeroSlider({ articles }: HeroSliderProps) {
+  const { t } = useI18n();
   const slides = articles.slice(0, 6);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' });
   const [selected, setSelected] = useState(0);
@@ -60,7 +62,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
   return (
     <section
       className="mx-auto max-w-7xl px-4 pt-6"
-      aria-label="À la une"
+      aria-label={t('hero.aria')}
       onMouseEnter={() => {
         pausedRef.current = true;
       }}
@@ -91,7 +93,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                     />
                     <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
                       <CategoryBadge
-                        name={article.category?.name || 'À la une'}
+                        name={article.category?.name || t('hero.aria')}
                         color={article.category?.color}
                         className="mb-2 shadow-sm"
                       />
@@ -102,7 +104,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                         {article.subtitle}
                       </p>
                       <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur transition-colors group-hover:bg-white/25">
-                        Lire la suite
+                        {t('common.readMore')}
                         <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </div>
@@ -119,7 +121,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
             <button
               type="button"
               onClick={() => emblaApi?.scrollPrev()}
-              aria-label="Article précédent"
+              aria-label={t('slider.prev')}
               className="absolute left-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition-colors hover:bg-primary"
             >
               <ChevronLeft className="size-4.5" />
@@ -127,7 +129,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
             <button
               type="button"
               onClick={() => emblaApi?.scrollNext()}
-              aria-label="Article suivant"
+              aria-label={t('slider.next')}
               className="absolute right-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition-colors hover:bg-primary"
             >
               <ChevronRight className="size-4.5" />
@@ -139,7 +141,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                   key={i}
                   type="button"
                   onClick={() => emblaApi?.scrollTo(i)}
-                  aria-label={`Aller à la diapositive ${i + 1}`}
+                  aria-label={`${t('slider.goTo')} ${i + 1}`}
                   aria-current={selected === i}
                   className={
                     selected === i

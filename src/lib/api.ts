@@ -5,8 +5,8 @@
 // ═══════════════════════════════════════════════════════════════
 import type {
   AdminUser, AuthSession, ArticlesResponse, ArticleFull, ArticleSummary,
-  ArticleVersion, ArticleStatus, Category, MediaItem, VideoItem, PodcastItem, StaticPageItem,
-  MenuItem, CommentItem, NewsletterSubscriber, NewsletterCampaign,
+  ArticleVersion, ArticleStatus, Category, MediaItem, VideoItem, PodcastItem, PodcastCollection,
+  StaticPageItem, MenuItem, CommentItem, NewsletterSubscriber, NewsletterCampaign,
   AdPlacement, AdCampaign, AdBanner, SiteSettings, FlashInfoItem,
   HomeBlockConfig, SiteBootstrap, AdminStats, AuditLogItem, ContentBlock,
 } from './types';
@@ -28,7 +28,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(path, { ...options, headers });
+  // Langue du lecteur : les contenus publics (articles, vidéos, podcasts,
+  // catégories, flash info) sont servis traduits côté API.
+  let url = path;
+  if (!options.method || options.method === 'GET') {
+    const locale = typeof window !== 'undefined' ? localStorage.getItem('bh_locale') : null;
+    if (locale && locale !== 'fr' && (path === '/api/site' || path.startsWith('/api/public'))) {
+      url += (path.includes('?') ? '&' : '?') + `lang=${encodeURIComponent(locale)}`;
+    }
+  }
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: 'Erreur réseau' }));
     throw new Error((body as { error?: string }).error || `Erreur ${res.status}`);
@@ -71,8 +80,15 @@ export const publicApi = {
   videos: (params: { playlist?: string; page?: number; limit?: number } = {}) =>
     request<PaginatedVideos>(`/api/public/videos${qs(params)}`),
 
-  podcasts: (params: { page?: number; limit?: number } = {}) =>
+  video: (id: string) =>
+    request<{ video: VideoItem; related: VideoItem[] }>(`/api/public/videos/${id}`),
+
+  videoPlaylists: () => request<{ playlists: string[] }>('/api/public/videos/playlists'),
+
+  podcasts: (params: { page?: number; limit?: number; collection?: string } = {}) =>
     request<PaginatedPodcasts>(`/api/public/podcasts${qs(params)}`),
+
+  podcastCollections: () => request<{ collections: PodcastCollection[] }>('/api/public/podcasts/collections'),
 
   incrementPodcastPlay: (id: string) => request<{ ok: boolean }>(`/api/public/podcasts/${id}/play`, { method: 'POST' }),
 
@@ -93,8 +109,22 @@ export const publicApi = {
 
   adClick: (campaignId: string) => request<{ ok: boolean }>(`/api/public/ads/${campaignId}/click`, { method: 'POST' }),
 
-  track: (type: string, path: string, meta?: Record<string, unknown>) =>
-    request<{ ok: boolean }>('/api/public/track', { method: 'POST', body: JSON.stringify({ type, path, meta }) }).catch(() => ({ ok: true })),
+  track: (type: string, path: string, meta?: Record<string, unknown>) => {
+    // Analytics réelles : chaque événement emporte le referrer, l'appareil
+    // et la langue (agrégés côté dashboard : sources de trafic, devices).
+    const enriched: Record<string, unknown> = { ...(meta ?? {}) };
+    if (typeof window !== 'undefined' && (type === 'PAGE_VIEW' || type === 'ARTICLE_VIEW')) {
+      if (document.referrer) enriched.referrer = document.referrer;
+      const ua = navigator.userAgent;
+      enriched.device = /iPad|Tablet/i.test(ua)
+        ? 'tablet'
+        : /Mobi|Android|iPhone/i.test(ua)
+          ? 'mobile'
+          : 'desktop';
+      enriched.lang = localStorage.getItem('bh_locale') || navigator.language?.slice(0, 2) || 'fr';
+    }
+    return request<{ ok: boolean }>('/api/public/track', { method: 'POST', body: JSON.stringify({ type, path, meta: enriched }) }).catch(() => ({ ok: true }));
+  },
 
   search: (q: string, filters?: { category?: string; type?: string }) =>
     request<SearchResults>(`/api/public/search${qs({ q, ...filters })}`),
@@ -166,6 +196,24 @@ export const adminApi = {
   media: (params: { search?: string; page?: number } = {}) =>
     request<PaginatedResponse<MediaItem>>(`/api/admin/media${qs(params)}`),
   createMedia: (data: Partial<MediaItem>) => request<{ media: MediaItem }>('/api/admin/media', { method: 'POST', body: JSON.stringify(data) }),
+  /** Import d'un fichier image vers Cloudinary (multipart, aucun stockage local). */
+  uploadMedia: async (file: File, meta?: { alt?: string; caption?: string; credit?: string; tags?: string }) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (meta?.alt) fd.append('alt', meta.alt);
+    if (meta?.caption) fd.append('caption', meta.caption);
+    if (meta?.credit) fd.append('credit', meta.credit);
+    if (meta?.tags) fd.append('tags', meta.tags);
+    const headers: Record<string, string> = {};
+    const token = getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch('/api/admin/upload', { method: 'POST', headers, body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: 'Erreur réseau' }));
+      throw new Error((body as { error?: string }).error || `Erreur ${res.status}`);
+    }
+    return (await res.json()) as { media: MediaItem };
+  },
   updateMedia: (id: string, data: Partial<MediaItem>) => request<{ media: MediaItem }>(`/api/admin/media/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteMedia: (id: string) => request<{ ok: boolean }>(`/api/admin/media/${id}`, { method: 'DELETE' }),
 
@@ -176,6 +224,11 @@ export const adminApi = {
   updateVideo: (id: string, data: Partial<VideoItem>) => request<{ video: VideoItem }>(`/api/admin/videos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteVideo: (id: string) => request<{ ok: boolean }>(`/api/admin/videos/${id}`, { method: 'DELETE' }),
   fetchYouTubeMeta: (urlOrId: string) => request<{ title: string; thumbnailUrl: string; duration: string }>(`/api/admin/youtube${qs({ urlOrId })}`),
+  /** Renomme une playlist sur toutes les vidéos concernées. */
+  renamePlaylist: (from: string, to: string) =>
+    request<{ updated: number }>('/api/admin/videos/playlists', { method: 'PUT', body: JSON.stringify({ from, to }) }),
+  sendPush: (data: { title: string; body: string; url?: string }) =>
+    request<{ sent: number; removed: number }>('/api/admin/push/send', { method: 'POST', body: JSON.stringify(data) }),
 
   // Podcasts
   podcasts: (params: { page?: number; search?: string } = {}) =>
@@ -183,6 +236,17 @@ export const adminApi = {
   createPodcast: (data: Partial<PodcastItem>) => request<{ podcast: PodcastItem }>('/api/admin/podcasts', { method: 'POST', body: JSON.stringify(data) }),
   updatePodcast: (id: string, data: Partial<PodcastItem>) => request<{ podcast: PodcastItem }>(`/api/admin/podcasts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletePodcast: (id: string) => request<{ ok: boolean }>(`/api/admin/podcasts/${id}`, { method: 'DELETE' }),
+
+  // Collections de podcasts (saisons renommables)
+  podcastCollections: () => request<{ collections: PodcastCollection[] }>('/api/admin/podcasts/collections'),
+  createPodcastCollection: (data: Partial<PodcastCollection>) =>
+    request<{ collection: PodcastCollection }>('/api/admin/podcasts/collections', { method: 'POST', body: JSON.stringify(data) }),
+  updatePodcastCollection: (id: string, data: Partial<PodcastCollection>) =>
+    request<{ collection: PodcastCollection }>(`/api/admin/podcasts/collections/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deletePodcastCollection: (id: string) =>
+    request<{ ok: boolean }>(`/api/admin/podcasts/collections/${id}`, { method: 'DELETE' }),
+  reorderPodcastCollections: (ids: string[]) =>
+    request<{ ok: boolean }>('/api/admin/podcasts/collections/reorder', { method: 'POST', body: JSON.stringify({ ids }) }),
 
   // Pages statiques
   pages: () => request<{ pages: StaticPageItem[] }>('/api/admin/pages'),
@@ -249,6 +313,16 @@ export const adminApi = {
   updateUser: (id: string, data: { name?: string; role?: string; bio?: string; password?: string; active?: boolean; twitter?: string; linkedin?: string; avatarUrl?: string }) =>
     request<{ user: AdminUser }>(`/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id: string) => request<{ ok: boolean }>(`/api/admin/users/${id}`, { method: 'DELETE' }),
+
+  // Traductions (correction manuelle / re-traduction)
+  translations: (entityType: string, entityId: string) =>
+    request<{ translations: { locale: string; auto: boolean; data: Record<string, unknown>; updatedAt: string }[] }>(
+      `/api/admin/translations${qs({ entityType, entityId })}`,
+    ),
+  saveTranslation: (data: { entityType: string; entityId: string; locale: string; data: Record<string, unknown> }) =>
+    request<{ ok: boolean }>('/api/admin/translations', { method: 'PUT', body: JSON.stringify(data) }),
+  retranslate: (data: { entityType: string; entityId: string; locale?: string }) =>
+    request<{ ok: boolean }>('/api/admin/translations/retranslate', { method: 'POST', body: JSON.stringify(data) }),
 
   // Export
   export: (type: 'articles' | 'subscribers' | 'comments', format: 'json' | 'csv') =>

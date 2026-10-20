@@ -16,8 +16,12 @@ import {
   serializeAdminArticle, serializeArticleFull, serializeCampaign, serializeCategory,
   serializeComment, serializeFlashInfo, serializeMedia, serializeMenuItem, serializePage,
   serializePlacement, serializePodcast, serializeSubscriber, serializeUser, serializeVideo,
-  loadHomeBlocks, loadSettings, mergeSettings, saveHomeBlocks,
+  loadHomeBlocks, loadSettings, mergeSettings, saveHomeBlocks, sanitizeAdHtml,
 } from '@/lib/server/utils';
+import { translateEntity, TRANSLATE_LOCALES } from '@/lib/server/translate';
+import { buildTranslationData } from '@/lib/server/translate';
+import { broadcastPush, pushConfigured } from '@/lib/server/push';
+import { autoFeatureArticle, autoFlashArticle } from '@/lib/server/autoPublish';
 import type { AdminUser, HomeBlockConfig } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -137,6 +141,7 @@ async function handleArticleCreate(ctx: Ctx) {
       slug,
       title,
       subtitle: String(body.subtitle ?? ''),
+      excerpt: String(body.excerpt ?? ''),
       content: contentStr,
       coverImage: String(body.coverImage ?? ''),
       coverCredit: String(body.coverCredit ?? ''),
@@ -159,6 +164,21 @@ async function handleArticleCreate(ctx: Ctx) {
     data: { articleId: created.id, title, content: contentStr, savedBy: ctx.user.name },
   });
   logAudit(ctx.user.id, ctx.user.name, 'ARTICLE_CREATE', `Article « ${title} » créé`);
+  // Traduction automatique à la publication (FR → EN/ES/AR/ZH)
+  if (status === 'PUBLISHED') {
+    await autoFeatureArticle(created.id);
+    await autoFlashArticle(created.id);
+    await translateEntity('article', created.id, { title, subtitle: created.subtitle, excerpt: created.excerpt, content: contentStr });
+    // Notification push aux abonnés
+    if (pushConfigured()) {
+      await broadcastPush({
+        title: 'Nouvelle publication — Réussite Magazine',
+        body: title,
+        url: `/#/article/${slug}`,
+        tag: `article-${created.id}`,
+      }).catch(() => {});
+    }
+  }
 
   return ok({ article: serializeArticleFull(await fetchArticleFull(created.id)) });
 }
@@ -184,6 +204,7 @@ async function handleArticleUpdate(ctx: Ctx) {
     );
   }
   if (body.subtitle !== undefined) data.subtitle = String(body.subtitle);
+  if (body.excerpt !== undefined) data.excerpt = String(body.excerpt);
   if (body.content !== undefined) {
     data.content = JSON.stringify(Array.isArray(body.content) ? body.content : []);
   }
@@ -222,6 +243,32 @@ async function handleArticleUpdate(ctx: Ctx) {
   if (body.tags !== undefined) await setArticleTags(existing.id, body.tags);
 
   logAudit(ctx.user.id, ctx.user.name, 'ARTICLE_UPDATE', `Article « ${data.title ?? existing.title} » modifié`);
+  // Traduction automatique à (re)publication — les corrections manuelles
+  // (auto=false) ne sont jamais écrasées.
+  if (nextStatus === 'PUBLISHED') {
+    const fresh = await db.article.findUnique({ where: { id: existing.id } });
+    if (fresh) {
+      await translateEntity('article', fresh.id, {
+        title: fresh.title,
+        subtitle: fresh.subtitle,
+        excerpt: fresh.excerpt,
+        content: fresh.content,
+      });
+      // Notifie seulement si l'article passe en PUBLISHED lors de cette action.
+      if (existing.status !== 'PUBLISHED') {
+        await autoFeatureArticle(fresh.id);
+        await autoFlashArticle(fresh.id);
+      }
+      if (existing.status !== 'PUBLISHED' && pushConfigured()) {
+        await broadcastPush({
+          title: 'Nouvelle publication — Réussite Magazine',
+          body: fresh.title,
+          url: `/#/article/${fresh.slug}`,
+          tag: `article-${fresh.id}`,
+        }).catch(() => {});
+      }
+    }
+  }
   return ok({ article: serializeArticleFull(await fetchArticleFull(existing.id)) });
 }
 
@@ -257,6 +304,10 @@ async function handleArticleBulk(ctx: Ctx) {
           ...(target === 'PUBLISHED' && !row.publishedAt ? { publishedAt: new Date() } : {}),
         },
       });
+      if (target === 'PUBLISHED') {
+        await autoFeatureArticle(id);
+        await autoFlashArticle(id);
+      }
     }
   }
   logAudit(ctx.user.id, ctx.user.name, 'ARTICLE_BULK', `Action ${action} sur ${ids.length} article(s)`);
@@ -335,6 +386,7 @@ async function handleCategoryCreate(ctx: Ctx) {
     },
   });
   logAudit(ctx.user.id, ctx.user.name, 'CATEGORY_CREATE', `Catégorie « ${name} » créée`);
+  await translateEntity('category', created.id, { name: created.name, description: created.description });
   return ok({ category: serializeCategory(created) });
 }
 
@@ -358,6 +410,7 @@ async function handleCategoryUpdate(ctx: Ctx) {
   if (body.showInHome !== undefined) data.showInHome = toBool(body.showInHome);
   const updated = await db.category.update({ where: { id }, data });
   logAudit(ctx.user.id, ctx.user.name, 'CATEGORY_UPDATE', `Catégorie « ${updated.name} » modifiée`);
+  await translateEntity('category', updated.id, { name: updated.name, description: updated.description });
   return ok({ category: serializeCategory(updated) });
 }
 
@@ -453,6 +506,15 @@ async function handleMediaDelete(ctx: Ctx) {
   const id = ctx.seg[1];
   const existing = await db.media.findUnique({ where: { id } });
   if (!existing) throw new HttpError(404, 'Média introuvable.');
+  // Supprime aussi l'image sur Cloudinary si elle en provient.
+  if (existing.publicId) {
+    try {
+      const { destroyImage } = await import('@/lib/server/cloudinary');
+      await destroyImage(existing.publicId);
+    } catch {
+      // Cloudinary indisponible : on supprime quand même la métadonnée.
+    }
+  }
   await db.media.delete({ where: { id } });
   logAudit(ctx.user.id, ctx.user.name, 'MEDIA_DELETE', `Média « ${existing.filename} » supprimé`);
   return ok({ ok: true });
@@ -495,6 +557,15 @@ async function handleVideoCreate(ctx: Ctx) {
     },
   });
   logAudit(ctx.user.id, ctx.user.name, 'VIDEO_CREATE', `Vidéo « ${created.title} » créée`);
+  await translateEntity('video', created.id, { title: created.title, description: created.description });
+  if (created.published && pushConfigured()) {
+    await broadcastPush({
+      title: 'Nouvelle vidéo — Réussite Magazine',
+      body: created.title,
+      url: `/#/video/${created.id}`,
+      tag: `video-${created.id}`,
+    }).catch(() => {});
+  }
   return ok({ video: serializeVideo(created) });
 }
 
@@ -516,7 +587,19 @@ async function handleVideoUpdate(ctx: Ctx) {
   if (body.publishedAt !== undefined) data.publishedAt = parseDateOrNull(body.publishedAt) ?? existing.publishedAt;
   const updated = await db.video.update({ where: { id }, data });
   logAudit(ctx.user.id, ctx.user.name, 'VIDEO_UPDATE', `Vidéo « ${updated.title} » modifiée`);
+  await translateEntity('video', updated.id, { title: updated.title, description: updated.description });
   return ok({ video: serializeVideo(updated) });
+}
+
+/** Renomme une playlist sur toutes les vidéos concernées. */
+async function handlePlaylistRename(ctx: Ctx) {
+  const body = await readBody<{ from?: string; to?: string }>(ctx.req);
+  const from = String(body.from ?? '').trim();
+  const to = String(body.to ?? '').trim();
+  if (!from || !to) throw new HttpError(400, 'Les noms de playlist (avant/après) sont obligatoires.');
+  const result = await db.video.updateMany({ where: { playlist: from }, data: { playlist: to } });
+  logAudit(ctx.user.id, ctx.user.name, 'PLAYLIST_RENAME', `Playlist « ${from} » → « ${to} » (${result.count} vidéo(s))`);
+  return ok({ updated: result.count });
 }
 
 async function handleVideoDelete(ctx: Ctx) {
@@ -579,6 +662,8 @@ async function handlePodcastCreate(ctx: Ctx) {
       duration: String(body.duration ?? ''),
       season: Math.max(1, Math.trunc(toNumberOr(body.season, 1))),
       episode: Math.max(1, Math.trunc(toNumberOr(body.episode, 1))),
+      collectionId:
+        typeof body.collectionId === 'string' && body.collectionId ? body.collectionId : null,
       coverImage: String(body.coverImage ?? ''),
       guests: String(body.guests ?? ''),
       published: toBool(body.published, true),
@@ -586,6 +671,15 @@ async function handlePodcastCreate(ctx: Ctx) {
     },
   });
   logAudit(ctx.user.id, ctx.user.name, 'PODCAST_CREATE', `Podcast « ${created.title} » créé`);
+  await translateEntity('podcast', created.id, { title: created.title, description: created.description });
+  if (created.published && pushConfigured()) {
+    await broadcastPush({
+      title: 'Nouvel épisode podcast — Réussite Magazine',
+      body: created.title,
+      url: '/#/podcasts',
+      tag: `podcast-${created.id}`,
+    }).catch(() => {});
+  }
   return ok({ podcast: serializePodcast(created) });
 }
 
@@ -601,12 +695,23 @@ async function handlePodcastUpdate(ctx: Ctx) {
   if (body.duration !== undefined) data.duration = String(body.duration);
   if (body.season !== undefined) data.season = Math.max(1, Math.trunc(toNumberOr(body.season, existing.season)));
   if (body.episode !== undefined) data.episode = Math.max(1, Math.trunc(toNumberOr(body.episode, existing.episode)));
+  if (body.collectionId !== undefined) {
+    const collectionId = typeof body.collectionId === 'string' && body.collectionId ? body.collectionId : null;
+    if (collectionId) {
+      const col = await db.podcastCollection.findUnique({ where: { id: collectionId }, select: { id: true } });
+      if (!col) throw new HttpError(400, 'Collection invalide.');
+      data.collection = { connect: { id: col.id } };
+    } else {
+      data.collection = { disconnect: true };
+    }
+  }
   if (body.coverImage !== undefined) data.coverImage = String(body.coverImage);
   if (body.guests !== undefined) data.guests = String(body.guests);
   if (body.published !== undefined) data.published = toBool(body.published, true);
   if (body.publishedAt !== undefined) data.publishedAt = parseDateOrNull(body.publishedAt) ?? existing.publishedAt;
   const updated = await db.podcast.update({ where: { id }, data });
   logAudit(ctx.user.id, ctx.user.name, 'PODCAST_UPDATE', `Podcast « ${updated.title} » modifié`);
+  await translateEntity('podcast', updated.id, { title: updated.title, description: updated.description });
   return ok({ podcast: serializePodcast(updated) });
 }
 
@@ -653,6 +758,7 @@ async function handlePageCreate(ctx: Ctx) {
     },
   });
   logAudit(ctx.user.id, ctx.user.name, 'PAGE_CREATE', `Page « ${created.title} » créée`);
+  await translateEntity('page', created.id, { title: created.title, content: created.content });
   return ok({ page: serializePage(created) });
 }
 
@@ -676,6 +782,7 @@ async function handlePageUpdate(ctx: Ctx) {
   if (body.published !== undefined) data.published = toBool(body.published, true);
   const updated = await db.staticPage.update({ where: { id }, data });
   logAudit(ctx.user.id, ctx.user.name, 'PAGE_UPDATE', `Page « ${updated.title} » modifiée`);
+  await translateEntity('page', updated.id, { title: updated.title, content: updated.content });
   return ok({ page: serializePage(updated) });
 }
 
@@ -901,21 +1008,73 @@ async function handleCampaignSend(ctx: Ctx) {
   if (!existing) throw new HttpError(404, 'Campagne introuvable.');
   if (existing.status === 'SENT') throw new HttpError(400, 'Cette campagne a déjà été envoyée.');
 
-  const recipients = await db.newsletterSubscriber.count({ where: { active: true } });
-  const jitter = (base: number, amp: number) =>
-    Math.round((base + (Math.random() * 2 - 1) * amp) * 100) / 100;
+  const subscribers = await db.newsletterSubscriber.findMany({
+    where: { active: true },
+    select: { email: true },
+  });
+  const recipients = subscribers.length;
+
+  // ─── Envoi RÉEL via Resend si configuré, sinon simulation ───
+  let sent = false;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey && recipients > 0) {
+    const ids = JSON.parse(existing.articleIds || '[]') as string[];
+    const articles = ids.length
+      ? await db.article.findMany({ where: { id: { in: ids } }, select: { title: true, slug: true, subtitle: true } })
+      : [];
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const itemsHtml = articles
+      .map(
+        (a) =>
+          `<li style="margin:0 0 14px"><a href="${baseUrl}/#/article/${a.slug}" style="color:#d97706;font-weight:700;text-decoration:none">${a.title}</a>` +
+          (a.subtitle ? `<p style="margin:4px 0 0;color:#555;font-size:14px">${a.subtitle}</p>` : '') +
+          '</li>',
+      )
+      .join('');
+    const html = `<div style="font-family:Georgia,serif;max-width:600px;margin:auto">
+  <h2 style="color:#0a0a0a">${existing.subject}</h2>
+  ${existing.intro ? `<p style="color:#444">${existing.intro}</p>` : ''}
+  <ul style="list-style:none;padding:0">${itemsHtml}</ul>
+  <p style="margin-top:28px;font-size:12px;color:#999">Réussite Magazine — <a href="${baseUrl}" style="color:#d97706">reussitemagazine.com</a></p>
+</div>`;
+    try {
+      // Resend : envoi par lots de 50 destinataires (bcc).
+      for (let i = 0; i < recipients; i += 50) {
+        const batch = subscribers.slice(i, i + 50).map((s) => s.email);
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: process.env.NEWSLETTER_FROM || 'Réussite Magazine <newsletter@resend.dev>',
+            to: [process.env.NEWSLETTER_FROM || 'newsletter@resend.dev'],
+            bcc: batch,
+            subject: existing.subject,
+            html,
+          }),
+        });
+        if (!res.ok) throw new Error(`Resend ${res.status}`);
+      }
+      sent = true;
+    } catch (e) {
+      logAudit(ctx.user.id, ctx.user.name, 'CAMPAIGN_SEND_FAIL', e instanceof Error ? e.message : 'Erreur Resend');
+      throw new HttpError(502, `Envoi email impossible (${e instanceof Error ? e.message : 'erreur Resend'}).`);
+    }
+  }
+
   const updated = await db.newsletterCampaign.update({
     where: { id },
     data: {
       status: 'SENT',
       sentAt: new Date(),
       recipients,
-      openRate: jitter(0.42, 0.1),
-      clickRate: jitter(0.12, 0.04),
+      // Taux réels mesurés plus tard (pixels de tracking) — repli simulé
+      // uniquement quand l'envoi réel n'est pas configuré.
+      openRate: sent ? 0 : 0.42,
+      clickRate: sent ? 0 : 0.12,
     },
   });
-  logAudit(ctx.user.id, ctx.user.name, 'CAMPAIGN_SEND', `Campagne « ${updated.subject} » envoyée à ${recipients} abonné(s)`);
-  return ok({ campaign: serializeCampaign(updated) });
+  logAudit(ctx.user.id, ctx.user.name, 'CAMPAIGN_SEND', `Campagne « ${updated.subject} » ${sent ? 'envoyée réellement' : 'simulée (RESEND_API_KEY absent)'} à ${recipients} abonné(s)`);
+  return ok({ campaign: serializeCampaign(updated), realSend: sent });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -972,7 +1131,9 @@ async function handleAdCampaignCreate(ctx: Ctx) {
       name: String(body.name),
       advertiser: String(body.advertiser),
       imageUrl: String(body.imageUrl ?? ''),
-      htmlCode: String(body.htmlCode ?? ''),
+      htmlCode: sanitizeAdHtml(String(body.htmlCode ?? '')),
+      mediaType: ['IMAGE', 'GIF', 'VIDEO'].includes(String(body.mediaType)) ? String(body.mediaType) : 'IMAGE',
+      videoUrl: String(body.videoUrl ?? ''),
       targetUrl: String(body.targetUrl ?? ''),
       weight: Math.max(1, Math.trunc(toNumberOr(body.weight, 1))),
       deviceTargeting: ['ALL', 'MOBILE', 'DESKTOP'].includes(String(body.deviceTargeting))
@@ -998,7 +1159,11 @@ async function handleAdCampaignUpdate(ctx: Ctx) {
   if (body.name !== undefined) data.name = String(body.name);
   if (body.advertiser !== undefined) data.advertiser = String(body.advertiser);
   if (body.imageUrl !== undefined) data.imageUrl = String(body.imageUrl);
-  if (body.htmlCode !== undefined) data.htmlCode = String(body.htmlCode);
+  if (body.htmlCode !== undefined) data.htmlCode = sanitizeAdHtml(String(body.htmlCode));
+  if (body.mediaType !== undefined && ['IMAGE', 'GIF', 'VIDEO'].includes(String(body.mediaType))) {
+    data.mediaType = String(body.mediaType);
+  }
+  if (body.videoUrl !== undefined) data.videoUrl = String(body.videoUrl);
   if (body.targetUrl !== undefined) data.targetUrl = String(body.targetUrl);
   if (body.weight !== undefined) data.weight = Math.max(1, Math.trunc(toNumberOr(body.weight, existing.weight)));
   if (body.deviceTargeting !== undefined && ['ALL', 'MOBILE', 'DESKTOP'].includes(String(body.deviceTargeting))) {
@@ -1059,6 +1224,7 @@ async function handleFlashCreate(ctx: Ctx) {
     },
   });
   logAudit(ctx.user.id, ctx.user.name, 'FLASH_CREATE', 'Flash info créé');
+  await translateEntity('flashInfo', created.id, { text: created.text });
   return ok({ item: serializeFlashInfo(created) });
 }
 
@@ -1074,6 +1240,7 @@ async function handleFlashUpdate(ctx: Ctx) {
   if (body.order !== undefined) data.order = Math.trunc(toNumberOr(body.order, existing.order));
   const updated = await db.flashInfo.update({ where: { id }, data });
   logAudit(ctx.user.id, ctx.user.name, 'FLASH_UPDATE', `Flash info modifié`);
+  await translateEntity('flashInfo', updated.id, { text: updated.text });
   return ok({ item: serializeFlashInfo(updated) });
 }
 
@@ -1126,6 +1293,8 @@ async function handleSettingsGet() {
 async function handleSettingsPut(ctx: Ctx) {
   const body = await readBody<Record<string, unknown>>(ctx.req);
   const settings = await mergeSettings(body);
+  // Traduit les textes éditoriaux modifiés (popup, blocs accueil).
+  await translateEntity('setting', 'site', settings as unknown as Record<string, unknown>).catch(() => {});
   logAudit(ctx.user.id, ctx.user.name, 'SETTINGS_UPDATE', `${Object.keys(body).length} réglage(s) modifié(s)`);
   return ok({ settings });
 }
@@ -1261,7 +1430,7 @@ async function buildStats(days: number) {
   const [
     visits30d, visits7d, articlesPublished, articlesDraft, commentsPending,
     newsletterSubscribers, newsletterActive, videos, podcasts, adsActive,
-    campaigns, totalViewsAgg, chart, topRows, trafficRows,
+    campaigns, totalViewsAgg, chart, topRows, trafficRows, visitMetaRows,
   ] = await Promise.all([
     db.analyticsEvent.count({ where: { type: 'PAGE_VIEW', createdAt: { gte: start30 } } }),
     db.analyticsEvent.count({ where: { type: 'PAGE_VIEW', createdAt: { gte: start7 } } }),
@@ -1283,6 +1452,12 @@ async function buildStats(days: number) {
       include: { category: { select: { name: true } } },
     }),
     db.analyticsEvent.groupBy({ by: ['type'], _count: { type: true }, where: { createdAt: { gte: start30 } } }),
+    // Méta des visites (referrer/appareil/langue réels enregistrés côté client)
+    db.analyticsEvent.findMany({
+      where: { type: 'PAGE_VIEW', createdAt: { gte: start30 } },
+      select: { meta: true },
+      take: 20000,
+    }),
   ]);
 
   const impressions = campaigns.reduce((sum, c) => sum + c.impressions, 0);
@@ -1322,10 +1497,71 @@ async function buildStats(days: number) {
       clicks: c.clicks,
       ctr: c.impressions > 0 ? Math.round((c.clicks / c.impressions) * 10000) / 10000 : 0,
     })),
-    trafficSources: trafficRows
-      .map((r) => ({ source: r.type, count: r._count.type }))
-      .sort((a, b) => b.count - a.count),
+    // ─── Sources de trafic RÉELLES (referrer enregistré par le navigateur) ───
+    trafficSources: buildRealSources(visitMetaRows),
+    devices: buildDeviceSplit(visitMetaRows),
   });
+}
+
+/** Classe un referrer en source lisible. */
+function classifyReferrer(referrer: string | undefined): string {
+  if (!referrer) return 'Direct';
+  let host = '';
+  try {
+    host = new URL(referrer).hostname.replace(/^www\./, '');
+  } catch {
+    return 'Direct';
+  }
+  if (/^(google|bing|duckduckgo|qwant|ecosia|yahoo|baidu)\./i.test(host)) return 'Moteurs de recherche';
+  if (/^(facebook|instagram|m\.facebook|l\.facebook)\./i.test(host)) return 'Facebook / Instagram';
+  if (/^(x|twitter|t)\./i.test(host)) return 'X (Twitter)';
+  if (/^(linkedin)\./i.test(host)) return 'LinkedIn';
+  if (/^(youtube|youtu)\./i.test(host)) return 'YouTube';
+  if (/^(whatsapp|t\.me|telegram)\./i.test(host)) return 'Messageries';
+  if (/(reussitemagazine|localhost)/i.test(host)) return 'Interne';
+  return host;
+}
+
+/** Agrège les referrers en sources (top 6 + autres). */
+function buildRealSources(rows: { meta: string }[]): { source: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    let meta: Record<string, unknown> = {};
+    try {
+      meta = JSON.parse(r.meta || '{}');
+    } catch {
+      meta = {};
+    }
+    const source = classifyReferrer(
+      typeof meta.referrer === 'string' ? meta.referrer : undefined,
+    );
+    counts.set(source, (counts.get(source) ?? 0) + 1);
+  }
+  const sorted = [...counts.entries()]
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
+  if (sorted.length <= 7) return sorted;
+  const top = sorted.slice(0, 6);
+  const rest = sorted.slice(6).reduce((sum, x) => sum + x.count, 0);
+  return [...top, { source: 'Autres', count: rest }];
+}
+
+/** Répartition appareils (meta.device enregistré côté client). */
+function buildDeviceSplit(rows: { meta: string }[]): { device: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    let meta: Record<string, unknown> = {};
+    try {
+      meta = JSON.parse(r.meta || '{}');
+    } catch {
+      meta = {};
+    }
+    const device = meta.device === 'mobile' || meta.device === 'desktop' || meta.device === 'tablet'
+      ? String(meta.device)
+      : 'inconnu';
+    counts.set(device, (counts.get(device) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([device, count]) => ({ device, count }));
 }
 
 async function handleAuditLogs(ctx: Ctx) {
@@ -1446,6 +1682,232 @@ async function handleExport(ctx: Ctx) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// COLLECTIONS DE PODCASTS (saisons renommables, mère/fille)
+// ═══════════════════════════════════════════════════════════════
+
+async function handlePodcastCollectionsList() {
+  const rows = await db.podcastCollection.findMany({
+    orderBy: { order: 'asc' },
+    include: { _count: { select: { podcasts: true } } },
+  });
+  const byParent = new Map<string | null, typeof rows>();
+  for (const c of rows) {
+    const key = c.parentId;
+    const list = byParent.get(key) ?? [];
+    list.push(c);
+    byParent.set(key, list);
+  }
+  type Node = {
+    id: string; title: string; description: string; parentId: string | null;
+    order: number; podcastCount: number; children: Node[];
+  };
+  const build = (parent: string | null): Node[] =>
+    (byParent.get(parent) ?? []).map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      parentId: c.parentId,
+      order: c.order,
+      podcastCount: c._count.podcasts,
+      children: build(c.id),
+    }));
+  return ok({ collections: build(null) });
+}
+
+async function handlePodcastCollectionCreate(ctx: Ctx) {
+  const body = await readBody<Record<string, unknown>>(ctx.req);
+  const title = String(body.title ?? '').trim();
+  if (!title) throw new HttpError(400, 'Le titre de la collection est obligatoire.');
+  const maxOrder = await db.podcastCollection.aggregate({ _max: { order: true } });
+  const created = await db.podcastCollection.create({
+    data: {
+      title,
+      description: String(body.description ?? ''),
+      parentId:
+        typeof body.parentId === 'string' && body.parentId ? body.parentId : null,
+      order: Math.trunc(toNumberOr(body.order, (maxOrder._max.order ?? -1) + 1)),
+    },
+  });
+  logAudit(ctx.user.id, ctx.user.name, 'PODCAST_COLLECTION_CREATE', `Collection « ${created.title} » créée`);
+  return ok({ collection: { ...created, children: [], podcastCount: 0 } });
+}
+
+async function handlePodcastCollectionUpdate(ctx: Ctx) {
+  const id = ctx.seg[2];
+  const existing = await db.podcastCollection.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'Collection introuvable.');
+  const body = await readBody<Record<string, unknown>>(ctx.req);
+  const data: Prisma.PodcastCollectionUpdateInput = {};
+  if (body.title !== undefined) data.title = String(body.title).trim() || existing.title;
+  if (body.description !== undefined) data.description = String(body.description);
+  if (body.order !== undefined) data.order = Math.trunc(toNumberOr(body.order, existing.order));
+  if (body.parentId !== undefined) {
+    const parentId = typeof body.parentId === 'string' && body.parentId ? body.parentId : null;
+    if (parentId === id) throw new HttpError(400, 'Une collection ne peut pas être sa propre parente.');
+    data.parent = parentId ? { connect: { id: parentId } } : { disconnect: true };
+  }
+  const updated = await db.podcastCollection.update({ where: { id }, data });
+  logAudit(ctx.user.id, ctx.user.name, 'PODCAST_COLLECTION_UPDATE', `Collection « ${updated.title} » modifiée`);
+  return ok({ collection: updated });
+}
+
+async function handlePodcastCollectionDelete(ctx: Ctx) {
+  const id = ctx.seg[2];
+  const existing = await db.podcastCollection.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'Collection introuvable.');
+  const childCount = await db.podcastCollection.count({ where: { parentId: id } });
+  if (childCount > 0) throw new HttpError(400, 'Supprimez ou déplacez d’abord les sous-collections.');
+  // Les épisodes sont détachés (collectionId → null), jamais supprimés.
+  await db.podcast.updateMany({ where: { collectionId: id }, data: { collectionId: null } });
+  await db.podcastCollection.delete({ where: { id } });
+  logAudit(ctx.user.id, ctx.user.name, 'PODCAST_COLLECTION_DELETE', `Collection « ${existing.title} » supprimée`);
+  return ok({ ok: true });
+}
+
+async function handlePodcastCollectionReorder(ctx: Ctx) {
+  const body = await readBody<{ ids?: unknown }>(ctx.req);
+  const ids = Array.isArray(body.ids) ? body.ids.map(String).filter(Boolean) : [];
+  await db.$transaction(ids.map((id, index) => db.podcastCollection.update({ where: { id }, data: { order: index } })));
+  return ok({ ok: true });
+}
+
+// ─── Envoi manuel de notification push (back-office) ──────────
+async function handlePushSend(ctx: Ctx) {
+  const body = await readBody<{ title?: string; body?: string; url?: string }>(ctx.req);
+  const title = String(body.title ?? '').trim();
+  const message = String(body.body ?? '').trim();
+  if (!title || !message) throw new HttpError(400, 'Titre et message requis.');
+  if (!pushConfigured()) {
+    throw new HttpError(503, 'Notifications non configurées : générez les clés VAPID (voir .env) puis redémarrez.');
+  }
+  const result = await broadcastPush({ title, body: message, url: body.url || '/' });
+  logAudit(ctx.user.id, ctx.user.name, 'PUSH_SEND', `Notification « ${title} » envoyée (${result.sent} abonné(s))`);
+  return ok(result);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRADUCTIONS (gestion manuelle / re-traduction)
+// ═══════════════════════════════════════════════════════════════
+
+const ENTITY_TYPES = ['article', 'flashInfo', 'podcast', 'video', 'category', 'setting', 'page'] as const;
+type EntityType = (typeof ENTITY_TYPES)[number];
+
+async function readEntityType(sp: URLSearchParams): Promise<EntityType> {
+  const t = String(sp.get('entityType') ?? '');
+  if (!(ENTITY_TYPES as readonly string[]).includes(t)) {
+    throw new HttpError(400, 'entityType invalide (article, flashInfo, podcast, video, category).');
+  }
+  return t as EntityType;
+}
+
+/** Récupère l'entité source FR selon son type (pour re-traduction). */
+async function fetchEntitySource(type: EntityType, id: string): Promise<Record<string, unknown> | null> {
+  switch (type) {
+    case 'article': {
+      const a = await db.article.findUnique({ where: { id } });
+      return a ? { title: a.title, subtitle: a.subtitle, excerpt: a.excerpt, content: a.content } : null;
+    }
+    case 'flashInfo': {
+      const f = await db.flashInfo.findUnique({ where: { id } });
+      return f ? { text: f.text } : null;
+    }
+    case 'podcast': {
+      const p = await db.podcast.findUnique({ where: { id } });
+      return p ? { title: p.title, description: p.description } : null;
+    }
+    case 'video': {
+      const v = await db.video.findUnique({ where: { id } });
+      return v ? { title: v.title, description: v.description } : null;
+    }
+    case 'category': {
+      const c = await db.category.findUnique({ where: { id } });
+      return c ? { name: c.name, description: c.description } : null;
+    }
+    case 'setting':
+      return loadSettings() as unknown as Record<string, unknown>;
+    case 'page': {
+      const pg = await db.staticPage.findUnique({ where: { id } });
+      return pg ? { title: pg.title, content: pg.content } : null;
+    }
+  }
+}
+
+async function handleTranslationsGet(ctx: Ctx) {
+  const entityType = await readEntityType(ctx.sp);
+  const entityId = String(ctx.sp.get('entityId') ?? '');
+  if (!entityId) throw new HttpError(400, 'entityId manquant.');
+  const rows = await db.translation.findMany({ where: { entityType, entityId } });
+  return ok({
+    translations: rows.map((r) => ({
+      locale: r.locale,
+      auto: r.auto,
+      data: JSON.parse(r.data || '{}'),
+      updatedAt: r.updatedAt.toISOString(),
+    })),
+  });
+}
+
+/** Sauvegarde manuelle d'une traduction (auto=false : plus jamais écrasée). */
+async function handleTranslationsPut(ctx: Ctx) {
+  const body = await readBody<{ entityType?: string; entityId?: string; locale?: string; data?: Record<string, unknown> }>(ctx.req);
+  const entityType = String(body.entityType ?? '');
+  if (!(ENTITY_TYPES as readonly string[]).includes(entityType)) {
+    throw new HttpError(400, 'entityType invalide.');
+  }
+  const entityId = String(body.entityId ?? '');
+  const locale = String(body.locale ?? '');
+  if (!entityId || !(TRANSLATE_LOCALES as readonly string[]).includes(locale)) {
+    throw new HttpError(400, 'entityId ou locale invalide.');
+  }
+  const data = body.data && typeof body.data === 'object' ? body.data : {};
+  // Fusion avec les données existantes (on ne perd pas les champs non
+  // envoyés, ex. le contenu traduit des blocs d'article).
+  const existing = await db.translation.findUnique({
+    where: { entityType_entityId_locale: { entityType, entityId, locale } },
+  });
+  const merged = existing ? { ...JSON.parse(existing.data || '{}'), ...data } : data;
+  await db.translation.upsert({
+    where: { entityType_entityId_locale: { entityType, entityId, locale } },
+    update: { data: JSON.stringify(merged), auto: false },
+    create: { entityType, entityId, locale, data: JSON.stringify(merged), auto: false },
+  });
+  logAudit(ctx.user.id, ctx.user.name, 'TRANSLATION_SAVE', `${entityType}/${entityId} [${locale}] corrigé manuellement`);
+  return ok({ ok: true });
+}
+
+/** Force une re-traduction automatique (supprime les versions auto existantes). */
+async function handleTranslationsRetranslate(ctx: Ctx) {
+  const body = await readBody<{ entityType?: string; entityId?: string; locale?: string }>(ctx.req);
+  const entityType = String(body.entityType ?? '');
+  if (!(ENTITY_TYPES as readonly string[]).includes(entityType)) {
+    throw new HttpError(400, 'entityType invalide.');
+  }
+  const entityId = String(body.entityId ?? '');
+  if (!entityId) throw new HttpError(400, 'entityId manquant.');
+  const source = await fetchEntitySource(entityType as EntityType, entityId);
+  if (!source) throw new HttpError(404, 'Entité introuvable.');
+
+  // Supprime les traductions auto ciblées (toutes si aucune locale précisée,
+  // ou seulement la locale demandée), puis re-traduit.
+  await db.translation.deleteMany({
+    where: { entityType, entityId, ...(body.locale ? { locale: String(body.locale) } : {}), auto: true },
+  });
+  if (body.locale) {
+    const locale = String(body.locale) as 'en' | 'es' | 'ar' | 'zh';
+    const data = await buildTranslationData(entityType as EntityType, source, locale);
+    await db.translation.upsert({
+      where: { entityType_entityId_locale: { entityType, entityId, locale } },
+      update: { data: JSON.stringify(data), auto: true },
+      create: { entityType, entityId, locale, data: JSON.stringify(data), auto: true },
+    });
+  } else {
+    await translateEntity(entityType as EntityType, entityId, source);
+  }
+  logAudit(ctx.user.id, ctx.user.name, 'TRANSLATION_REBUILD', `${entityType}/${entityId} re-traduit automatiquement`);
+  return ok({ ok: true });
+}
+
+// ═══════════════════════════════════════════════════════════════
 // DISPATCH GET / POST / PUT / DELETE
 // ═══════════════════════════════════════════════════════════════
 
@@ -1487,6 +1949,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: stri
         return handleYouTubeMeta(c);
       case 'podcasts':
         if (!second) return handlePodcastsList(c);
+        if (second === 'collections') return handlePodcastCollectionsList();
         throw new HttpError(404, 'Ressource introuvable.');
       case 'pages':
         if (!second) return handlePagesList();
@@ -1512,6 +1975,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: stri
         return handleSettingsGet();
       case 'users':
         return handleUsersList();
+      case 'translations':
+        return handleTranslationsGet(c);
       case 'export':
         return handleExport(c);
       default:
@@ -1544,6 +2009,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path?: str
         if (!second) return handleVideoCreate(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'podcasts':
+        if (second === 'collections' && third === 'reorder') return handlePodcastCollectionReorder(c);
+        if (second === 'collections' && !third) return handlePodcastCollectionCreate(c);
         if (!second) return handlePodcastCreate(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'pages':
@@ -1565,6 +2032,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path?: str
         throw new HttpError(404, 'Ressource introuvable.');
       case 'users':
         if (!second) return handleUserCreate(c);
+        throw new HttpError(404, 'Ressource introuvable.');
+      case 'translations':
+        if (second === 'retranslate') return handleTranslationsRetranslate(c);
+        throw new HttpError(404, 'Ressource introuvable.');
+      case 'push':
+        if (second === 'send') return handlePushSend(c);
         throw new HttpError(404, 'Ressource introuvable.');
       default:
         return jsonError(404, 'Ressource introuvable.');
@@ -1590,9 +2063,11 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ path?: stri
         if (second) return handleMediaUpdate(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'videos':
+        if (second === 'playlists') return handlePlaylistRename(c);
         if (second) return handleVideoUpdate(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'podcasts':
+        if (second === 'collections' && third) return handlePodcastCollectionUpdate(c);
         if (second) return handlePodcastUpdate(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'pages':
@@ -1624,6 +2099,8 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ path?: stri
       case 'users':
         if (second) return handleUserUpdate(c);
         throw new HttpError(404, 'Ressource introuvable.');
+      case 'translations':
+        return handleTranslationsPut(c);
       default:
         return jsonError(404, 'Ressource introuvable.');
     }
@@ -1651,6 +2128,7 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path?: s
         if (second) return handleVideoDelete(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'podcasts':
+        if (second === 'collections' && third) return handlePodcastCollectionDelete(c);
         if (second) return handlePodcastDelete(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'pages':

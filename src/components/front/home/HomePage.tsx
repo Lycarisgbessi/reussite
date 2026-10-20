@@ -22,7 +22,9 @@ import { HomeSkeleton } from '../mag/Skeletons';
 import { AdSlot } from '../ads/AdSlot';
 import { HeroSlider } from './HeroSlider';
 import { CategoryBlocks } from './CategoryBlocks';
-import { frRelative, isValidEmail } from '../mag/helpers';
+import { isValidEmail } from '../mag/helpers';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useI18n } from '@/lib/i18n';
 
 interface HomeData {
   featured: ArticleSummary[];
@@ -35,8 +37,10 @@ interface HomeData {
 }
 
 export function HomePage() {
+  useDocumentTitle(null);
   const settings = useMagazineStore((s) => s.bootstrap?.settings);
   const { toast } = useToast();
+  const { t } = useI18n();
   const [data, setData] = useState<HomeData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [extra, setExtra] = useState<ArticleSummary[]>([]);
@@ -52,7 +56,7 @@ export function HomePage() {
         setData(res);
         publicApi.track('PAGE_VIEW', '/');
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Erreur de chargement'));
+      .catch((e) => setError(e instanceof Error ? e.message : t('article.loadingError')));
   };
 
   useEffect(load, []);
@@ -74,8 +78,8 @@ export function HomePage() {
       setTotalPages(res.totalPages);
     } catch (e) {
       toast({
-        title: 'Erreur',
-        description: e instanceof Error ? e.message : 'Impossible de charger plus d’articles.',
+        title: t('form.error'),
+        description: e instanceof Error ? e.message : t('home.loadMoreError'),
         variant: 'destructive',
       });
     } finally {
@@ -86,10 +90,10 @@ export function HomePage() {
   if (error) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <p className="font-editorial text-xl font-bold">Impossible de charger la page d'accueil</p>
+        <p className="font-editorial text-xl font-bold">{t('home.loadError')}</p>
         <p className="mt-2 text-sm text-muted-foreground">{error}</p>
         <Button className="mt-6" onClick={load}>
-          Réessayer
+          {t('retry')}
         </Button>
       </div>
     );
@@ -105,7 +109,7 @@ export function HomePage() {
         {/* ── Derniers articles + sidebar ──────────────────────── */}
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <SectionTitle eyebrow="Actualités" title="Derniers articles" />
+            <SectionTitle eyebrow={t('home.latestEyebrow')} title={t('home.latestTitle')} />
             <div className="grid gap-5 sm:grid-cols-2">
               {allLatest.map((article, i) => (
                 <Reveal key={article.id} delay={(i % 4) * 60}>
@@ -123,7 +127,7 @@ export function HomePage() {
                   className="min-h-[44px] rounded-full px-8"
                 >
                   {loadingMore ? <Loader2 className="size-4 animate-spin" /> : null}
-                  Plus d'articles
+                  {t('home.moreArticles')}
                 </Button>
               </div>
             ) : null}
@@ -133,8 +137,8 @@ export function HomePage() {
           <aside className="space-y-8">
             <AdSlot placement="SIDEBAR_TOP" />
 
-            <section aria-label="Populaires de la semaine">
-              <SectionTitle eyebrow="Tendance" title="Populaires de la semaine" />
+            <section aria-label={t('home.popularTitle')}>
+              <SectionTitle eyebrow={t('home.popularEyebrow')} title={t('home.popularTitle')} />
               <div>
                 {data.popular.slice(0, 5).map((article, i) => (
                   <ArticleCard key={article.id} article={article} variant="ranked" rank={i + 1} />
@@ -156,8 +160,8 @@ export function HomePage() {
         {/* ── Dernières vidéos ──────────────────────────────────── */}
         {data.latestVideos.length > 0 ? (
           <Reveal className="mt-12">
-            <section aria-label="Dernières vidéos">
-              <SectionTitle eyebrow="Format vidéo" title="Dernières vidéos" seeAllHref="/videos" />
+            <section aria-label={t('home.videosTitle')}>
+              <SectionTitle eyebrow={t('videos.eyebrow')} title={t('home.videosTitle')} seeAllHref="/videos" />
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {data.latestVideos.slice(0, 3).map((video) => (
                   <a
@@ -170,7 +174,7 @@ export function HomePage() {
                         src={video.thumbnailUrl || (video.youtubeId ? `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg` : '')}
                         alt={video.title}
                         className="h-full w-full object-cover"
-                        fallbackLabel="Vidéo"
+                        fallbackLabel={t('home.videoFallback')}
                       />
                       <div
                         className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition-opacity group-hover:opacity-100"
@@ -188,7 +192,7 @@ export function HomePage() {
                     </div>
                     <div className="p-3.5">
                       <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">
-                        {video.playlist || 'Vidéo'}
+                        {video.playlist || t('home.videoFallback')}
                       </p>
                       <h3 className="mt-1 font-editorial text-[15px] font-bold leading-snug transition-colors group-hover:text-primary">
                         <span className="line-clamp-2">{video.title}</span>
@@ -204,8 +208,8 @@ export function HomePage() {
         {/* ── Derniers podcasts ─────────────────────────────────── */}
         {data.latestPodcasts.length > 0 ? (
           <Reveal className="mt-12">
-            <section aria-label="Derniers podcasts">
-              <SectionTitle eyebrow="Format audio" title="Derniers podcasts" seeAllHref="/podcasts" />
+            <section aria-label={t('home.podcastsTitle')}>
+              <SectionTitle eyebrow={t('podcasts.eyebrow')} title={t('home.podcastsTitle')} seeAllHref="/podcasts" />
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {data.latestPodcasts.slice(0, 3).map((pod) => (
                   <a
@@ -218,7 +222,7 @@ export function HomePage() {
                         src={pod.coverImage}
                         alt={pod.title}
                         className="h-full w-full object-cover"
-                        fallbackLabel="Podcast"
+                        fallbackLabel={t('home.podcastFallback')}
                       />
                       <div
                         className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100"
@@ -229,7 +233,7 @@ export function HomePage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-primary">
-                        S{pod.season} · Épisode {pod.episode}
+                        S{pod.season} · {t('podcasts.episode')} {pod.episode}
                       </p>
                       <h3 className="mt-0.5 font-editorial text-[13px] font-bold leading-snug transition-colors group-hover:text-primary sm:text-sm">
                         <span className="line-clamp-2">{pod.title}</span>
@@ -250,10 +254,10 @@ export function HomePage() {
         {/* ── Partenaires / sponsorisés ─────────────────────────── */}
         {data.partners.length > 0 ? (
           <Reveal className="mt-12">
-            <section aria-label="Partenaires">
+            <section aria-label={t('home.partnersTitle')}>
               <SectionTitle
-                eyebrow="Ils nous soutiennent"
-                title={settings?.partnersTitle || 'Nos partenaires'}
+                eyebrow={t('home.partnersEyebrow')}
+                title={settings?.partnersTitle || t('home.partnersTitle')}
               />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {data.partners.slice(0, 6).map((p, i) => (
@@ -264,12 +268,12 @@ export function HomePage() {
                     rel="sponsored noopener noreferrer"
                     onClick={() => publicApi.adClick(p.id).catch(() => {})}
                     className="article-card relative block min-w-0 overflow-hidden rounded-lg border bg-card"
-                    aria-label={`Partenaire ${p.advertiser || ''}`}
+                    aria-label={`${t('home.partner')} ${p.advertiser || ''}`}
                   >
                     {p.imageUrl ? (
                       <SmartImage
                         src={p.imageUrl}
-                        alt={`Partenaire ${p.advertiser || ''}`}
+                        alt={`${t('home.partner')} ${p.advertiser || ''}`}
                         className="aspect-[4/3] w-full object-cover"
                       />
                     ) : (
@@ -279,7 +283,7 @@ export function HomePage() {
                       />
                     )}
                     <span className="absolute left-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/90">
-                      Sponsorisé
+                      {t('ads.sponsored')}
                     </span>
                   </a>
                 ))}
@@ -301,6 +305,7 @@ export function HomePage() {
 function NewsletterCta() {
   const settings = useMagazineStore((s) => s.bootstrap?.settings);
   const { toast } = useToast();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -308,18 +313,18 @@ function NewsletterCta() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail(email)) {
-      toast({ title: 'Adresse email invalide', variant: 'destructive' });
+      toast({ title: t('form.invalidEmail'), variant: 'destructive' });
       return;
     }
     setBusy(true);
     try {
       await publicApi.subscribeNewsletter({ email: email.trim(), source: 'homepage' });
       setDone(true);
-      toast({ title: 'Inscription confirmée', description: 'À très vite dans votre boîte mail !' });
+      toast({ title: t('form.subscribedTitle'), description: t('form.subscribedEmailDesc') });
     } catch (err) {
       toast({
-        title: 'Erreur',
-        description: err instanceof Error ? err.message : 'Réessayez plus tard.',
+        title: t('form.error'),
+        description: err instanceof Error ? err.message : t('form.retryLater'),
         variant: 'destructive',
       });
     } finally {
@@ -329,35 +334,34 @@ function NewsletterCta() {
 
   return (
     <section
-      aria-label="Newsletter"
+      aria-label={t('footer.newsletter')}
       className="overflow-hidden rounded-xl border bg-gradient-to-br from-secondary via-card to-accent/40"
     >
       <div className="grid items-center gap-6 p-6 sm:gap-8 sm:p-8 lg:grid-cols-2">
         <div>
-          <p className="eyebrow text-primary">Newsletter</p>
+          <p className="eyebrow text-primary">{t('footer.newsletter')}</p>
           <h2 className="mt-1 font-editorial text-xl font-bold leading-tight sm:text-2xl">
-            {settings?.newsletterHeroTitle || "L'essentiel business, chaque semaine"}
+            {settings?.newsletterHeroTitle || t('home.newsletterTitle')}
           </h2>
           <p className="mt-2.5 text-[13px] leading-relaxed text-muted-foreground sm:text-sm">
-            {settings?.newsletterHeroText ||
-              'Analyses exclusives, success stories et tendances à ne pas manquer. Rejoignez notre communauté de lecteurs.'}
+            {settings?.newsletterHeroText || t('home.newsletterText')}
           </p>
           <div className="mt-3.5 flex items-center gap-4 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <Users className="size-3.5 text-primary" aria-hidden="true" />
-              +15 000 abonnés
+              {t('home.subscribersCount')}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Mail className="size-3.5 text-primary" aria-hidden="true" />
-              1 email / semaine
+              {t('home.emailsPerWeek')}
             </span>
           </div>
         </div>
         {done ? (
           <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
             <DrawCheck className="size-14" />
-            <p className="font-editorial text-base font-bold">Inscription confirmée !</p>
-            <p className="text-[13px] text-muted-foreground">Merci de rejoindre la communauté Réussite Magazine.</p>
+            <p className="font-editorial text-base font-bold">{t('footer.subscribed')}</p>
+            <p className="text-[13px] text-muted-foreground">{t('home.thanksCommunity')}</p>
           </div>
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-2.5 sm:flex-row">
@@ -365,8 +369,8 @@ function NewsletterCta() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
-              aria-label="Adresse email"
+              placeholder={t('form.emailPlaceholder')}
+              aria-label={t('article.emailLabel')}
               className="h-11 flex-1 rounded-full"
             />
             <Button
@@ -375,7 +379,7 @@ function NewsletterCta() {
               className="cta-pulse h-11 rounded-full px-7 text-sm font-semibold"
             >
               {busy ? <Loader2 className="size-4 animate-spin" /> : <Headphones className="hidden" />}
-              {busy ? 'Inscription…' : "Je m'abonne"}
+              {busy ? t('home.subscribing') : t('home.subscribeCta')}
             </Button>
           </form>
         )}
