@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ChevronRight, Eye, Play } from 'lucide-react';
 import { publicApi } from '@/lib/api';
 import { navigate } from '@/lib/store';
-import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useDocumentTitle, useSocialMeta } from '@/hooks/use-document-title';
 import { useI18n, useFormatDate } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import type { VideoItem } from '@/lib/types';
@@ -20,6 +20,11 @@ export function VideoPage({ id }: { id: string }) {
   const { relative } = useFormatDate();
   const [video, setVideo] = useState<VideoItem | null>(null);
   useDocumentTitle(video?.title || t('videos.title'));
+  useSocialMeta({
+    title: video?.title,
+    description: video?.description || undefined,
+    image: video?.thumbnailUrl || undefined,
+  });
   const [related, setRelated] = useState<VideoItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

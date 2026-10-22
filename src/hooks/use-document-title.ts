@@ -20,3 +20,32 @@ export function useDocumentTitle(title?: string | null, withSuffix = true) {
       : `${SITE} — Trimestriel des décideurs africains`;
   }, [title, withSuffix]);
 }
+
+/** Métadonnées Open Graph / Twitter dynamiques (partage réseaux sociaux). */
+export function useSocialMeta({ title, description, image }: { title?: string; description?: string; image?: string }) {
+  useEffect(() => {
+    const set = (prop: string, content: string, attr: 'property' | 'name' = 'property') => {
+      let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${prop}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, prop);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+    if (title) {
+      set('og:title', title);
+      set('twitter:title', title, 'name');
+    }
+    if (description) {
+      set('og:description', description);
+      set('twitter:description', description, 'name');
+    }
+    if (image) {
+      set('og:image', new URL(image, window.location.origin).toString());
+      set('twitter:image', image, 'name');
+    }
+    set('og:url', window.location.href);
+    set('og:type', 'article');
+  }, [title, description, image]);
+}

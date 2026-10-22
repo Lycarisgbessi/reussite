@@ -22,6 +22,7 @@ import { NewsletterPopup } from './NewsletterPopup';
 import { CookieBanner } from './CookieBanner';
 import { ScrollToTop } from './ScrollToTop';
 import { InstallBanner } from './InstallBanner';
+import { ChatWidget } from './ChatWidget';
 import { AdSlot, InterstitialAd, StickyMobileAd } from './ads/AdSlot';
 import { HomeSkeleton } from './mag/Skeletons';
 import { HomePage } from './home/HomePage';
@@ -148,6 +149,7 @@ export default function FrontOffice() {
       {/* Overlays et éléments flottants */}
       <GlobalPodcastPlayer />
       <InstallBanner />
+      <ChatWidget />
       <SearchOverlay />
       <NewsletterPopup />
       <CookieBanner />

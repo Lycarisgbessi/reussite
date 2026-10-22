@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 // ═══════════════════════════════════════════════════════════════
 // HEADER — Réussite Magazine.
 // Masthead noir permanent (logo officiel + tagline), topbar fine
@@ -17,6 +19,7 @@ import {
   Phone,
   Search,
   Sun,
+  Thermometer,
   Twitter,
   Youtube,
 } from 'lucide-react';
@@ -61,6 +64,34 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
   const todayRaw = formatDate(new Date(), 'EEEE d MMMM yyyy');
   const today = todayRaw ? todayRaw.charAt(0).toUpperCase() + todayRaw.slice(1) : '';
 
+  // ── Barre utilitaire : météo Conakry + fuseau horaire ──
+  const [weather, setWeather] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=9.537&longitude=-13.6785&current=temperature_2m')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d?.current?.temperature_2m != null) {
+          setWeather(`${Math.round(d.current.temperature_2m)}°C`);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const tz = (() => {
+    try {
+      return (
+        Intl.DateTimeFormat('fr', { timeZone: 'Africa/Conakry', timeZoneName: 'short' })
+          .formatToParts(new Date())
+          .find((x) => x.type === 'timeZoneName')?.value ?? 'GMT'
+      );
+    } catch {
+      return 'GMT';
+    }
+  })();
+
   const roots = (bootstrap?.categories || []).filter((c) => !c.parentId && c.showInMenu);
   const tagline = settings?.tagline || 'Trimestriel des décideurs africains';
 
@@ -78,6 +109,20 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
         <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-[11px] text-white/60">
           <div className="flex min-w-0 items-center gap-3">
             <p className="hidden shrink-0 font-medium tracking-wide lg:block">{today || '\u00a0'}</p>
+            <span className="hidden h-3.5 w-px bg-white/15 lg:block" aria-hidden="true" />
+            <span className="hidden shrink-0 items-center gap-1 lg:flex">
+              <Thermometer className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
+              Conakry {weather ?? '…'} · {tz}
+            </span>
+            <span className="hidden h-3.5 w-px bg-white/15 md:block" aria-hidden="true" />
+            <a
+              href="tel:+224628209866"
+              className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white md:flex"
+              aria-label="628 20 98 66"
+            >
+              <Phone className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
+              <span className="shrink-0 font-semibold text-white/80">628 20 98 66</span>
+            </a>
             {settings?.contactPhone && (
               <a
                 href={contactHref('Téléphone', settings.contactPhone)}
@@ -170,15 +215,45 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             aria-label={t('header.homeAria')}
           >
             {/* png transparent : rouge du logo sur fond noir permanent */}
+            <span className="flex flex-col items-center">
             <img
-              src="/images/logo-reussite.png"
-              alt={t('header.logoAlt')}
-              className="h-7 w-auto sm:h-8 md:h-9"
+              src="/images/logo-reussite-white.png"
+              alt="Réussite Magazine"
+              className="h-10 w-auto sm:h-12 md:h-14"
             />
-            <span className="hidden border-l border-white/15 pl-3 text-[10px] font-medium uppercase leading-relaxed tracking-[0.22em] text-white/55 md:block">
-              {tagline}
+            <span className="mt-0.5 text-center text-[8px] font-semibold uppercase tracking-[0.4em] text-white/70 sm:text-[9px]">
+              Trimestriel
+            </span>
+            </span>
+            <span className="hidden flex-col gap-1 border-l border-white/15 pl-4 md:flex">
+              <span className="font-editorial text-sm font-bold italic leading-snug text-white">
+                « Avec Réussite, Osez l'Avenir… »
+              </span>
+              <span className="text-[10px] font-medium uppercase leading-relaxed tracking-[0.22em] text-white/55">
+                {tagline}
+              </span>
             </span>
           </a>
+
+          {/* ── Couvertures des numéros (vitrine du trimestriel) ── */}
+          <div className="mr-2 hidden items-end gap-2 xl:flex" aria-label="Couvertures des numéros">
+            {['cover-business-1.jpg', 'cover-interview-1.jpg', 'cover-dossier-1.jpg'].map((c, i) => (
+              <a
+                key={c}
+                href="#/newsletter"
+                className="group relative block overflow-hidden rounded-sm border border-white/20 shadow-lg transition-transform hover:-translate-y-1"
+                style={{ transform: `rotate(${(i - 1) * 4}deg)` }}
+                aria-label="Numéros du magazine"
+              >
+                <img
+                  src={`/images/${c}`}
+                  alt=""
+                  className="h-20 w-14 object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+              </a>
+            ))}
+          </div>
 
           <div className="flex items-center gap-1">
             <button
@@ -380,6 +455,48 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
           </div>
         </div>
       </div>
+        {/* ── Bande horizontale des rubriques (rouge sang / blanc) ── */}
+        <nav className="overflow-x-auto bg-primary text-white" aria-label="Rubriques">
+          <ul className="mx-auto flex h-10 max-w-7xl items-center whitespace-nowrap px-2">
+            <li>
+              <a
+                href="#/"
+                className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+              >
+                {t('nav.home')}
+              </a>
+            </li>
+            {roots.map((cat) => (
+              <li key={cat.id} className="flex items-center">
+                <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+                <a
+                  href={`#/category/${cat.slug}`}
+                  className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+                >
+                  {cat.name}
+                </a>
+              </li>
+            ))}
+            <li className="flex items-center">
+              <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+              <a
+                href="#/videos"
+                className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+              >
+                {t('nav.videos')}
+              </a>
+            </li>
+            <li>
+              <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+              <a
+                href="#/podcasts"
+                className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+              >
+                {t('nav.podcasts')}
+              </a>
+            </li>
+          </ul>
+        </nav>
     </header>
   );
 }

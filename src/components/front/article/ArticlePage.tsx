@@ -33,7 +33,7 @@ import { SmartImage } from '../mag/SmartImage';
 import { DrawCheck } from '../mag/DrawCheck';
 import { SectionTitle } from '../mag/SectionTitle';
 import { formatViews, initials, isValidEmail } from '../mag/helpers';
-import { useDocumentTitle } from '@/hooks/use-document-title';
+import { useDocumentTitle, useSocialMeta } from '@/hooks/use-document-title';
 import { useI18n, useFormatDate } from '@/lib/i18n';
 import { AdSlot } from '../ads/AdSlot';
 import { BlocksRenderer } from './BlocksRenderer';
@@ -53,6 +53,11 @@ export function ArticlePage({ slug }: { slug: string }) {
 
   const [article, setArticle] = useState<ArticleFull | null>(null);
   useDocumentTitle(article?.title || undefined);
+  useSocialMeta({
+    title: article?.title,
+    description: article?.excerpt || article?.subtitle,
+    image: article?.coverImage || undefined,
+  });
   const [related, setRelated] = useState<import('@/lib/types').ArticleSummary[]>([]);
   const [comments, setComments] = useState<import('@/lib/api').PublicComment[]>([]);
   const [error, setError] = useState<string | null>(null);
