@@ -118,58 +118,13 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
               <Thermometer className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
               Conakry {weather ?? '…'} · {tz}
             </span>
-            <span className="hidden h-3.5 w-px bg-white/15 md:block" aria-hidden="true" />
-            <a
-              href="tel:+224628209866"
-              className="hidden min-w-0 items-center gap-1.5 font-medium text-white md:flex"
-              aria-label="628 20 98 66"
-            >
-              <Phone className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
-              <span className="shrink-0 font-semibold text-white">628 20 98 66</span>
-            </a>
-            {settings?.contactPhone && (
-              <a
-                href={contactHref('Téléphone', settings.contactPhone)}
-                className="hidden min-w-0 items-center gap-1.5 font-medium text-white md:flex"
-                aria-label={t('nav.phoneLabel')}
-              >
-                <Phone className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
-                <span className="truncate">{settings.contactPhone}</span>
-              </a>
-            )}
-            {settings?.contactEmail && (
-              <a
-                href={contactHref('Email', settings.contactEmail)}
-                className="hidden min-w-0 items-center gap-1.5 font-medium text-white lg:flex"
-                aria-label={t('nav.emailLabel')}
-              >
-                <Mail className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
-                <span className="truncate">{settings.contactEmail}</span>
-              </a>
-            )}
           </div>
           {/* Slogan — cellule centrale dédiée (aucune superposition) */}
           <p className="hidden justify-self-center whitespace-nowrap font-editorial text-[12.5px] font-semibold italic tracking-wide text-white xl:block">
             « Avec Réussite, Osez l'Avenir… »
           </p>
           <div className="flex items-center justify-end gap-0.5">
-            {socials.map(({ key, url, Icon, label }) => (
-              <a
-                key={key}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                className="flex size-7 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
-              >
-                <Icon className="size-3.5" fill="currentColor" strokeWidth={0} />
-              </a>
-            ))}
-            <span className="mx-2 h-3.5 w-px bg-white/15" aria-hidden="true" />
-            <a href="#/announcers" className="rounded px-1.5 py-0.5 transition-colors hover:text-white">
-              {t('nav.announcers')}
-            </a>
-            <span className="mx-1.5 h-3.5 w-px bg-white/15" aria-hidden="true" />
+
             {settings?.darkModeEnabled !== false && (
               <button
                 type="button"
