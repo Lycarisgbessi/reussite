@@ -173,60 +173,91 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
           {/* ── Abonnements ── */}
           {plans.length > 0 ? (
             <section aria-label="Abonnements" className="mt-16">
-              <div className="mb-6 text-center">
-                <p className="eyebrow text-primary">Simple, économique</p>
-                <h2 className="font-editorial text-2xl font-bold">S'abonner à Réussite</h2>
+              <div className="mb-10 flex flex-col items-center">
+                <span className="h-1 w-14 rounded-full bg-primary" aria-hidden="true" />
+                <p className="eyebrow mt-4 text-primary">Simple, économique</p>
+                <h2 className="mt-1 text-center font-editorial text-3xl font-bold">S'abonner à Réussite</h2>
                 <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
                   Chaque numéro livré directement par email, dès sa parution, avec les archives numériques.
                 </p>
               </div>
-              <div className={cn('grid gap-6 md:grid-cols-2 lg:grid-cols-3', plans.length === 1 && 'mx-auto max-w-md')}>
-                {plans.map((plan, idx) => (
-                  <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className={cn(
-                      'relative flex flex-col rounded-2xl border-2 p-6',
-                      idx === 1 ? 'border-primary shadow-xl shadow-primary/15' : 'border-border',
-                    )}
-                  >
-                    {idx === 1 ? (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                        Le plus choisi
-                      </span>
-                    ) : null}
-                    <h3 className="font-editorial text-xl font-bold">{plan.name}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">{plan.description}</p>
-                    <p className="mt-4">
-                      <span className="text-3xl font-bold text-primary">{fmtGnf(plan.priceCfa)}</span>
-                      <span className="ml-2 text-sm text-muted-foreground">/ {fmtUsd(plan.priceEur)}</span>
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {plan.issuesCount} numéro(s) sur {plan.durationMonths} mois
-                    </p>
-                    <ul className="mt-4 flex-1 space-y-2.5">
-                      <li className="flex items-start gap-2 text-sm">
-                        <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                        Tous les numéros livrés par email
-                      </li>
-                      {plan.perks.map((perk) => (
-                        <li key={perk} className="flex items-start gap-2 text-sm">
-                          <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                          {perk}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      className={cn('mt-5 rounded-full', idx === 1 && 'bg-primary')}
-                      variant={idx === 1 ? 'default' : 'outline'}
-                      onClick={() => setCheckout({ type: 'SUBSCRIPTION', plan })}
+              <div
+                className={cn(
+                  'grid gap-6 md:grid-cols-2 lg:grid-cols-3',
+                  plans.length === 1 && 'mx-auto max-w-sm',
+                  plans.length === 2 && 'mx-auto max-w-2xl',
+                )}
+              >
+                {plans.map((plan, idx) => {
+                  const featured = idx === 1;
+                  // Une seule liste d'avantages, sans doublon avec le perk « email »
+                  const perks = [
+                    'Tous les numéros livrés par email',
+                    ...plan.perks.filter((p) => !/email/i.test(p)),
+                  ];
+                  return (
+                    <motion.div
+                      key={plan.id}
+                      initial={{ opacity: 0, y: 14 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      className={cn(
+                        'relative flex flex-col overflow-hidden rounded-2xl border bg-card p-7',
+                        featured
+                          ? 'border-primary shadow-xl shadow-primary/15'
+                          : 'border-border hover:border-primary/40 transition-colors',
+                      )}
                     >
-                      Choisir cette formule
-                    </Button>
-                  </motion.div>
-                ))}
+                      {featured ? (
+                        <>
+                          <span className="absolute right-0 top-0 rounded-bl-2xl bg-primary px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                            Le plus choisi
+                          </span>
+                          <span className="absolute inset-x-0 top-0 h-1 bg-primary" aria-hidden="true" />
+                        </>
+                      ) : null}
+                      <h3 className="font-editorial text-xl font-bold">{plan.name}</h3>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {plan.description}
+                      </p>
+
+                      {/* Prix : une seule ligne, équivalence dessous */}
+                      <div className="mt-5 border-y py-4">
+                        <p className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="text-3xl font-bold tracking-tight text-primary">
+                            {fmtGnf(plan.priceCfa)}
+                          </span>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            ≈ {fmtUsd(plan.priceEur)}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Soit {plan.issuesCount} numéro{plan.issuesCount > 1 ? 's' : ''} sur{' '}
+                          {plan.durationMonths} mois
+                        </p>
+                      </div>
+
+                      <ul className="mb-6 mt-5 flex-1 space-y-2.5">
+                        {perks.map((perk) => (
+                          <li key={perk} className="flex items-start gap-2.5 text-sm">
+                            <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                            {perk}
+                          </li>
+                        ))}
+                      </ul>
+                      <Button
+                        className={cn(
+                          'mt-auto min-h-[44px] w-full rounded-full',
+                          featured ? 'bg-primary' : 'outline',
+                        )}
+                        variant={featured ? 'default' : 'outline'}
+                        onClick={() => setCheckout({ type: 'SUBSCRIPTION', plan })}
+                      >
+                        Choisir cette formule
+                      </Button>
+                    </motion.div>
+                  );
+                })}
               </div>
             </section>
           ) : null}
