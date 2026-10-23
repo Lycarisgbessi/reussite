@@ -71,6 +71,8 @@ export async function GET(req: NextRequest) {
           description: issue.description,
           coverUrl: issue.coverUrl,
           previewImages: parseJson<string[]>(issue.previewImages, []),
+          pdfUrl: issue.pdfUrl,
+          previewPages: issue.previewPages,
           priceCfa: issue.priceCfa,
           priceEur: issue.priceEur,
           featured: issue.featured,

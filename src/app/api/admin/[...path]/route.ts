@@ -1804,6 +1804,7 @@ async function handleShopIssueCreate(ctx: Ctx) {
       priceCfa: Math.max(0, Math.trunc(toNumberOr(body.priceCfa, 5000))),
       priceEur: Math.max(0, Math.trunc(toNumberOr(body.priceEur, 8))),
       pdfUrl: String(body.pdfUrl ?? ''),
+      previewPages: Math.min(50, Math.max(0, Math.trunc(toNumberOr(body.previewPages, 5)))),
       featured: toBool(body.featured),
       published: toBool(body.published, true),
     },
@@ -1825,6 +1826,7 @@ async function handleShopIssueUpdate(ctx: Ctx) {
   if (body.priceCfa !== undefined) data.priceCfa = Math.max(0, Math.trunc(toNumberOr(body.priceCfa, existing.priceCfa)));
   if (body.priceEur !== undefined) data.priceEur = Math.max(0, Math.trunc(toNumberOr(body.priceEur, existing.priceEur)));
   if (body.pdfUrl !== undefined) data.pdfUrl = String(body.pdfUrl);
+  if (body.previewPages !== undefined) data.previewPages = Math.min(50, Math.max(0, Math.trunc(toNumberOr(body.previewPages, existing.previewPages))));
   if (body.issueNumber !== undefined) data.issueNumber = Math.max(1, Math.trunc(toNumberOr(body.issueNumber, existing.issueNumber)));
   if (body.featured !== undefined) data.featured = toBool(body.featured);
   if (body.published !== undefined) data.published = toBool(body.published, true);

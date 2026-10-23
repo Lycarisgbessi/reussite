@@ -72,6 +72,41 @@ export async function uploadImageBuffer(
   return result;
 }
 
+/** Upload d'un fichier brut (PDF…) — resource_type « raw », aucun post-traitement. */
+export async function uploadRawBuffer(
+  buffer: Buffer,
+  filename: string,
+): Promise<UploadResult> {
+  const cloud = configure();
+  const result = await new Promise<UploadResult>((resolve, reject) => {
+    const stream = cloud.uploader.upload_stream(
+      {
+        folder: FOLDER,
+        resource_type: 'raw',
+        use_filename: true,
+        unique_filename: true,
+        overwrite: false,
+      },
+      (error, uploaded) => {
+        if (error || !uploaded) {
+          reject(new Error(error?.message || 'Upload Cloudinary échoué'));
+          return;
+        }
+        resolve({
+          url: uploaded.secure_url,
+          publicId: uploaded.public_id,
+          filename,
+          bytes: uploaded.bytes,
+          format: uploaded.format,
+          resourceType: uploaded.resource_type,
+        });
+      },
+    );
+    stream.end(buffer);
+  });
+  return result;
+}
+
 /** Supprime une image Cloudinary à partir de son publicId (silencieux). */
 export async function destroyImage(publicId: string): Promise<boolean> {
   try {

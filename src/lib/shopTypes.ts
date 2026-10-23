@@ -2,7 +2,7 @@
 export interface AdminIssue {
   id: string; slug: string; title: string; issueNumber: number; description: string;
   coverUrl: string; previewImages: string[]; priceCfa: number; priceEur: number;
-  pdfUrl: string; featured: boolean; published: boolean; paidOrders: number;
+  pdfUrl: string; previewPages: number; featured: boolean; published: boolean; paidOrders: number;
   releaseDate: string;
 }
 export interface AdminPlan {

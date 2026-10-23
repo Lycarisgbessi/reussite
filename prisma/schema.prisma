@@ -379,6 +379,7 @@ model MagazineIssue {
   priceCfa    Int      @default(5000) // FCFA
   priceEur    Int      @default(8)    // euros (vente internationale)
   pdfUrl      String   @default("")   // livré après paiement
+  previewPages Int     @default(5)    // nb de pages visibles gratuitement (rendues depuis le PDF)
   featured    Boolean  @default(false)
   published   Boolean  @default(true)
   releaseDate DateTime @default(now())

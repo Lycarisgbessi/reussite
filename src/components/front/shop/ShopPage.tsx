@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SmartImage } from '../mag/SmartImage';
+import { IssuePreviewOverlay } from './IssuePreviewOverlay';
 import { cn } from '@/lib/utils';
 
 export interface ShopIssue {
@@ -35,6 +36,8 @@ export interface ShopIssue {
   featured: boolean;
   releaseDate: string;
   previewImages?: string[];
+  pdfUrl?: string;
+  previewPages?: number;
 }
 
 export interface ShopPlan {
@@ -76,6 +79,10 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
   }, []);
 
   const [checkout, setCheckout] = useState<{ type: 'SINGLE' | 'SUBSCRIPTION'; issue?: ShopIssue; plan?: ShopPlan } | null>(null);
+
+  // ── Suivi de commande : télécharger un numéro payé & validé ──
+  const [track, setTrack] = useState({ order: '', email: '' });
+  const [trackBusy, setTrackBusy] = useState(false);
 
   // Ouvre directement le détail d'un numéro si focusIssueId (depuis l'extérieur)
   const [preview, setPreview] = useState<ShopIssue | null>(null);
@@ -283,8 +290,76 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
         </>
       )}
 
+      {/* ── Suivi de commande : récupérer son numéro ── */}
+      {issues !== null ? (
+        <section aria-label="Suivi de commande" className="mt-16 rounded-2xl border border-primary/25 bg-accent/40 p-6 sm:p-8">
+          <div className="grid items-center gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <div>
+              <span className="h-1 w-14 rounded-full bg-primary" aria-hidden="true" />
+              <h2 className="mt-3 font-editorial text-2xl font-bold">Déjà payé ? Récupérez votre numéro</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Dès que la rédaction valide votre paiement, saisissez ici votre numéro de commande
+                (ex. <strong>RM-XXXXXXXX</strong>) et l'email utilisé lors de l'achat : le PDF du numéro
+                est téléchargé directement dans votre navigateur.
+              </p>
+            </div>
+            <form
+              className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!track.order.trim() || !track.email.trim()) return;
+                setTrackBusy(true);
+                try {
+                  const res = await fetch(
+                    `/api/public/shop/download?order=${encodeURIComponent(track.order.trim())}&email=${encodeURIComponent(track.email.trim())}`,
+                    { redirect: 'follow' },
+                  );
+                  if (!res.ok) {
+                    const body = (await res.json().catch(() => ({}))) as { error?: string };
+                    throw new Error(body.error || `Erreur ${res.status}`);
+                  }
+                  const url = res.url || `/api/public/shop/download?order=${encodeURIComponent(track.order.trim())}&email=${encodeURIComponent(track.email.trim())}`;
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = '';
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : 'Téléchargement impossible.');
+                } finally {
+                  setTrackBusy(false);
+                }
+              }}
+            >
+              <Input
+                value={track.order}
+                onChange={(e) => setTrack((t) => ({ ...t, order: e.target.value }))}
+                placeholder="N° de commande (RM-…)"
+                className="h-11"
+                aria-label="Numéro de commande"
+                required
+              />
+              <Input
+                type="email"
+                value={track.email}
+                onChange={(e) => setTrack((t) => ({ ...t, email: e.target.value }))}
+                placeholder="Email de la commande"
+                className="h-11"
+                aria-label="Email de la commande"
+                required
+              />
+              <Button type="submit" disabled={trackBusy} className="h-11 rounded-full px-6">
+                {trackBusy ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+                Télécharger
+              </Button>
+            </form>
+          </div>
+        </section>
+      ) : null}
+
       {/* ── Détail / aperçu d'un numéro ── */}
-      <IssuePreviewDialog
+      <IssuePreviewOverlay
         issue={preview}
         onClose={() => setPreview(null)}
         onBuy={(issue) => {
@@ -299,139 +374,6 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
         onClose={() => setCheckout(null)}
       />
     </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// DIALOG — aperçu d'un numéro (pages échantillon)
-// ═══════════════════════════════════════════════════════════════
-function IssuePreviewDialog({ issue, onClose, onBuy }: {
-  issue: ShopIssue | null;
-  onClose: () => void;
-  onBuy: (issue: ShopIssue) => void;
-}) {
-  const [page, setPage] = useState(0);
-  const [detail, setDetail] = useState<ShopIssue | null>(null);
-
-  useEffect(() => {
-    setDetail(null);
-    setPage(0);
-    if (!issue) return;
-    let cancelled = false;
-    publicApi
-      .shopIssue(issue.id)
-      .then((res) => {
-        if (!cancelled) setDetail(res.issue);
-      })
-      .catch(() => {
-        if (!cancelled) setDetail(issue);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [issue]);
-
-  if (!issue) return null;
-  const previews = detail?.previewImages ?? [];
-  const current = previews[page];
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-        onClick={onClose}
-        role="dialog"
-        aria-label={`Aperçu — ${issue.title}`}
-      >
-        <motion.div
-          initial={{ scale: 0.95, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.95, y: 20 }}
-          className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-card shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between border-b px-5 py-3.5">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-primary">N° {issue.issueNumber}</p>
-              <h3 className="font-editorial text-lg font-bold leading-tight">{issue.title}</h3>
-            </div>
-            <button type="button" onClick={onClose} aria-label="Fermer" className="flex size-9 items-center justify-center rounded-full hover:bg-secondary">
-              <X className="size-5" />
-            </button>
-          </div>
-
-          <div className="grid gap-6 p-5 md:grid-cols-[240px_1fr]">
-            {/* Couverture */}
-            <div>
-              <div className="overflow-hidden rounded-xl border shadow-lg">
-                <SmartImage src={issue.coverUrl} alt={issue.title} className="aspect-[3/4] w-full object-cover" fallbackLabel="Réussite" />
-              </div>
-              <div className="mt-4 space-y-2">
-                <p className="text-xl font-bold text-primary">{fmtGnf(issue.priceCfa)}</p>
-                <p className="text-xs text-muted-foreground">soit {fmtUsd(issue.priceEur)} — version numérique (PDF)</p>
-                <Button className="w-full rounded-full" onClick={() => onBuy(issue)}>
-                  <ShoppingBag className="size-4" /> Acheter ce numéro
-                </Button>
-              </div>
-            </div>
-
-            {/* Aperçu + description */}
-            <div>
-              {detail === null ? (
-                <div className="skeleton-shimmer h-72 rounded-xl" />
-              ) : previews.length > 0 ? (
-                <div>
-                  <div className="relative overflow-hidden rounded-xl border bg-black/5">
-                    {current ? (
-                      <img src={current} alt={`Page ${page + 1}`} className="max-h-[26rem] w-full object-contain" />
-                    ) : (
-                      <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">Aperçu indisponible</div>
-                    )}
-                    {previews.length > 1 ? (
-                      <>
-                        <button type="button" onClick={() => setPage((p) => (p - 1 + previews.length) % previews.length)} aria-label="Page précédente"
-                          className="absolute left-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white">
-                          <ChevronLeft className="size-5" />
-                        </button>
-                        <button type="button" onClick={() => setPage((p) => (p + 1) % previews.length)} aria-label="Page suivante"
-                          className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow hover:bg-white">
-                          <ChevronRight className="size-5" />
-                        </button>
-                        <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-0.5 text-[11px] text-white">
-                          {page + 1} / {previews.length} · aperçu gratuit
-                        </span>
-                      </>
-                    ) : null}
-                  </div>
-                  {previews.length > 1 ? (
-                    <div className="custom-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1">
-                      {previews.map((img, i) => (
-                        <button key={i} type="button" onClick={() => setPage(i)} aria-label={`Aller à la page ${i + 1}`}
-                          className={cn('h-16 w-12 shrink-0 overflow-hidden rounded border-2', i === page ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100')}>
-                          <img src={img} alt="" className="h-full w-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="flex h-40 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
-                  Aperçu pages non disponible pour ce numéro
-                </div>
-              )}
-
-              <h4 className="mt-5 text-xs font-bold uppercase tracking-wide text-muted-foreground">Dans ce numéro</h4>
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground/90">
-                {issue.description || 'Sommaire détaillé à venir.'}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
   );
 }
 
@@ -648,6 +590,14 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
                   <ol className="mt-2 list-inside list-decimal space-y-1 text-xs leading-relaxed text-muted-foreground">
                     {result.instructions?.steps.map((st, i) => <li key={i}>{st}</li>)}
                   </ol>
+                </div>
+
+                <div className="mt-5 rounded-xl border border-primary/25 bg-primary/5 p-4 text-left">
+                  <p className="text-sm font-bold text-primary">Après validation de votre paiement</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Revenez sur cette page et utilisez le bloc <strong>« Déjà payé ? Récupérez votre numéro »</strong> avec
+                    cette référence et votre email : le PDF du numéro sera téléchargé directement dans votre navigateur.
+                  </p>
                 </div>
 
                 <Button variant="outline" className="mt-5 w-full rounded-full" onClick={onClose}>

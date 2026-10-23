@@ -236,6 +236,20 @@ export const adminApi = {
     }
     return (await res.json()) as { media: MediaItem };
   },
+  /** Import d'un PDF (numéro du magazine) vers Cloudinary — renvoie l'URL brute. */
+  uploadPdf: async (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const headers: Record<string, string> = {};
+    const token = getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch('/api/admin/upload-pdf', { method: 'POST', headers, body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: 'Erreur réseau' }));
+      throw new Error((body as { error?: string }).error || `Erreur ${res.status}`);
+    }
+    return (await res.json()) as { url: string; bytes: number };
+  },
   updateMedia: (id: string, data: Partial<MediaItem>) => request<{ media: MediaItem }>(`/api/admin/media/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteMedia: (id: string) => request<{ ok: boolean }>(`/api/admin/media/${id}`, { method: 'DELETE' }),
 

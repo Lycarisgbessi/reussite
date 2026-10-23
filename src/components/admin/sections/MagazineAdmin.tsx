@@ -35,7 +35,7 @@ import type { AdminIssue as IssueRow, AdminPlan as PlanRow, AdminOrder as OrderR
 
 const EMPTY_ISSUE = {
   title: '', issueNumber: 1, description: '', coverUrl: '', previewImages: [] as string[],
-  priceCfa: 10000, priceEur: 1, pdfUrl: '', featured: false, published: true,
+  priceCfa: 10000, priceEur: 1, pdfUrl: '', previewPages: 5, featured: false, published: true,
 };
 const EMPTY_PLAN = {
   name: '', description: '', durationMonths: 12, issuesCount: 4,
@@ -59,6 +59,7 @@ export function MagazineAdmin() {
   const [deleteIssue, setDeleteIssue] = React.useState<IssueRow | null>(null);
   const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
   const [previewPickerTarget, setPreviewPickerTarget] = React.useState<number | null>(null);
+  const [uploadingPdf, setUploadingPdf] = React.useState(false);
 
   // Formule : dialog
   const [planDialog, setPlanDialog] = React.useState(false);
@@ -98,7 +99,7 @@ export function MagazineAdmin() {
     setIssueForm({
       title: i.title, issueNumber: i.issueNumber, description: i.description, coverUrl: i.coverUrl,
       previewImages: [...i.previewImages], priceCfa: i.priceCfa, priceEur: i.priceEur,
-      pdfUrl: i.pdfUrl, featured: i.featured, published: i.published,
+      pdfUrl: i.pdfUrl, previewPages: i.previewPages ?? 5, featured: i.featured, published: i.published,
     });
     setIssueDialog(true);
   };
@@ -245,7 +246,9 @@ export function MagazineAdmin() {
                     <p className="text-[10px] font-bold uppercase tracking-wide text-primary">N° {i.issueNumber} · {i.paidOrders} vente(s)</p>
                     <p className="line-clamp-2 font-editorial text-sm font-bold">{i.title}</p>
                     <p className="mt-1 text-sm font-semibold text-primary">{fmtGnf(i.priceCfa)} / {i.priceEur} €</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{i.previewImages.length} page(s) d'aperçu</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {i.pdfUrl ? 'PDF ✓' : 'PDF manquant'} · aperçu {i.previewPages ?? 0} page(s)
+                    </p>
                     <div className="mt-auto flex items-center gap-1 pt-2">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openIssueEdit(i)} aria-label="Modifier">
                         <Pencil className="h-3.5 w-3.5" />
@@ -374,8 +377,48 @@ export function MagazineAdmin() {
               <Field label="Prix en dollars ($ USD)">
                 <Input type="number" min={0} value={issueForm.priceEur} onChange={(e) => setIssueForm((f) => ({ ...f, priceEur: Number(e.target.value) || 0 }))} />
               </Field>
-              <Field label="PDF livré après paiement" hint="Lien vers le fichier (Cloudinary, Drive public…).">
-                <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://…" />
+              <Field label="PDF du numéro (livré après paiement)" hint="Fichier PDF importé vers Cloudinary (50 Mo max). L'acheteur le reçoit dès validation du paiement.">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex">
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (!file) return;
+                          if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                            toast({ variant: 'destructive', title: 'Format invalide', description: 'Seuls les fichiers PDF sont acceptés.' });
+                            return;
+                          }
+                          setUploadingPdf(true);
+                          adminApi.uploadPdf(file)
+                            .then((r) => {
+                              setIssueForm((f) => ({ ...f, pdfUrl: r.url }));
+                              toast({ title: 'PDF importé', description: `${Math.round(r.bytes / 1024 / 1024 * 10) / 10} Mo — prêt à être livré aux acheteurs.` });
+                            })
+                            .catch((err) => handleErr(err, 'Import impossible.'))
+                            .finally(() => setUploadingPdf(false));
+                        }}
+                      />
+                      <Button variant="outline" size="sm" disabled={uploadingPdf} asChild>
+                        <span>{uploadingPdf ? <><Loader2 className="h-4 w-4 animate-spin" /> Import…</> : <><BookOpen className="h-4 w-4" /> Importer le PDF</>}</span>
+                      </Button>
+                    </label>
+                    {issueForm.pdfUrl ? (
+                      <a href={issueForm.pdfUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-primary underline underline-offset-2">
+                        Vérifier le fichier
+                      </a>
+                    ) : null}
+                  </div>
+                  <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://… (ou importez le fichier ci-dessus)" />
+                </div>
+              </Field>
+              <Field label="Pages d'aperçu gratuites" hint="Nombre de premières pages visibles dans la boutique (ex. 5 = pages 1 à 5). 0 = aucun aperçu.">
+                <Input type="number" min={0} max={50} value={issueForm.previewPages}
+                  onChange={(e) => setIssueForm((f) => ({ ...f, previewPages: Math.min(50, Math.max(0, Number(e.target.value) || 0)) }))} />
               </Field>
             </div>
 
