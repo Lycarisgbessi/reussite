@@ -47,6 +47,25 @@ export function HomePage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Interviews mises en avant en tête de sidebar (rubrique « Interview »,
+  // repli sur l'ancienne rubrique « Interviews & Portraits »).
+  const [interviews, setInterviews] = useState<ArticleSummary[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    publicApi
+      .articles({ category: 'interview', limit: 4 })
+      .then((r) => {
+        if (cancelled) return;
+        if (r.articles.length > 0) setInterviews(r.articles);
+        else return publicApi.articles({ category: 'interviews-portraits', limit: 4 }).then((r2) => {
+          if (!cancelled) setInterviews(r2.articles);
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = () => {
     setError(null);
@@ -137,6 +156,43 @@ export function HomePage() {
           <aside className="space-y-8">
             <AdSlot placement="SIDEBAR_TOP" />
 
+            {/* ── INTERVIEWS : en tête de colonne, mise en valeur ── */}
+            {interviews.length > 0 ? (
+              <section
+                aria-label="Interviews"
+                className="rounded-xl border border-primary/30 bg-gradient-to-b from-primary/[0.07] to-transparent p-4"
+              >
+                <SectionTitle eyebrow="À découvrir" title="Interviews" />
+                <div className="space-y-1">
+                  {interviews.slice(0, 4).map((article) => (
+                    <a
+                      key={article.id}
+                      href={`#/article/${article.slug}`}
+                      className="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-secondary/70"
+                    >
+                      {article.coverImage ? (
+                        <img
+                          src={article.coverImage}
+                          alt=""
+                          className="h-14 w-20 shrink-0 rounded-md object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                      <div className="min-w-0">
+                        <h3 className="line-clamp-2 font-editorial text-[15px] font-bold leading-snug transition-colors group-hover:text-primary">
+                          {article.title}
+                        </h3>
+                        <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                          {t('common.readMore')} · {article.readingTime} {t('common.min')}
+                        </p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {/* ── TENDANCES : désormais sous les interviews ── */}
             <section aria-label={t('home.popularTitle')}>
               <SectionTitle eyebrow={t('home.popularEyebrow')} title={t('home.popularTitle')} />
               <div>

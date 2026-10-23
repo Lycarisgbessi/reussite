@@ -47,6 +47,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { contactHref } from './mag/helpers';
+import { HeaderCovers } from './HeaderCovers';
 import { cn } from '@/lib/utils';
 
 export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstrap);
@@ -106,7 +107,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
     <header className="sticky top-0 z-50">
       {/* ── Topbar fine (noir permanent) ────────────────────────── */}
       <div className="hidden border-b border-white/10 bg-neutral-950 sm:block">
-        <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-[11px] text-white/60">
+        <div className="relative mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-[11px] text-white/60">
           <div className="flex min-w-0 items-center gap-3">
             <p className="hidden shrink-0 font-medium tracking-wide lg:block">{today || '\u00a0'}</p>
             <span className="hidden h-3.5 w-px bg-white/15 lg:block" aria-hidden="true" />
@@ -144,6 +145,10 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
               </a>
             )}
           </div>
+          {/* Slogan du magazine — placé au centre de la barre utilitaire */}
+          <p className="pointer-events-none absolute inset-x-0 hidden text-center font-editorial text-[12px] font-semibold italic tracking-wide text-white/80 lg:block">
+            « Avec Réussite, Osez l'Avenir… »
+          </p>
           <div className="flex items-center gap-0.5">
             {socials.map(({ key, url, Icon, label }) => (
               <a
@@ -217,45 +222,17 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             aria-label={t('header.homeAria')}
           >
             {/* Charte : fond noir conservé, logo en BLANC pour la visibilité */}
-            <span className="flex shrink-0 flex-col items-center">
-              <img
-                src="/images/logo-reussite-white.png"
-                alt="Réussite Magazine"
-                className="h-16 w-auto sm:h-20 md:h-24 lg:h-28"
-              />
-              <span className="mt-1 text-center text-[9px] font-semibold uppercase tracking-[0.45em] text-white/70 sm:text-[10px]">
-                Trimestriel
-              </span>
-            </span>
-            <span className="hidden min-w-0 flex-col gap-1.5 border-l-2 border-primary/60 pl-5 lg:flex">
-              <span className="font-editorial text-base font-bold italic leading-snug text-white xl:text-lg">
-                « Avec Réussite, Osez l'Avenir… »
-              </span>
-              <span className="text-[10px] font-medium uppercase leading-relaxed tracking-[0.22em] text-white/55">
-                {tagline}
-              </span>
-            </span>
+            {/* Le logo contient déjà « Réussite Magazine » et « Trimestriel
+                des décideurs africains » : aucun texte dupliqué ici. */}
+            <img
+              src="/images/logo-reussite-white.png"
+              alt="Réussite Magazine — Trimestriel des décideurs africains"
+              className="h-16 w-auto shrink-0 sm:h-20 md:h-24 lg:h-28"
+            />
           </a>
 
-          {/* ── Couvertures des numéros (vitrine du trimestriel) ── */}
-          <div className="hidden shrink-0 items-end gap-3 self-end pb-1 md:flex" aria-label="Couvertures des numéros">
-            {['cover-business-1.jpg', 'cover-interview-1.jpg', 'cover-dossier-1.jpg'].map((c, i) => (
-              <a
-                key={c}
-                href="#/newsletter"
-                className="group relative block overflow-hidden rounded-sm border border-white/25 shadow-xl shadow-black/50 transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-0"
-                style={{ transform: `rotate(${(i - 1) * 5}deg)` }}
-                aria-label="Numéros du magazine"
-              >
-                <img
-                  src={`/images/${c}`}
-                  alt=""
-                  className="h-24 w-16 object-cover transition-transform duration-500 group-hover:scale-105 sm:h-28 sm:w-[4.7rem] lg:h-32 lg:w-[5.4rem]"
-                  loading="lazy"
-                />
-              </a>
-            ))}
-          </div>
+          {/* ── Carrousel des unes : défilement auto, centre en exergue ── */}
+          <HeaderCovers />
 
           <div className="flex shrink-0 items-center gap-1">
             <button
@@ -458,7 +435,9 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
         </div>
       </div>
         {/* ── Bande horizontale des rubriques (rouge sang / blanc) ── */}
-        <nav className="overflow-x-auto bg-primary text-white" aria-label="Rubriques">
+        {/* Bande des rubriques — légèrement descendue pour laisser respirer le masthead */}
+        <div className="mt-3 bg-black/0 px-0">
+        <nav className="overflow-x-auto bg-primary text-white shadow-lg shadow-primary/25" aria-label="Rubriques">
           <ul className="mx-auto flex h-11 max-w-7xl items-center gap-1 overflow-x-auto whitespace-nowrap px-3 scrollbar-none">
             <li>
               <a
@@ -499,6 +478,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             </li>
           </ul>
         </nav>
+        </div>
     </header>
   );
 }
