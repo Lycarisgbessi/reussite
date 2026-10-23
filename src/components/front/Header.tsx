@@ -208,25 +208,27 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
 
       {/* ── Masthead noir avec logo officiel ───────────────────── */}
       <div className="border-b-2 border-primary bg-neutral-950">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:h-16">
+        {/* Masthead élargi : logo en GRAND au centre-gauche, couvertures à droite.
+            Hauteur généreuse (h-24 → h-32) pour bien cadrer sans débordement. */}
+        <div className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-6 px-4 sm:h-28 lg:h-32">
           <a
             href="#/"
-            className="flex shrink-0 items-center gap-3"
+            className="flex min-w-0 shrink items-center gap-5"
             aria-label={t('header.homeAria')}
           >
-            {/* png transparent : rouge du logo sur fond noir permanent */}
-            <span className="flex flex-col items-center">
-            <img
-              src="/images/logo-reussite-white.png"
-              alt="Réussite Magazine"
-              className="h-10 w-auto sm:h-12 md:h-14"
-            />
-            <span className="mt-0.5 text-center text-[8px] font-semibold uppercase tracking-[0.4em] text-white/70 sm:text-[9px]">
-              Trimestriel
+            {/* Charte : fond noir conservé, logo en BLANC pour la visibilité */}
+            <span className="flex shrink-0 flex-col items-center">
+              <img
+                src="/images/logo-reussite-white.png"
+                alt="Réussite Magazine"
+                className="h-16 w-auto sm:h-20 md:h-24 lg:h-28"
+              />
+              <span className="mt-1 text-center text-[9px] font-semibold uppercase tracking-[0.45em] text-white/70 sm:text-[10px]">
+                Trimestriel
+              </span>
             </span>
-            </span>
-            <span className="hidden flex-col gap-1 border-l border-white/15 pl-4 md:flex">
-              <span className="font-editorial text-sm font-bold italic leading-snug text-white">
+            <span className="hidden min-w-0 flex-col gap-1.5 border-l-2 border-primary/60 pl-5 lg:flex">
+              <span className="font-editorial text-base font-bold italic leading-snug text-white xl:text-lg">
                 « Avec Réussite, Osez l'Avenir… »
               </span>
               <span className="text-[10px] font-medium uppercase leading-relaxed tracking-[0.22em] text-white/55">
@@ -236,26 +238,26 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
           </a>
 
           {/* ── Couvertures des numéros (vitrine du trimestriel) ── */}
-          <div className="mr-2 hidden items-end gap-2 xl:flex" aria-label="Couvertures des numéros">
+          <div className="hidden shrink-0 items-end gap-3 self-end pb-1 md:flex" aria-label="Couvertures des numéros">
             {['cover-business-1.jpg', 'cover-interview-1.jpg', 'cover-dossier-1.jpg'].map((c, i) => (
               <a
                 key={c}
                 href="#/newsletter"
-                className="group relative block overflow-hidden rounded-sm border border-white/20 shadow-lg transition-transform hover:-translate-y-1"
-                style={{ transform: `rotate(${(i - 1) * 4}deg)` }}
+                className="group relative block overflow-hidden rounded-sm border border-white/25 shadow-xl shadow-black/50 transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-0"
+                style={{ transform: `rotate(${(i - 1) * 5}deg)` }}
                 aria-label="Numéros du magazine"
               >
                 <img
                   src={`/images/${c}`}
                   alt=""
-                  className="h-20 w-14 object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="h-24 w-16 object-cover transition-transform duration-500 group-hover:scale-105 sm:h-28 sm:w-[4.7rem] lg:h-32 lg:w-[5.4rem]"
                   loading="lazy"
                 />
               </a>
             ))}
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -457,11 +459,11 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
       </div>
         {/* ── Bande horizontale des rubriques (rouge sang / blanc) ── */}
         <nav className="overflow-x-auto bg-primary text-white" aria-label="Rubriques">
-          <ul className="mx-auto flex h-10 max-w-7xl items-center whitespace-nowrap px-2">
+          <ul className="mx-auto flex h-11 max-w-7xl items-center gap-1 overflow-x-auto whitespace-nowrap px-3 scrollbar-none">
             <li>
               <a
                 href="#/"
-                className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+                className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
               >
                 {t('nav.home')}
               </a>
@@ -471,7 +473,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
                 <span className="h-4 w-px bg-white/25" aria-hidden="true" />
                 <a
                   href={`#/category/${cat.slug}`}
-                  className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+                  className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
                 >
                   {cat.name}
                 </a>
@@ -481,7 +483,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
               <span className="h-4 w-px bg-white/25" aria-hidden="true" />
               <a
                 href="#/videos"
-                className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+                className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
               >
                 {t('nav.videos')}
               </a>
@@ -490,7 +492,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
               <span className="h-4 w-px bg-white/25" aria-hidden="true" />
               <a
                 href="#/podcasts"
-                className="flex h-full items-center px-3 text-[12px] font-bold uppercase tracking-wider transition-colors hover:bg-white/15"
+                className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
               >
                 {t('nav.podcasts')}
               </a>

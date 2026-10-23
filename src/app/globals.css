@@ -367,3 +367,7 @@ a, button {
   }
   img.smart-fade { opacity: 1; transform: none; }
 }
+
+/* Bande de rubriques : masque la barre de défilement horizontale */
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
