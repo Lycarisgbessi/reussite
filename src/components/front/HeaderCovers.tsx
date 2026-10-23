@@ -26,7 +26,7 @@ export function HeaderCovers() {
 
   return (
     <div
-      className="hidden shrink-0 items-center justify-center md:flex"
+      className="hidden shrink-0 items-center justify-center px-8 md:flex"
       aria-label="Couvertures des numéros"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -47,7 +47,7 @@ export function HeaderCovers() {
                 width: isActive ? '8.6rem' : '5.3rem',
                 height: isActive ? '10.4rem' : '6.6rem',
                 zIndex: 10 - abs,
-                transform: `translateX(calc(-50% + ${d * (isActive ? 0 : 92) + d * 34}px)) rotateY(${d * -32}deg) translateZ(${isActive ? 60 : -40}px) scale(${isActive ? 1 : 0.92})`,
+                transform: `translateX(calc(-50% + ${d * (isActive ? 0 : 86) + d * 30}px)) rotateY(${d * -32}deg) translateZ(${isActive ? 60 : -40}px) scale(${isActive ? 1 : 0.92})`,
                 opacity: isActive ? 1 : 0.75,
                 borderWidth: isActive ? 2 : 1,
               }}

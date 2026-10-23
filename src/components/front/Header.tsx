@@ -107,30 +107,30 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
     <header>
       {/* ── Topbar fine (noir permanent) ────────────────────────── */}
       <div
-        className={`hidden border-b sm:block ${settings?.mastheadBackground === 'black' ? 'border-white/10 bg-neutral-950' : 'border-black/25 bg-[#8B1215]'}`}
+        className={`hidden border-b sm:block ${theme === 'dark' || settings?.mastheadBackground === 'black' ? 'border-white/10 bg-neutral-950' : 'border-black/25 bg-[#8B1215]'}`}
         role="banner"
       >
-        <div className="relative mx-auto flex h-11 max-w-7xl items-center justify-between gap-4 px-4 text-[12px] text-white/60">
+        <div className="relative mx-auto grid h-11 max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 text-[12px] text-white">
           <div className="flex min-w-0 items-center gap-3">
             <p className="hidden shrink-0 font-medium tracking-wide lg:block">{today || '\u00a0'}</p>
             <span className="hidden h-3.5 w-px bg-white/15 lg:block" aria-hidden="true" />
-            <span className="hidden shrink-0 items-center gap-1 lg:flex">
+            <span className="hidden shrink-0 items-center gap-1 font-medium text-white lg:flex">
               <Thermometer className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
               Conakry {weather ?? '…'} · {tz}
             </span>
             <span className="hidden h-3.5 w-px bg-white/15 md:block" aria-hidden="true" />
             <a
               href="tel:+224628209866"
-              className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white md:flex"
+              className="hidden min-w-0 items-center gap-1.5 font-medium text-white md:flex"
               aria-label="628 20 98 66"
             >
               <Phone className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
-              <span className="shrink-0 font-semibold text-white/80">628 20 98 66</span>
+              <span className="shrink-0 font-semibold text-white">628 20 98 66</span>
             </a>
             {settings?.contactPhone && (
               <a
                 href={contactHref('Téléphone', settings.contactPhone)}
-                className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white md:flex"
+                className="hidden min-w-0 items-center gap-1.5 font-medium text-white md:flex"
                 aria-label={t('nav.phoneLabel')}
               >
                 <Phone className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
@@ -140,7 +140,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             {settings?.contactEmail && (
               <a
                 href={contactHref('Email', settings.contactEmail)}
-                className="hidden min-w-0 items-center gap-1.5 transition-colors hover:text-white lg:flex"
+                className="hidden min-w-0 items-center gap-1.5 font-medium text-white lg:flex"
                 aria-label={t('nav.emailLabel')}
               >
                 <Mail className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
@@ -148,11 +148,11 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
               </a>
             )}
           </div>
-          {/* Slogan du magazine — placé au centre de la barre utilitaire */}
-          <p className="pointer-events-none absolute inset-x-0 hidden text-center font-editorial text-[12px] font-semibold italic tracking-wide text-white/80 lg:block">
+          {/* Slogan — cellule centrale dédiée (aucune superposition) */}
+          <p className="hidden justify-self-center whitespace-nowrap font-editorial text-[12.5px] font-semibold italic tracking-wide text-white xl:block">
             « Avec Réussite, Osez l'Avenir… »
           </p>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center justify-end gap-0.5">
             {socials.map(({ key, url, Icon, label }) => (
               <a
                 key={key}
@@ -160,9 +160,9 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                className="flex size-6.5 items-center justify-center rounded-full transition-colors hover:bg-white/10 hover:text-white"
+                className="flex size-7 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
               >
-                <Icon className="size-3" />
+                <Icon className="size-3.5" fill="currentColor" strokeWidth={0} />
               </a>
             ))}
             <span className="mx-2 h-3.5 w-px bg-white/15" aria-hidden="true" />
@@ -217,14 +217,14 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
       {/* ── Masthead noir avec logo officiel ───────────────────── */}
       <div
         className={
-          settings?.mastheadBackground === 'red'
-            ? 'border-b-2 border-black/30 bg-primary'
-            : 'border-b-2 border-primary bg-neutral-950'
+          theme === 'dark' || settings?.mastheadBackground === 'black'
+            ? 'border-b-2 border-primary bg-neutral-950'
+            : 'border-b-2 border-black/30 bg-primary'
         }
       >
         {/* Masthead élargi : logo en GRAND au centre-gauche, couvertures à droite.
             Hauteur généreuse (h-24 → h-32) pour bien cadrer sans débordement. */}
-        <div className="mx-auto flex h-36 max-w-7xl items-center justify-between gap-8 px-5 py-4 sm:h-40 lg:h-48">
+        <div className="mx-auto flex h-36 max-w-7xl items-center justify-between gap-12 px-6 py-4 sm:h-40 lg:h-48">
           <a
             href="#/"
             className="flex min-w-0 shrink items-center gap-5"
