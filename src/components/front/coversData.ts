@@ -1,6 +1,8 @@
 // Couvertures des numéros affichées dans le header (carrousel).
 // Remplacez simplement les fichiers dans public/images et ajustez.
-export const COVERS: { file: string; label: string }[] = [
+export interface CoverItem { file: string; label: string; src?: string }
+
+export const COVERS: CoverItem[] = [
   { file: 'cover-numero-special.jpg', label: 'Numéro spécial' },
   { file: 'cover-interview-1.jpg', label: 'Interview' },
   { file: 'cover-business-1.jpg', label: 'Business' },

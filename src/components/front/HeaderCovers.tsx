@@ -6,20 +6,45 @@
 // (grande, nette, droite), les voisines inclinées en retrait.
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { COVERS, coverSrc } from './coversData';
+import { COVERS, coverSrc, type CoverItem } from './coversData';
+import { publicApi } from '@/lib/api';
 
 export function HeaderCovers() {
+  // Numéros de la boutique (couverture renseignée au dashboard) —
+  // repli sur la liste statique si la boutique est vide.
+  const [covers, setCovers] = useState<CoverItem[]>(COVERS);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    if (paused) return;
-    const id = setInterval(() => setActive((a) => (a + 1) % COVERS.length), 3200);
+    let cancelled = false;
+    publicApi
+      .shop()
+      .then((res) => {
+        if (cancelled) return;
+        const fromShop = res.issues
+          .filter((i) => i.coverUrl)
+          .slice(0, 6)
+          .map((i) => ({ file: '', src: i.coverUrl, label: i.title.length > 26 ? i.title.slice(0, 26) + '…' : i.title }));
+        if (fromShop.length > 0) {
+          setCovers(fromShop);
+          setActive(0);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (paused || covers.length < 2) return;
+    const id = setInterval(() => setActive((a) => (a + 1) % covers.length), 3200);
     return () => clearInterval(id);
-  }, [paused]);
+  }, [paused, covers.length]);
 
   const offset = (i: number) => {
-    const n = COVERS.length;
+    const n = covers.length;
     const d = i - active;
     return ((d + n + n / 2) % n) - n / 2; // -2..2
   };
@@ -32,14 +57,14 @@ export function HeaderCovers() {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="relative flex h-44 items-center lg:h-48" style={{ perspective: '900px' }}>
-        {COVERS.map((c, i) => {
+        {covers.map((c, i) => {
           const d = offset(i);
           const abs = Math.abs(d);
           if (abs > 2) return null;
           const isActive = d === 0;
           return (
             <a
-              key={c.file}
+              key={c.file || (c.src ?? "") + i}
               href="#/newsletter"
               aria-label={`Numéro : ${c.label}`}
               className="absolute left-1/2 block overflow-hidden rounded-[3px] border-white/25 bg-neutral-900 shadow-2xl transition-all duration-700 ease-out"

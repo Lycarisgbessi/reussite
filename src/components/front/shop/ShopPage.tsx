@@ -48,8 +48,8 @@ export interface ShopPlan {
   perks: string[];
 }
 
-const fmtCfa = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
-const fmtEur = (n: number) => `${n} €`;
+const fmtGnf = (n: number) => `${n.toLocaleString('fr-FR')} GNF`;
+const fmtUsd = (n: number) => `${n} $`;
 
 export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
   useDocumentTitle('Boutique — Numéros & Abonnements');
@@ -152,8 +152,8 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
                         {new Date(issue.releaseDate).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                       </p>
                       <div className="mt-3 flex items-baseline gap-2">
-                        <span className="text-lg font-bold text-primary">{fmtCfa(issue.priceCfa)}</span>
-                        <span className="text-xs text-muted-foreground">/ {fmtEur(issue.priceEur)}</span>
+                        <span className="text-lg font-bold text-primary">{fmtGnf(issue.priceCfa)}</span>
+                        <span className="text-xs text-muted-foreground">/ {fmtUsd(issue.priceEur)}</span>
                       </div>
                       <div className="mt-3 flex gap-2">
                         <Button size="sm" className="flex-1 rounded-full" onClick={() => setCheckout({ type: 'SINGLE', issue })}>
@@ -200,8 +200,8 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
                     <h3 className="font-editorial text-xl font-bold">{plan.name}</h3>
                     <p className="mt-1 text-xs text-muted-foreground">{plan.description}</p>
                     <p className="mt-4">
-                      <span className="text-3xl font-bold text-primary">{fmtCfa(plan.priceCfa)}</span>
-                      <span className="ml-2 text-sm text-muted-foreground">/ {fmtEur(plan.priceEur)}</span>
+                      <span className="text-3xl font-bold text-primary">{fmtGnf(plan.priceCfa)}</span>
+                      <span className="ml-2 text-sm text-muted-foreground">/ {fmtUsd(plan.priceEur)}</span>
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {plan.issuesCount} numéro(s) sur {plan.durationMonths} mois
@@ -339,8 +339,8 @@ function IssuePreviewDialog({ issue, onClose, onBuy }: {
                 <SmartImage src={issue.coverUrl} alt={issue.title} className="aspect-[3/4] w-full object-cover" fallbackLabel="Réussite" />
               </div>
               <div className="mt-4 space-y-2">
-                <p className="text-xl font-bold text-primary">{fmtCfa(issue.priceCfa)}</p>
-                <p className="text-xs text-muted-foreground">soit {fmtEur(issue.priceEur)} — version numérique (PDF)</p>
+                <p className="text-xl font-bold text-primary">{fmtGnf(issue.priceCfa)}</p>
+                <p className="text-xs text-muted-foreground">soit {fmtUsd(issue.priceEur)} — version numérique (PDF)</p>
                 <Button className="w-full rounded-full" onClick={() => onBuy(issue)}>
                   <ShoppingBag className="size-4" /> Acheter ce numéro
                 </Button>
@@ -434,7 +434,7 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
   const label = isSingle ? checkout.issue?.title : checkout.plan?.name;
   const amountCfa = isSingle ? checkout.issue!.priceCfa : checkout.plan!.priceCfa;
   const amountEur = isSingle ? checkout.issue!.priceEur : checkout.plan!.priceEur;
-  const amount = form.currency === 'EUR' ? fmtEur(amountEur) : fmtCfa(amountCfa);
+  const amount = form.currency === 'EUR' ? fmtUsd(amountEur) : fmtGnf(amountCfa);
 
   const submit = async () => {
     setBusy(true);
@@ -526,8 +526,8 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
                 <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Devise</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {[
-                    { key: 'XOF', label: `FCFA — ${fmtCfa(amountCfa)}` },
-                    { key: 'EUR', label: `Euros — ${fmtEur(amountEur)}` },
+                    { key: 'XOF', label: `Francs guinéens — ${amountCfa}` },
+                    { key: 'EUR', label: `Dollars ($ USD) — ${fmtUsd(amountEur)}` },
                   ].map((c) => (
                     <button key={c.key} type="button" onClick={() => setForm((f) => ({ ...f, currency: c.key }))}
                       className={cn('rounded-lg border-2 px-3 py-2.5 text-sm font-semibold transition-all',
@@ -607,7 +607,7 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
                 </p>
 
                 <div className="mt-5 space-y-3 rounded-xl border bg-secondary/40 p-4 text-left">
-                  <p className="text-sm font-bold">Finalisez le paiement — {result.currency === 'EUR' ? fmtEur(result.amountEur) : fmtCfa(result.amountCfa)}</p>
+                  <p className="text-sm font-bold">Finalisez le paiement — {result.currency === 'EUR' ? fmtUsd(result.amountEur) : fmtGnf(result.amountCfa)}</p>
                   {result.instructions?.mobileMoney?.map((m) => (
                     <p key={m.network} className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{m.network}</span>

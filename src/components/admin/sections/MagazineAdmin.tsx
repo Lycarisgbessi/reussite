@@ -29,17 +29,17 @@ import {
 } from 'lucide-react';
 import { isAuthError, formatDate } from '../ui/helpers';
 
-const fmtCfa = (n: number) => `${(n ?? 0).toLocaleString('fr-FR')} FCFA`;
+const fmtGnf = (n: number) => `${(n ?? 0).toLocaleString('fr-FR')} GNF`;
 
 import type { AdminIssue as IssueRow, AdminPlan as PlanRow, AdminOrder as OrderRow } from '@/lib/shopTypes';
 
 const EMPTY_ISSUE = {
   title: '', issueNumber: 1, description: '', coverUrl: '', previewImages: [] as string[],
-  priceCfa: 5000, priceEur: 8, pdfUrl: '', featured: false, published: true,
+  priceCfa: 10000, priceEur: 1, pdfUrl: '', featured: false, published: true,
 };
 const EMPTY_PLAN = {
   name: '', description: '', durationMonths: 12, issuesCount: 4,
-  priceCfa: 15000, priceEur: 25, perks: [] as string[], active: true,
+  priceCfa: 100000, priceEur: 10, perks: [] as string[], active: true,
 };
 
 export function MagazineAdmin() {
@@ -244,7 +244,7 @@ export function MagazineAdmin() {
                   <div className="flex min-w-0 flex-1 flex-col">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-primary">N° {i.issueNumber} · {i.paidOrders} vente(s)</p>
                     <p className="line-clamp-2 font-editorial text-sm font-bold">{i.title}</p>
-                    <p className="mt-1 text-sm font-semibold text-primary">{fmtCfa(i.priceCfa)} / {i.priceEur} €</p>
+                    <p className="mt-1 text-sm font-semibold text-primary">{fmtGnf(i.priceCfa)} / {i.priceEur} €</p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">{i.previewImages.length} page(s) d'aperçu</p>
                     <div className="mt-auto flex items-center gap-1 pt-2">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openIssueEdit(i)} aria-label="Modifier">
@@ -281,7 +281,7 @@ export function MagazineAdmin() {
                       <p className="font-editorial text-base font-bold">{p.name}</p>
                       <p className="text-xs text-muted-foreground">{p.issuesCount} numéro(s) · {p.durationMonths} mois</p>
                     </div>
-                    <p className="shrink-0 font-bold text-primary">{fmtCfa(p.priceCfa)}</p>
+                    <p className="shrink-0 font-bold text-primary">{fmtGnf(p.priceCfa)}</p>
                   </div>
                   {p.perks.length > 0 ? (
                     <ul className="mt-2 space-y-1">
@@ -331,7 +331,7 @@ export function MagazineAdmin() {
                     </p>
                     <p className="mt-1 truncate text-sm font-semibold">{o.item}</p>
                     <p className="text-xs text-muted-foreground">
-                      {o.buyerName} · {o.buyerEmail}{o.buyerPhone ? ` · ${o.buyerPhone}` : ''} — {o.currency === 'EUR' ? `${o.amountEur} €` : fmtCfa(o.amountCfa)}
+                      {o.buyerName} · {o.buyerEmail}{o.buyerPhone ? ` · ${o.buyerPhone}` : ''} — {o.currency === 'EUR' ? `${o.amountEur} €` : fmtGnf(o.amountCfa)}
                       {' '}· {formatDate(o.createdAt, true)}
                     </p>
                     {o.paymentRef ? <p className="text-xs text-muted-foreground">Réf. paiement : {o.paymentRef}</p> : null}
@@ -368,10 +368,10 @@ export function MagazineAdmin() {
               <Field label="N° de parution">
                 <Input type="number" min={1} value={issueForm.issueNumber} onChange={(e) => setIssueForm((f) => ({ ...f, issueNumber: Number(e.target.value) || 1 }))} />
               </Field>
-              <Field label="Prix FCFA">
+              <Field label="Prix en francs guinéens (GNF)">
                 <Input type="number" min={0} value={issueForm.priceCfa} onChange={(e) => setIssueForm((f) => ({ ...f, priceCfa: Number(e.target.value) || 0 }))} />
               </Field>
-              <Field label="Prix euros (international)">
+              <Field label="Prix en dollars ($ USD)">
                 <Input type="number" min={0} value={issueForm.priceEur} onChange={(e) => setIssueForm((f) => ({ ...f, priceEur: Number(e.target.value) || 0 }))} />
               </Field>
               <Field label="PDF livré après paiement" hint="Lien vers le fichier (Cloudinary, Drive public…).">
@@ -457,10 +457,10 @@ export function MagazineAdmin() {
               <Field label="Durée (mois)">
                 <Input type="number" min={1} value={planForm.durationMonths} onChange={(e) => setPlanForm((f) => ({ ...f, durationMonths: Number(e.target.value) || 1 }))} />
               </Field>
-              <Field label="Prix FCFA">
+              <Field label="Prix en francs guinéens (GNF)">
                 <Input type="number" min={0} value={planForm.priceCfa} onChange={(e) => setPlanForm((f) => ({ ...f, priceCfa: Number(e.target.value) || 0 }))} />
               </Field>
-              <Field label="Prix euros">
+              <Field label="Prix en dollars ($ USD)">
                 <Input type="number" min={0} value={planForm.priceEur} onChange={(e) => setPlanForm((f) => ({ ...f, priceEur: Number(e.target.value) || 0 }))} />
               </Field>
             </div>
