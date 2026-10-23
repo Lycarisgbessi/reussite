@@ -2,11 +2,13 @@
 // GET /api/public/shop/download?order=RM-XXXX&email=…
 // Téléchargement du PDF d'un numéro ACHETÉ : la commande doit être
 // VALIDÉE (PAID) par la rédaction et l'email doit correspondre.
-// En simulation : redirection 302 vers le PDF hébergé (Cloudinary).
+// Le fichier est streamé par le serveur (fonctionne pour Drive
+// comme pour Cloudinary, avec Content-Disposition attachment).
 // ═══════════════════════════════════════════════════════════════
 import type { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { handleRouteError, HttpError, isValidEmail, rateLimit, clientLimitKey } from '@/lib/server/utils';
+import { directFileUrl } from '../preview/route';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,9 +45,22 @@ export async function GET(req: NextRequest) {
       throw new HttpError(503, 'Le PDF de ce numéro n’est pas encore disponible. La rédaction est informée.');
     }
 
-    return new Response(null, {
-      status: 302,
-      headers: { Location: order.issue.pdfUrl },
+    const upstream = await fetch(directFileUrl(order.issue.pdfUrl), {
+      redirect: 'follow',
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ReussiteMagazine/1.0)' },
+    });
+    if (!upstream.ok || !upstream.body) {
+      throw new HttpError(502, 'Impossible de récupérer le PDF (vérifiez que le partage du fichier est public).');
+    }
+
+    const safeName = `Reussite-${String(order.issue.issueNumber).padStart(2, '0')}.pdf`;
+    return new Response(upstream.body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${safeName}"`,
+        'Cache-Control': 'private, no-store',
+      },
     });
   } catch (err) {
     return handleRouteError(err);

@@ -59,9 +59,11 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
   const previewPages = detail?.previewPages ?? 5;
   const usePdf = Boolean(pdfUrl) && previewPages > 0;
 
-  // Chargement du document pdf.js (uniquement les N premières pages accessibles)
+  // Chargement du document pdf.js (uniquement les N premières pages accessibles).
+  // Le PDF est servi par notre proxy same-origin (/api/public/shop/preview) :
+  // indispensable pour les fichiers Google Drive et Cloudinary (CORS).
   useEffect(() => {
-    if (!usePdf) return;
+    if (!usePdf || !detail) return;
     let cancelled = false;
     setPdfState('loading');
     (async () => {
@@ -69,7 +71,11 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
         const pdfjs = await import('pdfjs-dist');
         pdfjs.GlobalWorkerOptions.workerSrc =
           'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
-        const doc = await pdfjs.getDocument({ url: pdfUrl }).promise;
+        const doc = await pdfjs.getDocument({
+          url: `/api/public/shop/preview?issue=${encodeURIComponent(detail.id)}`,
+          disableRange: false,
+          disableStream: false,
+        }).promise;
         if (cancelled) { doc.destroy().catch(() => undefined); return; }
         pdfDocRef.current = doc;
         setPageCount(Math.min(doc.numPages, previewPages));
@@ -79,7 +85,7 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
       }
     })();
     return () => { cancelled = true; };
-  }, [usePdf, pdfUrl, previewPages]);
+  }, [usePdf, detail, previewPages]);
 
   // Rendu de la page courante dans le canvas
   useEffect(() => {

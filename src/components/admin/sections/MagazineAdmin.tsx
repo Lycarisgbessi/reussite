@@ -379,7 +379,7 @@ export function MagazineAdmin() {
               <Field label="Prix en dollars ($ USD)">
                 <Input type="number" min={0} value={issueForm.priceEur} onChange={(e) => setIssueForm((f) => ({ ...f, priceEur: Number(e.target.value) || 0 }))} />
               </Field>
-              <Field label="PDF du numéro (livré après paiement)" hint="Fichier PDF importé vers Cloudinary (50 Mo max). L'acheteur le reçoit dès validation du paiement.">
+              <Field label="PDF du numéro (livré après paiement)" hint="Collez le lien de partage Google Drive du PDF (doit etre public) — ou importez le fichier. L'acheteur le reçoit dès validation du paiement.">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <input
@@ -418,7 +418,7 @@ export function MagazineAdmin() {
                       </>
                     ) : null}
                   </div>
-                  <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://… (ou utilisez le bouton d'import ci-dessus)" />
+                  <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://drive.google.com/file/d/…/view ou https://…" />
                 </div>
               </Field>
               <Field label="Pages d'aperçu gratuites (générées depuis le PDF)" hint="Aucune image à importer : la boutique affiche elle-même les X premières pages du PDF. Ex. 5 = pages 1 à 5 visibles, le reste réservé aux acheteurs. 0 = aucun aperçu.">
