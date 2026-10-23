@@ -2212,10 +2212,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path?: str
         if (second === 'issues' && !third) return handleShopIssueCreate(c);
         if (second === 'plans' && !third) return handleShopPlanCreate(c);
         throw new HttpError(404, 'Ressource introuvable.');
-      case 'shop':
-        if (second === 'issues' && third) return handleShopIssueDelete(c);
-        if (second === 'plans' && third) return handleShopPlanDelete(c);
-        throw new HttpError(404, 'Ressource introuvable.');
       case 'push':
         if (second === 'send') return handlePushSend(c);
         throw new HttpError(404, 'Ressource introuvable.');
@@ -2337,6 +2333,10 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path?: s
         throw new HttpError(404, 'Ressource introuvable.');
       case 'users':
         if (second) return handleUserDelete(c);
+        throw new HttpError(404, 'Ressource introuvable.');
+      case 'shop':
+        if (second === 'issues' && third) return handleShopIssueDelete(c);
+        if (second === 'plans' && third) return handleShopPlanDelete(c);
         throw new HttpError(404, 'Ressource introuvable.');
       default:
         return jsonError(404, 'Ressource introuvable.');
