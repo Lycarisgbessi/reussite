@@ -78,7 +78,7 @@ export function HeaderCovers() {
               }}
             >
               <img
-                src={coverSrc(c.file)}
+                src={c.src || coverSrc(c.file)}
                 alt={c.label}
                 className="h-full w-full object-cover"
                 loading="lazy"
