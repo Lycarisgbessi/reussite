@@ -59,6 +59,9 @@ export function MagazineAdmin() {
   const [deleteIssue, setDeleteIssue] = React.useState<IssueRow | null>(null);
   const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
   const [uploadingPdf, setUploadingPdf] = React.useState(false);
+  const [uploadingCover, setUploadingCover] = React.useState(false);
+  const pdfInputRef = React.useRef<HTMLInputElement>(null);
+  const coverInputRef = React.useRef<HTMLInputElement>(null);
 
   // Formule : dialog
   const [planDialog, setPlanDialog] = React.useState(false);
@@ -379,40 +382,43 @@ export function MagazineAdmin() {
               <Field label="PDF du numéro (livré après paiement)" hint="Fichier PDF importé vers Cloudinary (50 Mo max). L'acheteur le reçoit dès validation du paiement.">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <label className="inline-flex">
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          e.target.value = '';
-                          if (!file) return;
-                          if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-                            toast({ variant: 'destructive', title: 'Format invalide', description: 'Seuls les fichiers PDF sont acceptés.' });
-                            return;
-                          }
-                          setUploadingPdf(true);
-                          adminApi.uploadPdf(file)
-                            .then((r) => {
-                              setIssueForm((f) => ({ ...f, pdfUrl: r.url }));
-                              toast({ title: 'PDF importé', description: `${Math.round(r.bytes / 1024 / 1024 * 10) / 10} Mo — prêt à être livré aux acheteurs.` });
-                            })
-                            .catch((err) => handleErr(err, 'Import impossible.'))
-                            .finally(() => setUploadingPdf(false));
-                        }}
-                      />
-                      <Button variant="outline" size="sm" disabled={uploadingPdf} asChild>
-                        <span>{uploadingPdf ? <><Loader2 className="h-4 w-4 animate-spin" /> Import…</> : <><BookOpen className="h-4 w-4" /> Importer le PDF</>}</span>
-                      </Button>
-                    </label>
+                    <input
+                      ref={pdfInputRef}
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                          toast({ variant: 'destructive', title: 'Format invalide', description: 'Seuls les fichiers PDF sont acceptés.' });
+                          return;
+                        }
+                        setUploadingPdf(true);
+                        adminApi.uploadPdf(file)
+                          .then((r) => {
+                            setIssueForm((f) => ({ ...f, pdfUrl: r.url }));
+                            toast({ title: 'PDF importé', description: `${Math.max(1, Math.round((r.bytes / 1024 / 1024) * 10) / 10)} Mo — prêt à être livré aux acheteurs.` });
+                          })
+                          .catch((err) => handleErr(err, 'Import impossible.'))
+                          .finally(() => setUploadingPdf(false));
+                      }}
+                    />
+                    <Button type="button" variant="outline" size="sm" disabled={uploadingPdf} onClick={() => pdfInputRef.current?.click()}>
+                      {uploadingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
+                      {issueForm.pdfUrl ? 'Remplacer le PDF' : 'Importer le PDF'}
+                    </Button>
                     {issueForm.pdfUrl ? (
-                      <a href={issueForm.pdfUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-primary underline underline-offset-2">
-                        Vérifier le fichier
-                      </a>
+                      <>
+                        <span className="text-xs font-medium text-emerald-600">PDF attaché ✓</span>
+                        <a href={issueForm.pdfUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-primary underline underline-offset-2">
+                          Vérifier le fichier
+                        </a>
+                      </>
                     ) : null}
                   </div>
-                  <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://… (ou importez le fichier ci-dessus)" />
+                  <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://… (ou utilisez le bouton d'import ci-dessus)" />
                 </div>
               </Field>
               <Field label="Pages d'aperçu gratuites (générées depuis le PDF)" hint="Aucune image à importer : la boutique affiche elle-même les X premières pages du PDF. Ex. 5 = pages 1 à 5 visibles, le reste réservé aux acheteurs. 0 = aucun aperçu.">
@@ -421,16 +427,47 @@ export function MagazineAdmin() {
               </Field>
             </div>
 
-            <Field label="Couverture">
-              <div className="flex items-center gap-3">
-                {issueForm.coverUrl ? (
-                  <img src={issueForm.coverUrl} alt="" className="h-24 w-16 rounded-md border object-cover" />
-                ) : (
-                  <div className="flex h-24 w-16 items-center justify-center rounded-md border border-dashed text-muted-foreground"><BookOpen className="h-5 w-5" /></div>
-                )}
-                <Button variant="outline" size="sm" onClick={() => setCoverPickerOpen(true)}>
-                  {issueForm.coverUrl ? 'Changer' : 'Choisir dans la médiathèque'}
-                </Button>
+            <Field label="Couverture" hint="Importez la une : elle alimente automatiquement le carrousel du header du site.">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  {issueForm.coverUrl ? (
+                    <img src={issueForm.coverUrl} alt="" className="h-24 w-16 rounded-md border object-cover" />
+                  ) : (
+                    <div className="flex h-24 w-16 items-center justify-center rounded-md border border-dashed text-muted-foreground"><BookOpen className="h-5 w-5" /></div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <input
+                      ref={coverInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                          toast({ variant: 'destructive', title: 'Format invalide', description: 'Seules les images sont acceptées.' });
+                          return;
+                        }
+                        setUploadingCover(true);
+                        adminApi.uploadMedia(file, { alt: `Couverture — ${issueForm.title || 'numéro'}` })
+                          .then(({ media }) => {
+                            setIssueForm((f) => ({ ...f, coverUrl: media.url }));
+                            toast({ title: 'Couverture importée', description: 'Elle apparaîtra dans le carrousel du header après enregistrement.' });
+                          })
+                          .catch((err) => handleErr(err, 'Import impossible.'))
+                          .finally(() => setUploadingCover(false));
+                      }}
+                    />
+                    <Button type="button" variant="outline" size="sm" disabled={uploadingCover} onClick={() => coverInputRef.current?.click()}>
+                      {uploadingCover ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      {issueForm.coverUrl ? 'Remplacer l\u2019image' : 'Importer depuis mon ordinateur'}
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setCoverPickerOpen(true)}>
+                      Ou choisir dans la médiathèque
+                    </Button>
+                  </div>
+                </div>
               </div>
             </Field>
 
