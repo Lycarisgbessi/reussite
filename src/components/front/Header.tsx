@@ -106,7 +106,10 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
   return (
     <header>
       {/* ── Topbar fine (noir permanent) ────────────────────────── */}
-      <div className="hidden border-b border-white/10 bg-neutral-950 sm:block" role="banner">
+      <div
+        className={`hidden border-b sm:block ${settings?.mastheadBackground === 'black' ? 'border-white/10 bg-neutral-950' : 'border-black/25 bg-[#8B1215]'}`}
+        role="banner"
+      >
         <div className="relative mx-auto flex h-11 max-w-7xl items-center justify-between gap-4 px-4 text-[12px] text-white/60">
           <div className="flex min-w-0 items-center gap-3">
             <p className="hidden shrink-0 font-medium tracking-wide lg:block">{today || '\u00a0'}</p>

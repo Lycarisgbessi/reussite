@@ -607,7 +607,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   adsNativeEnabled: true,
   adsInterstitialEnabled: false,
   themeColor: '#d97706',
-  mastheadBackground: 'black',
+  mastheadBackground: 'red',
 };
 
 /** Lit les réglages en base et renvoie un objet SiteSettings COMPLET (défauts inclus). */
