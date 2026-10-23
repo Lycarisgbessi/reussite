@@ -32,7 +32,7 @@ import {
   LayoutDashboard, BarChart3, FileText, FolderTree, FileStack, Images,
   MonitorPlay, Mic, Home, ListTree, MessageSquare, Mail, Megaphone,
   Users, Settings, ScrollText, Mountain, ExternalLink, Sun, Moon,
-  LogOut, KeyRound, Menu, Loader2, Newspaper,
+  LogOut, KeyRound, Menu, Loader2, Newspaper, ShoppingBag,
 } from 'lucide-react';
 
 // ─── Navigation (groupes, icônes, sections) ────────────────────
@@ -61,6 +61,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: 'videos', label: 'Vidéos', icon: MonitorPlay },
       { key: 'podcasts', label: 'Podcasts', icon: Mic },
+      { key: 'magazine', label: 'Boutique', icon: ShoppingBag },
     ],
   },
   {

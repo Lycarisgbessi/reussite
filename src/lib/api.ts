@@ -135,7 +135,29 @@ export const publicApi = {
     request<{ favorited: boolean }>(`/api/public/favorites`, { method: 'POST', body: JSON.stringify({ readerKey, articleId }) }),
 
   suggest: (q: string) => request<{ suggestions: { slug: string; title: string; type: string }[] }>(`/api/public/suggest${qs({ q })}`),
+
+  // Boutique
+  shop: () => request<{ issues: ShopIssue[]; plans: ShopPlan[] }>('/api/public/shop'),
+  shopIssue: (idOrSlug: string) => request<{ issue: ShopIssue }>(`/api/public/shop/issues/${encodeURIComponent(idOrSlug)}`),
+  createOrder: (data: {
+    type: 'SINGLE' | 'SUBSCRIPTION'; issueId?: string; planId?: string;
+    buyerName: string; buyerEmail: string; buyerPhone?: string;
+    currency?: string; paymentMethod?: string; paymentRef?: string; note?: string;
+  }) => request<{
+    order: { orderNumber: string; type: string; amountCfa: number; amountEur: number; currency: string; status: string };
+    instructions: { mobileMoney: { network: string; number: string }[]; bankTransfer: string; steps: string[] };
+  }>('/api/public/shop/order', { method: 'POST', body: JSON.stringify(data) }),
 };
+
+export interface ShopIssue {
+  id: string; slug: string; title: string; issueNumber: number; description: string;
+  coverUrl: string; previewImages?: string[]; priceCfa: number; priceEur: number;
+  featured: boolean; releaseDate: string;
+}
+export interface ShopPlan {
+  id: string; name: string; description: string; durationMonths: number; issuesCount: number;
+  priceCfa: number; priceEur: number; perks: string[];
+}
 
 export interface PaginatedVideos { items: VideoItem[]; total: number; page: number; totalPages: number }
 export interface PaginatedPodcasts { items: PodcastItem[]; total: number; page: number; totalPages: number }
@@ -313,6 +335,18 @@ export const adminApi = {
   updateUser: (id: string, data: { name?: string; role?: string; bio?: string; password?: string; active?: boolean; twitter?: string; linkedin?: string; avatarUrl?: string }) =>
     request<{ user: AdminUser }>(`/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id: string) => request<{ ok: boolean }>(`/api/admin/users/${id}`, { method: 'DELETE' }),
+
+  // Boutique
+  shopIssues: () => request<{ issues: import('./shopTypes').AdminIssue[] }>('/api/admin/shop/issues'),
+  shopCreateIssue: (data: Record<string, unknown>) => request<{ issue: import('./shopTypes').AdminIssue }>('/api/admin/shop/issues', { method: 'POST', body: JSON.stringify(data) }),
+  shopUpdateIssue: (id: string, data: Record<string, unknown>) => request<{ issue: import('./shopTypes').AdminIssue }>(`/api/admin/shop/issues/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  shopDeleteIssue: (id: string) => request<{ ok: boolean }>(`/api/admin/shop/issues/${id}`, { method: 'DELETE' }),
+  shopPlans: () => request<{ plans: import('./shopTypes').AdminPlan[] }>('/api/admin/shop/plans'),
+  shopCreatePlan: (data: Record<string, unknown>) => request<{ plan: import('./shopTypes').AdminPlan }>('/api/admin/shop/plans', { method: 'POST', body: JSON.stringify(data) }),
+  shopUpdatePlan: (id: string, data: Record<string, unknown>) => request<{ plan: import('./shopTypes').AdminPlan }>(`/api/admin/shop/plans/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  shopDeletePlan: (id: string) => request<{ ok: boolean }>(`/api/admin/shop/plans/${id}`, { method: 'DELETE' }),
+  shopOrders: (params: { status?: string } = {}) => request<{ orders: import('./shopTypes').AdminOrder[] }>(`/api/admin/shop/orders${qs(params)}`),
+  shopOrderStatus: (id: string, status: string) => request<{ order: unknown }>(`/api/admin/shop/orders/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
   // Traductions (correction manuelle / re-traduction)
   translations: (entityType: string, entityId: string) =>

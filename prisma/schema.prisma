@@ -362,3 +362,66 @@ model PushSubscription {
   auth      String
   createdAt DateTime @default(now())
 }
+
+// ─────────────────────────────────────────────────────────────
+// BOUTIQUE — numéros du magazine, abonnements, commandes.
+// Paiement : instructions Mobile Money/virement + validation par
+// la rédaction (structure prête pour CinetPay/Stripe ensuite).
+// ─────────────────────────────────────────────────────────────
+model MagazineIssue {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  issueNumber Int      @default(1)
+  description String   @default("")
+  coverUrl    String   @default("")
+  previewImages String @default("[]") // JSON: pages d'aperçu [url,…]
+  priceCfa    Int      @default(5000) // FCFA
+  priceEur    Int      @default(8)    // euros (vente internationale)
+  pdfUrl      String   @default("")   // livré après paiement
+  featured    Boolean  @default(false)
+  published   Boolean  @default(true)
+  releaseDate DateTime @default(now())
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SubscriptionPlan {
+  id             String   @id @default(cuid())
+  name           String
+  description    String   @default("")
+  durationMonths Int      @default(12)
+  issuesCount    Int      @default(4)
+  priceCfa       Int      @default(15000)
+  priceEur       Int      @default(25)
+  perks          String   @default("") // JSON: [avantage,…]
+  active         Boolean  @default(true)
+  orders         Order[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique
+  type          String // SINGLE | SUBSCRIPTION
+  issueId       String?
+  issue         MagazineIssue? @relation(fields: [issueId], references: [id], onDelete: SetNull)
+  planId        String?
+  plan          SubscriptionPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  buyerName     String
+  buyerEmail    String
+  buyerPhone    String   @default("")
+  amountCfa     Int      @default(0)
+  amountEur     Int      @default(0)
+  currency      String   @default("XOF")
+  paymentMethod String   @default("MOBILE_MONEY") // MOBILE_MONEY | BANK_TRANSFER | CARD
+  paymentRef    String   @default("") // référence fournie par l'acheteur
+  status        String   @default("PENDING") // PENDING | PAID | CANCELLED
+  note          String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+}

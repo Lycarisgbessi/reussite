@@ -15,6 +15,7 @@ import { ArticleEditor } from './sections/ArticleEditor';
 import { CategoriesAdmin } from './sections/CategoriesAdmin';
 import { MediaAdmin } from './sections/MediaAdmin';
 import { VideosAdmin } from './sections/VideosAdmin';
+import { MagazineAdmin } from './sections/MagazineAdmin';
 import { PodcastsAdmin } from './sections/PodcastsAdmin';
 import { HomepageAdmin } from './sections/HomepageAdmin';
 import { AdsAdmin } from './sections/AdsAdmin';
@@ -136,6 +137,7 @@ export default function AdminApp() {
       case 'pages': return <PagesAdmin />;
       case 'media': return <MediaAdmin />;
       case 'videos': return <VideosAdmin />;
+      case 'magazine': return <MagazineAdmin />;
       case 'podcasts': return <PodcastsAdmin />;
       case 'homepage': return <HomepageAdmin />;
       case 'menus': return <MenusAdmin />;

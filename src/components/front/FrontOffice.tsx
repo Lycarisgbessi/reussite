@@ -38,6 +38,7 @@ import { StaticPageView } from './static/StaticPageView';
 import { NewsletterPage } from './newsletter/NewsletterPage';
 import { FavoritesPage } from './favorites/FavoritesPage';
 import { AnnouncersPage } from './announcers/AnnouncersPage';
+import { ShopPage } from './shop/ShopPage';
 
 export default function FrontOffice() {
   const route = useMagazineStore((s) => s.route);
@@ -107,6 +108,8 @@ export default function FrontOffice() {
         return <AnnouncersPage />;
       case 'favorites':
         return <FavoritesPage />;
+      case 'shop':
+        return <ShopPage focusIssueId={route.query.numero || undefined} />;
       case 'home':
       default:
         return <HomePage />;

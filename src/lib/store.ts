@@ -10,7 +10,7 @@ import type { SiteBootstrap, AdminUser } from './types';
 // ─── Routing par hash ──────────────────────────────────────────
 export interface Route {
   view: 'home' | 'article' | 'category' | 'videos' | 'video' | 'podcasts' | 'search'
-    | 'contact' | 'page' | 'newsletter' | 'announcers' | 'favorites' | 'admin';
+    | 'contact' | 'page' | 'newsletter' | 'announcers' | 'favorites' | 'shop' | 'admin';
   param: string;
   query: Record<string, string>;
 }
@@ -24,7 +24,7 @@ export function parseHash(hash: string): Route {
   if (segs.length === 0) return { view: 'home', param: '', query };
   const view = segs[0];
   const param = segs.slice(1).join('/');
-  const knownViews = ['article', 'category', 'videos', 'video', 'podcasts', 'search', 'contact', 'page', 'newsletter', 'announcers', 'favorites', 'admin'];
+  const knownViews = ['article', 'category', 'videos', 'video', 'podcasts', 'search', 'contact', 'page', 'newsletter', 'announcers', 'favorites', 'shop', 'admin'];
   if (knownViews.includes(view)) return { view: view as Route['view'], param, query };
   return { view: 'home', param: '', query };
 }

@@ -1771,6 +1771,171 @@ async function handlePodcastCollectionReorder(ctx: Ctx) {
   return ok({ ok: true });
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// BOUTIQUE (numéros, formules d'abonnement, commandes)
+// ═══════════════════════════════════════════════════════════════
+
+async function handleShopIssuesList() {
+  const rows = await db.magazineIssue.findMany({ orderBy: { releaseDate: 'desc' } });
+  const orderCounts = await db.order.groupBy({ by: ['issueId'], _count: { id: true }, where: { type: 'SINGLE', status: 'PAID' } });
+  const countMap = new Map(orderCounts.map((o) => [o.issueId ?? '', o._count.id]));
+  return ok({
+    issues: rows.map((i) => ({ ...i, previewImages: JSON.parse(i.previewImages || '[]'), paidOrders: countMap.get(i.id) ?? 0 })),
+  });
+}
+
+async function handleShopIssueCreate(ctx: Ctx) {
+  const body = await readBody<Record<string, unknown>>(ctx.req);
+  const title = String(body.title ?? '').trim();
+  if (!title) throw new HttpError(400, 'Le titre du numéro est obligatoire.');
+  const slug = await findFreeSlug(
+    (sl) => db.magazineIssue.findUnique({ where: { slug: sl }, select: { id: true } }),
+    typeof body.slug === 'string' && body.slug ? body.slug : title,
+  );
+  const created = await db.magazineIssue.create({
+    data: {
+      slug,
+      title,
+      issueNumber: Math.max(1, Math.trunc(toNumberOr(body.issueNumber, 1))),
+      description: String(body.description ?? ''),
+      coverUrl: String(body.coverUrl ?? ''),
+      previewImages: JSON.stringify(Array.isArray(body.previewImages) ? body.previewImages.map(String) : []),
+      priceCfa: Math.max(0, Math.trunc(toNumberOr(body.priceCfa, 5000))),
+      priceEur: Math.max(0, Math.trunc(toNumberOr(body.priceEur, 8))),
+      pdfUrl: String(body.pdfUrl ?? ''),
+      featured: toBool(body.featured),
+      published: toBool(body.published, true),
+    },
+  });
+  logAudit(ctx.user.id, ctx.user.name, 'SHOP_ISSUE_CREATE', `Numéro « ${created.title} » créé`);
+  return ok({ issue: created });
+}
+
+async function handleShopIssueUpdate(ctx: Ctx) {
+  const id = ctx.seg[2];
+  const existing = await db.magazineIssue.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'Numéro introuvable.');
+  const body = await readBody<Record<string, unknown>>(ctx.req);
+  const data: Prisma.MagazineIssueUpdateInput = {};
+  if (body.title !== undefined) data.title = String(body.title).trim() || existing.title;
+  if (body.description !== undefined) data.description = String(body.description);
+  if (body.coverUrl !== undefined) data.coverUrl = String(body.coverUrl);
+  if (body.previewImages !== undefined) data.previewImages = JSON.stringify(Array.isArray(body.previewImages) ? body.previewImages.map(String) : []);
+  if (body.priceCfa !== undefined) data.priceCfa = Math.max(0, Math.trunc(toNumberOr(body.priceCfa, existing.priceCfa)));
+  if (body.priceEur !== undefined) data.priceEur = Math.max(0, Math.trunc(toNumberOr(body.priceEur, existing.priceEur)));
+  if (body.pdfUrl !== undefined) data.pdfUrl = String(body.pdfUrl);
+  if (body.issueNumber !== undefined) data.issueNumber = Math.max(1, Math.trunc(toNumberOr(body.issueNumber, existing.issueNumber)));
+  if (body.featured !== undefined) data.featured = toBool(body.featured);
+  if (body.published !== undefined) data.published = toBool(body.published, true);
+  const updated = await db.magazineIssue.update({ where: { id }, data });
+  logAudit(ctx.user.id, ctx.user.name, 'SHOP_ISSUE_UPDATE', `Numéro « ${updated.title} » modifié`);
+  return ok({ issue: updated });
+}
+
+async function handleShopIssueDelete(ctx: Ctx) {
+  const id = ctx.seg[2];
+  const existing = await db.magazineIssue.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'Numéro introuvable.');
+  await db.magazineIssue.delete({ where: { id } });
+  logAudit(ctx.user.id, ctx.user.name, 'SHOP_ISSUE_DELETE', `Numéro « ${existing.title} » supprimé`);
+  return ok({ ok: true });
+}
+
+async function handleShopPlansList() {
+  const rows = await db.subscriptionPlan.findMany({ orderBy: { priceCfa: 'asc' } });
+  return ok({ plans: rows.map((p) => ({ ...p, perks: JSON.parse(p.perks || '[]') })) });
+}
+
+async function handleShopPlanCreate(ctx: Ctx) {
+  const body = await readBody<Record<string, unknown>>(ctx.req);
+  const name = String(body.name ?? '').trim();
+  if (!name) throw new HttpError(400, 'Le nom de la formule est obligatoire.');
+  const created = await db.subscriptionPlan.create({
+    data: {
+      name,
+      description: String(body.description ?? ''),
+      durationMonths: Math.max(1, Math.trunc(toNumberOr(body.durationMonths, 12))),
+      issuesCount: Math.max(1, Math.trunc(toNumberOr(body.issuesCount, 4))),
+      priceCfa: Math.max(0, Math.trunc(toNumberOr(body.priceCfa, 15000))),
+      priceEur: Math.max(0, Math.trunc(toNumberOr(body.priceEur, 25))),
+      perks: JSON.stringify(Array.isArray(body.perks) ? body.perks.map(String) : []),
+      active: toBool(body.active, true),
+    },
+  });
+  logAudit(ctx.user.id, ctx.user.name, 'SHOP_PLAN_CREATE', `Formule « ${created.name} » créée`);
+  return ok({ plan: created });
+}
+
+async function handleShopPlanUpdate(ctx: Ctx) {
+  const id = ctx.seg[2];
+  const existing = await db.subscriptionPlan.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'Formule introuvable.');
+  const body = await readBody<Record<string, unknown>>(ctx.req);
+  const data: Prisma.SubscriptionPlanUpdateInput = {};
+  if (body.name !== undefined) data.name = String(body.name).trim() || existing.name;
+  if (body.description !== undefined) data.description = String(body.description);
+  if (body.durationMonths !== undefined) data.durationMonths = Math.max(1, Math.trunc(toNumberOr(body.durationMonths, existing.durationMonths)));
+  if (body.issuesCount !== undefined) data.issuesCount = Math.max(1, Math.trunc(toNumberOr(body.issuesCount, existing.issuesCount)));
+  if (body.priceCfa !== undefined) data.priceCfa = Math.max(0, Math.trunc(toNumberOr(body.priceCfa, existing.priceCfa)));
+  if (body.priceEur !== undefined) data.priceEur = Math.max(0, Math.trunc(toNumberOr(body.priceEur, existing.priceEur)));
+  if (body.perks !== undefined) data.perks = JSON.stringify(Array.isArray(body.perks) ? body.perks.map(String) : []);
+  if (body.active !== undefined) data.active = toBool(body.active, true);
+  const updated = await db.subscriptionPlan.update({ where: { id }, data });
+  logAudit(ctx.user.id, ctx.user.name, 'SHOP_PLAN_UPDATE', `Formule « ${updated.name} » modifiée`);
+  return ok({ plan: updated });
+}
+
+async function handleShopPlanDelete(ctx: Ctx) {
+  const id = ctx.seg[2];
+  const existing = await db.subscriptionPlan.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'Formule introuvable.');
+  await db.subscriptionPlan.delete({ where: { id } });
+  logAudit(ctx.user.id, ctx.user.name, 'SHOP_PLAN_DELETE', `Formule « ${existing.name} » supprimée`);
+  return ok({ ok: true });
+}
+
+async function handleShopOrdersList(ctx: Ctx) {
+  const status = ctx.sp.get('status');
+  const where: Prisma.OrderWhereInput = status ? { status: status.toUpperCase() } : {};
+  const rows = await db.order.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: { issue: { select: { title: true } }, plan: { select: { name: true } } },
+    take: 200,
+  });
+  return ok({
+    orders: rows.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      type: o.type,
+      item: o.issue?.title ?? o.plan?.name ?? '—',
+      buyerName: o.buyerName,
+      buyerEmail: o.buyerEmail,
+      buyerPhone: o.buyerPhone,
+      amountCfa: o.amountCfa,
+      amountEur: o.amountEur,
+      currency: o.currency,
+      paymentMethod: o.paymentMethod,
+      paymentRef: o.paymentRef,
+      status: o.status,
+      createdAt: o.createdAt.toISOString(),
+    })),
+  });
+}
+
+async function handleShopOrderStatus(ctx: Ctx) {
+  const id = ctx.seg[2];
+  const body = await readBody<{ status?: string }>(ctx.req);
+  const status = String(body.status ?? '').toUpperCase();
+  if (!['PENDING', 'PAID', 'CANCELLED'].includes(status)) throw new HttpError(400, 'Statut invalide.');
+  const existing = await db.order.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'Commande introuvable.');
+  const updated = await db.order.update({ where: { id }, data: { status } });
+  logAudit(ctx.user.id, ctx.user.name, 'SHOP_ORDER_STATUS', `Commande ${updated.orderNumber} → ${status}`);
+  return ok({ order: { id: updated.id, orderNumber: updated.orderNumber, status: updated.status } });
+}
+
 // ─── Envoi manuel de notification push (back-office) ──────────
 async function handlePushSend(ctx: Ctx) {
   const body = await readBody<{ title?: string; body?: string; url?: string }>(ctx.req);
@@ -1977,6 +2142,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: stri
         return handleUsersList();
       case 'translations':
         return handleTranslationsGet(c);
+      case 'shop':
+        if (second === 'issues') return handleShopIssuesList();
+        if (second === 'plans') return handleShopPlansList();
+        if (second === 'orders') return handleShopOrdersList(c);
+        throw new HttpError(404, 'Ressource introuvable.');
       case 'export':
         return handleExport(c);
       default:
@@ -2035,6 +2205,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ path?: str
         throw new HttpError(404, 'Ressource introuvable.');
       case 'translations':
         if (second === 'retranslate') return handleTranslationsRetranslate(c);
+        throw new HttpError(404, 'Ressource introuvable.');
+      case 'shop':
+        if (second === 'issues' && !third) return handleShopIssueCreate(c);
+        if (second === 'plans' && !third) return handleShopPlanCreate(c);
+        throw new HttpError(404, 'Ressource introuvable.');
+      case 'shop':
+        if (second === 'issues' && third) return handleShopIssueDelete(c);
+        if (second === 'plans' && third) return handleShopPlanDelete(c);
         throw new HttpError(404, 'Ressource introuvable.');
       case 'push':
         if (second === 'send') return handlePushSend(c);
@@ -2101,6 +2279,11 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ path?: stri
         throw new HttpError(404, 'Ressource introuvable.');
       case 'translations':
         return handleTranslationsPut(c);
+      case 'shop':
+        if (second === 'issues' && third) return handleShopIssueUpdate(c);
+        if (second === 'plans' && third) return handleShopPlanUpdate(c);
+        if (second === 'orders' && third) return handleShopOrderStatus(c);
+        throw new HttpError(404, 'Ressource introuvable.');
       default:
         return jsonError(404, 'Ressource introuvable.');
     }

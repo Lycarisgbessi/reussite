@@ -295,6 +295,9 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
                   <a href="#/podcasts" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
                     {t('nav.podcasts')}
                   </a>
+                  <a href="#/shop" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
+                    Boutique
+                  </a>
                   <a href="#/favorites" className="rounded-md px-3 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary">
                     {t('nav.favorites')}
                   </a>
@@ -423,6 +426,14 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
                 </a>
               </li>
             ))}
+            <li>
+              <a
+                href="#/shop"
+                className="flex h-full items-center bg-black/20 px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-black/30"
+              >
+                Boutique
+              </a>
+            </li>
             <li className="flex items-center">
               <span className="h-4 w-px bg-white/25" aria-hidden="true" />
               <a
