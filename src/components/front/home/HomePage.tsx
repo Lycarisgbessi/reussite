@@ -6,7 +6,7 @@
 // CTA newsletter. Chargement paginé « Plus d'articles ».
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useMemo, useState } from 'react';
-import { Clock3, Headphones, Loader2, Mail, Play, Users } from 'lucide-react';
+import { Clock3, Headphones, Loader2, Mail, Play, Users , ChevronRight , Mic } from 'lucide-react';
 import { publicApi } from '@/lib/api';
 import { useMagazineStore } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
@@ -156,36 +156,68 @@ export function HomePage() {
           <aside className="space-y-8">
             <AdSlot placement="SIDEBAR_TOP" />
 
-            {/* ── INTERVIEWS : en tête de colonne, mise en valeur ── */}
+            {/* ── INTERVIEWS — bloc signature, attirance immédiate sans excès ── */}
             {interviews.length > 0 ? (
               <section
                 aria-label="Interviews"
-                className="rounded-xl border border-primary/30 bg-gradient-to-b from-primary/[0.07] to-transparent p-4"
+                className="overflow-hidden rounded-xl border-2 border-primary/70 shadow-lg shadow-primary/10"
               >
-                <SectionTitle eyebrow="À découvrir" title="Interviews" />
-                <div className="space-y-1">
-                  {interviews.slice(0, 4).map((article) => (
+                {/* Bandeau rouge signature */}
+                <header className="flex items-center justify-between gap-2 bg-primary px-4 py-2.5 text-white">
+                  <span className="flex items-center gap-2">
+                    <Mic className="size-4" fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                    <span className="text-[13px] font-bold uppercase tracking-[0.18em]">Interviews</span>
+                  </span>
+                  <a href="#/category/interview" className="text-[11px] font-semibold uppercase tracking-wide text-white/85 transition-colors hover:text-white">
+                    {t('common.seeAll')} →
+                  </a>
+                </header>
+
+                {/* Interview vedette : grande image + titre éditorial */}
+                {(() => {
+                  const hero = interviews[0];
+                  return (
+                    <a href={`#/article/${hero.slug}`} className="group relative block">
+                      {hero.coverImage ? (
+                        <img
+                          src={hero.coverImage}
+                          alt={hero.title}
+                          className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="aspect-[16/10] w-full bg-gradient-to-br from-primary/25 to-secondary" />
+                      )}
+                      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" aria-hidden="true" />
+                      <span className="absolute inset-x-0 bottom-0 block p-3.5">
+                        <span className="mb-1 block font-editorial text-2xl leading-none text-primary" aria-hidden="true">“</span>
+                        <span className="line-clamp-3 block font-editorial text-[15.5px] font-bold leading-snug text-white">
+                          {hero.title}
+                        </span>
+                        <span className="mt-1.5 block text-[11px] font-medium uppercase tracking-wide text-white/80">
+                          {hero.author?.name} · {hero.readingTime} {t('common.min')}
+                        </span>
+                      </span>
+                      <span className="absolute right-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-md">
+                        À la une
+                      </span>
+                    </a>
+                  );
+                })()}
+
+                {/* Interviews suivantes : liste fine */}
+                <div className="divide-y divide-border/60 bg-card">
+                  {interviews.slice(1, 4).map((article) => (
                     <a
                       key={article.id}
                       href={`#/article/${article.slug}`}
-                      className="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-secondary/70"
+                      className="group flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-secondary/60"
                     >
-                      {article.coverImage ? (
-                        <img
-                          src={article.coverImage}
-                          alt=""
-                          className="h-14 w-20 shrink-0 rounded-md object-cover"
-                          loading="lazy"
-                        />
-                      ) : null}
-                      <div className="min-w-0">
-                        <h3 className="line-clamp-2 font-editorial text-[15px] font-bold leading-snug transition-colors group-hover:text-primary">
-                          {article.title}
-                        </h3>
-                        <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                          {t('common.readMore')} · {article.readingTime} {t('common.min')}
-                        </p>
-                      </div>
+                      <Mic className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                      <h3 className="line-clamp-2 min-w-0 flex-1 text-[13.5px] font-semibold leading-snug transition-colors group-hover:text-primary">
+                        {article.title}
+                      </h3>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
                     </a>
                   ))}
                 </div>
