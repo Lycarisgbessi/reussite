@@ -122,6 +122,36 @@ export function SettingsAdmin() {
           <Field label="Nom du site">
             <Input value={settings.siteName} onChange={(e) => patch({ siteName: e.target.value })} />
           </Field>
+          <Field label="Fond de la zone d'en-tête" hint="Le logo reste blanc sur les deux fonds (charte rouge sang / blanc).">
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => patch({ mastheadBackground: 'black' })}
+                className={`flex flex-1 items-center gap-3 rounded-lg border-2 p-3 text-left transition-all ${settings.mastheadBackground === 'black' ? 'border-primary ring-2 ring-primary/25' : 'border-border hover:border-primary/50'}`}
+              >
+                <span className="flex h-12 w-20 items-center justify-center rounded bg-neutral-950">
+                  <span className="font-editorial text-sm font-bold text-white">Réussite</span>
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold">Noir</span>
+                  <span className="block text-xs text-muted-foreground">Classique — par défaut</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => patch({ mastheadBackground: 'red' })}
+                className={`flex flex-1 items-center gap-3 rounded-lg border-2 p-3 text-left transition-all ${settings.mastheadBackground === 'red' ? 'border-primary ring-2 ring-primary/25' : 'border-border hover:border-primary/50'}`}
+              >
+                <span className="flex h-12 w-20 items-center justify-center rounded bg-[#A4161A]">
+                  <span className="font-editorial text-sm font-bold text-white">Réussite</span>
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold">Rouge sang</span>
+                  <span className="block text-xs text-muted-foreground">Variante festive</span>
+                </span>
+              </button>
+            </div>
+          </Field>
           <Field label="Slogan / tagline" hint="Affiché sous le logo dans l’en-tête du site.">
             <Input value={settings.tagline} onChange={(e) => patch({ tagline: e.target.value })} />
           </Field>

@@ -31,7 +31,7 @@ export function HeaderCovers() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative flex h-36 items-center lg:h-40" style={{ perspective: '900px' }}>
+      <div className="relative flex h-44 items-center lg:h-48" style={{ perspective: '900px' }}>
         {COVERS.map((c, i) => {
           const d = offset(i);
           const abs = Math.abs(d);
@@ -44,8 +44,8 @@ export function HeaderCovers() {
               aria-label={`Numéro : ${c.label}`}
               className="absolute left-1/2 block overflow-hidden rounded-[3px] border-white/25 bg-neutral-900 shadow-2xl transition-all duration-700 ease-out"
               style={{
-                width: isActive ? '7.4rem' : '5rem',
-                height: isActive ? '8.9rem' : '6rem',
+                width: isActive ? '8.6rem' : '5.3rem',
+                height: isActive ? '10.4rem' : '6.6rem',
                 zIndex: 10 - abs,
                 transform: `translateX(calc(-50% + ${d * (isActive ? 0 : 92) + d * 34}px)) rotateY(${d * -32}deg) translateZ(${isActive ? 60 : -40}px) scale(${isActive ? 1 : 0.92})`,
                 opacity: isActive ? 1 : 0.75,

@@ -335,6 +335,8 @@ export interface SiteSettings {
   adsNativeEnabled: boolean;
   adsInterstitialEnabled: boolean;
   themeColor: string;
+  /** Fond de la zone masthead : 'black' (défaut) ou 'red'. */
+  mastheadBackground: 'black' | 'red';
 }
 
 // ─── Flash info ────────────────────────────────────────────────

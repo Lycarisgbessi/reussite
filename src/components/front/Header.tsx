@@ -104,10 +104,10 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
   ].filter((s) => s.url);
 
   return (
-    <header className="sticky top-0 z-50">
+    <header>
       {/* ── Topbar fine (noir permanent) ────────────────────────── */}
-      <div className="hidden border-b border-white/10 bg-neutral-950 sm:block">
-        <div className="relative mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-[11px] text-white/60">
+      <div className="hidden border-b border-white/10 bg-neutral-950 sm:block" role="banner">
+        <div className="relative mx-auto flex h-11 max-w-7xl items-center justify-between gap-4 px-4 text-[12px] text-white/60">
           <div className="flex min-w-0 items-center gap-3">
             <p className="hidden shrink-0 font-medium tracking-wide lg:block">{today || '\u00a0'}</p>
             <span className="hidden h-3.5 w-px bg-white/15 lg:block" aria-hidden="true" />
@@ -212,10 +212,16 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
       </div>
 
       {/* ── Masthead noir avec logo officiel ───────────────────── */}
-      <div className="border-b-2 border-primary bg-neutral-950">
+      <div
+        className={
+          settings?.mastheadBackground === 'red'
+            ? 'border-b-2 border-black/30 bg-primary'
+            : 'border-b-2 border-primary bg-neutral-950'
+        }
+      >
         {/* Masthead élargi : logo en GRAND au centre-gauche, couvertures à droite.
             Hauteur généreuse (h-24 → h-32) pour bien cadrer sans débordement. */}
-        <div className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-6 px-4 sm:h-28 lg:h-32">
+        <div className="mx-auto flex h-36 max-w-7xl items-center justify-between gap-8 px-5 py-4 sm:h-40 lg:h-48">
           <a
             href="#/"
             className="flex min-w-0 shrink items-center gap-5"
@@ -227,7 +233,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             <img
               src="/images/logo-reussite-white.png"
               alt="Réussite Magazine — Trimestriel des décideurs africains"
-              className="h-16 w-auto shrink-0 sm:h-20 md:h-24 lg:h-28"
+              className="h-24 w-auto shrink-0 sm:h-28 md:h-32 lg:h-36"
             />
           </a>
 
@@ -435,9 +441,10 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
         </div>
       </div>
         {/* ── Bande horizontale des rubriques (rouge sang / blanc) ── */}
-        {/* Bande des rubriques — légèrement descendue pour laisser respirer le masthead */}
-        <div className="mt-3 bg-black/0 px-0">
-        <nav className="overflow-x-auto bg-primary text-white shadow-lg shadow-primary/25" aria-label="Rubriques">
+        {/* Bande des rubriques — SEUL élément fixe au scroll (lecture
+            préservée : tout le reste défile normalement). */}
+        <div className="mt-3 px-0">
+        <nav className="sticky top-0 z-50 overflow-x-auto bg-primary text-white shadow-lg shadow-primary/25" aria-label="Rubriques">
           <ul className="mx-auto flex h-11 max-w-7xl items-center gap-1 overflow-x-auto whitespace-nowrap px-3 scrollbar-none">
             <li>
               <a
