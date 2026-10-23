@@ -58,7 +58,6 @@ export function MagazineAdmin() {
   const [issueForm, setIssueForm] = React.useState({ ...EMPTY_ISSUE });
   const [deleteIssue, setDeleteIssue] = React.useState<IssueRow | null>(null);
   const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
-  const [previewPickerTarget, setPreviewPickerTarget] = React.useState<number | null>(null);
   const [uploadingPdf, setUploadingPdf] = React.useState(false);
 
   // Formule : dialog
@@ -361,7 +360,7 @@ export function MagazineAdmin() {
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-editorial">{editingIssue ? 'Modifier le numéro' : 'Nouveau numéro en vente'}</DialogTitle>
-            <DialogDescription>Couverture, prix, pages d'aperçu (via médiathèque) et sommaire.</DialogDescription>
+            <DialogDescription>Couverture, PDF du numéro, prix et sommaire. L'aperçu boutique se génère automatiquement depuis le PDF.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -416,7 +415,7 @@ export function MagazineAdmin() {
                   <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://… (ou importez le fichier ci-dessus)" />
                 </div>
               </Field>
-              <Field label="Pages d'aperçu gratuites" hint="Nombre de premières pages visibles dans la boutique (ex. 5 = pages 1 à 5). 0 = aucun aperçu.">
+              <Field label="Pages d'aperçu gratuites (générées depuis le PDF)" hint="Aucune image à importer : la boutique affiche elle-même les X premières pages du PDF. Ex. 5 = pages 1 à 5 visibles, le reste réservé aux acheteurs. 0 = aucun aperçu.">
                 <Input type="number" min={0} max={50} value={issueForm.previewPages}
                   onChange={(e) => setIssueForm((f) => ({ ...f, previewPages: Math.min(50, Math.max(0, Number(e.target.value) || 0)) }))} />
               </Field>
@@ -432,26 +431,6 @@ export function MagazineAdmin() {
                 <Button variant="outline" size="sm" onClick={() => setCoverPickerOpen(true)}>
                   {issueForm.coverUrl ? 'Changer' : 'Choisir dans la médiathèque'}
                 </Button>
-              </div>
-            </Field>
-
-            <Field label="Pages d'aperçu (échantillon gratuit)" hint="3 à 6 pages : sommaire, édito, un article phare.">
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  {issueForm.previewImages.map((img, idx) => (
-                    <span key={idx} className="relative">
-                      <img src={img} alt="" className="h-20 w-14 rounded border object-cover" />
-                      <button type="button" onClick={() => setIssueForm((f) => ({ ...f, previewImages: f.previewImages.filter((_, j) => j !== idx) }))}
-                        aria-label="Retirer" className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-destructive text-white">
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                  <button type="button" onClick={() => setPreviewPickerTarget(issueForm.previewImages.length)}
-                    className="flex h-20 w-14 items-center justify-center rounded border border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
               </div>
             </Field>
 
@@ -556,15 +535,7 @@ export function MagazineAdmin() {
         onSelect={(m) => { setIssueForm((f) => ({ ...f, coverUrl: m.url })); setCoverPickerOpen(false); }}
         title="Couverture du numéro"
       />
-      <MediaPicker
-        open={previewPickerTarget !== null}
-        onOpenChange={(o) => { if (!o) setPreviewPickerTarget(null); }}
-        onSelect={(m) => {
-          setIssueForm((f) => ({ ...f, previewImages: [...f.previewImages, m.url] }));
-          setPreviewPickerTarget(null);
-        }}
-        title="Page d'aperçu"
-      />
+      
 
       {/* Confirmations */}
       <ConfirmDialog
