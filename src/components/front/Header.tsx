@@ -405,22 +405,22 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
         {/* Bande des rubriques — SEUL élément fixe au scroll (lecture
             préservée : tout le reste défile normalement). */}
         <div className="mt-3 px-0">
-        <nav className="sticky top-0 z-50 overflow-x-auto bg-primary text-white shadow-lg shadow-primary/25" aria-label="Rubriques">
-          <ul className="mx-auto flex h-11 max-w-7xl items-center gap-1 overflow-x-auto whitespace-nowrap px-3 scrollbar-none">
+        <nav className="sticky top-0 z-50 bg-primary text-white shadow-lg shadow-primary/25" aria-label="Rubriques">
+          <ul className="mx-auto flex h-11 max-w-7xl items-center justify-between gap-0 overflow-x-auto whitespace-nowrap px-2 scrollbar-none xl:overflow-visible lg:px-4">
             <li>
               <a
                 href="#/"
-                className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
+                className="flex h-full items-center px-1.5 text-[10.5px] font-bold uppercase tracking-tight transition-colors hover:bg-white/20 sm:px-2.5 sm:text-[11.5px] lg:px-3"
               >
                 {t('nav.home')}
               </a>
             </li>
             {roots.map((cat) => (
               <li key={cat.id} className="flex items-center">
-                <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+                <span className="hidden h-4 w-px bg-white/25 lg:block" aria-hidden="true" />
                 <a
                   href={`#/category/${cat.slug}`}
-                  className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
+                  className="flex h-full items-center px-1.5 text-[10.5px] font-bold uppercase tracking-tight transition-colors hover:bg-white/20 sm:px-2.5 sm:text-[11.5px] lg:px-3"
                 >
                   {cat.name}
                 </a>
@@ -429,25 +429,25 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             <li>
               <a
                 href="#/shop"
-                className="flex h-full items-center bg-black/20 px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-black/30"
+                className="flex h-full items-center bg-black/20 px-1.5 text-[10.5px] font-bold uppercase tracking-tight transition-colors hover:bg-black/30 sm:px-2.5 sm:text-[11.5px] lg:px-3"
               >
                 Boutique
               </a>
             </li>
             <li className="flex items-center">
-              <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+              <span className="hidden h-4 w-px bg-white/25 lg:block" aria-hidden="true" />
               <a
                 href="#/videos"
-                className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
+                className="flex h-full items-center px-1.5 text-[10.5px] font-bold uppercase tracking-tight transition-colors hover:bg-white/20 sm:px-2.5 sm:text-[11.5px] lg:px-3"
               >
                 {t('nav.videos')}
               </a>
             </li>
             <li>
-              <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+              <span className="hidden h-4 w-px bg-white/25 lg:block" aria-hidden="true" />
               <a
                 href="#/podcasts"
-                className="flex h-full items-center px-3.5 text-[12.5px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
+                className="flex h-full items-center px-1.5 text-[10.5px] font-bold uppercase tracking-tight transition-colors hover:bg-white/20 sm:px-2.5 sm:text-[11.5px] lg:px-3"
               >
                 {t('nav.podcasts')}
               </a>

@@ -371,3 +371,41 @@ a, button {
 /* Bande de rubriques : masque la barre de défilement horizontale */
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* ── Slides publicitaires : fondu enchaîné à la rotation ── */
+@keyframes ad-fade-in {
+  from { opacity: 0; transform: scale(1.015); }
+  to { opacity: 1; transform: scale(1); }
+}
+.ad-fade { animation: ad-fade-in 700ms ease-out both; }
+
+/* ── Balayage interviews : entrée latérale des items ── */
+@keyframes interview-sweep-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.interview-sweep { animation: interview-sweep-in 480ms ease-out both; }
+@keyframes sweep-arrow {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+/* ── Encart magazines coin bas-gauche : bump + halo ── */
+@keyframes teaser-bump-kf {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.05) rotate(-1.2deg); }
+  60% { transform: scale(0.99) rotate(0.6deg); }
+}
+.teaser-bump { animation: teaser-bump-kf 700ms ease-in-out; }
+@keyframes teaser-glow-kf {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(164,22,26,0.0); }
+  50% { box-shadow: 0 0 14px 2px rgba(164,22,26,0.28); }
+}
+.teaser-glow { animation: teaser-glow-kf 4.2s ease-in-out infinite; }
+
+/* ── Badge vidéo du hero : légère respiration pour capter l'œil ── */
+@keyframes hero-video-pop-kf {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(164,22,26,0.0); }
+  50% { box-shadow: 0 0 16px 3px rgba(164,22,26,0.45); }
+}
+.hero-video-pop { animation: hero-video-pop-kf 3s ease-in-out infinite; }

@@ -53,11 +53,11 @@ export function HomePage() {
   useEffect(() => {
     let cancelled = false;
     publicApi
-      .articles({ category: 'interview', limit: 4 })
+      .articles({ category: 'interview', limit: 12 })
       .then((r) => {
         if (cancelled) return;
         if (r.articles.length > 0) setInterviews(r.articles);
-        else return publicApi.articles({ category: 'interviews-portraits', limit: 4 }).then((r2) => {
+        else return publicApi.articles({ category: 'interviews-portraits', limit: 12 }).then((r2) => {
           if (!cancelled) setInterviews(r2.articles);
         });
       })
@@ -205,22 +205,9 @@ export function HomePage() {
                   );
                 })()}
 
-                {/* Interviews suivantes : liste fine */}
-                <div className="divide-y divide-border/60 bg-card">
-                  {interviews.slice(1, 4).map((article) => (
-                    <a
-                      key={article.id}
-                      href={`#/article/${article.slug}`}
-                      className="group flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-secondary/60"
-                    >
-                      <Mic className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                      <h3 className="line-clamp-2 min-w-0 flex-1 text-[13.5px] font-semibold leading-snug transition-colors group-hover:text-primary">
-                        {article.title}
-                      </h3>
-                      <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
-                    </a>
-                  ))}
-                </div>
+                {/* Interviews suivantes : balayage animé — fenêtre de 3 qui
+                    défile pour ramener les anciennes interviews à la vue */}
+                <InterviewTicker items={interviews.slice(1)} />
               </section>
             ) : null}
 
@@ -385,6 +372,62 @@ export function HomePage() {
           <NewsletterCta />
         </Reveal>
       </div>
+    </div>
+  );
+}
+
+
+// ─── Balayage des interviews : fenêtre de 3 qui tourne en continu ──
+function InterviewTicker({ items }: { items: ArticleSummary[] }) {
+  const { t } = useI18n();
+  const [offset, setOffset] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const visible = 3;
+  const n = items.length;
+
+  useEffect(() => {
+    if (paused || n <= visible) return;
+    const id = setInterval(() => setOffset((o) => (o + 1) % n), 3800);
+    return () => clearInterval(id);
+  }, [paused, n]);
+
+  if (n === 0) return null;
+
+  // Fenêtre cyclique : slice autour de offset
+  const windowItems = Array.from({ length: Math.min(visible, n) }, (_, k) => items[(offset + k) % n]);
+
+  return (
+    <div
+      className="relative divide-y divide-border/60 overflow-hidden bg-card"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      aria-label="Autres interviews"
+    >
+      {windowItems.map((article, k) => (
+        <a
+          key={`${article.id}-${offset}-${k}`}
+          href={`#/article/${article.slug}`}
+          className="interview-sweep group flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-secondary/60"
+          style={{ animationDelay: `${k * 90}ms` }}
+        >
+          <Mic className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+          <h3 className="line-clamp-2 min-w-0 flex-1 text-[13.5px] font-semibold leading-snug transition-colors group-hover:text-primary">
+            {article.title}
+          </h3>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
+        </a>
+      ))}
+      {n > visible ? (
+        <button
+          type="button"
+          onClick={() => setOffset((o) => (o + 1) % n)}
+          aria-label="Balayer d'autres interviews"
+          className="flex w-full items-center justify-center gap-1.5 bg-primary/5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/10"
+        >
+          Balayer les {n} interviews
+          <ChevronRight className="size-3 animate-[sweep-arrow_1.6s_ease-in-out_infinite]" aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   );
 }

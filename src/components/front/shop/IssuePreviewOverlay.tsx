@@ -180,6 +180,9 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
               <p className="text-xs text-muted-foreground">
                 soit {fmtUsd(issue.priceEur)} — version numérique (PDF)
               </p>
+              <p className="text-xs text-muted-foreground">
+                Version papier : {fmtGnf(issue.pricePrintCfa ?? 30000)} ≈ {fmtUsd(issue.pricePrintEur ?? 3)} — livrée à domicile (frais de port à votre charge)
+              </p>
             </div>
             <Button className="w-full rounded-full" onClick={() => onBuy(issue)}>
               <ShoppingBag className="size-4" /> Acheter ce numéro

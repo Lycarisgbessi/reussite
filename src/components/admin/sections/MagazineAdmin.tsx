@@ -35,7 +35,7 @@ import type { AdminIssue as IssueRow, AdminPlan as PlanRow, AdminOrder as OrderR
 
 const EMPTY_ISSUE = {
   title: '', issueNumber: 1, description: '', coverUrl: '', previewImages: [] as string[],
-  priceCfa: 10000, priceEur: 1, pdfUrl: '', previewPages: 5, featured: false, published: true,
+  priceCfa: 10000, priceEur: 1, pricePrintCfa: 30000, pricePrintEur: 3, pdfUrl: '', previewPages: 5, featured: false, published: true,
 };
 const EMPTY_PLAN = {
   name: '', description: '', durationMonths: 12, issuesCount: 4,
@@ -101,7 +101,7 @@ export function MagazineAdmin() {
     setIssueForm({
       title: i.title, issueNumber: i.issueNumber, description: i.description, coverUrl: i.coverUrl,
       previewImages: [...i.previewImages], priceCfa: i.priceCfa, priceEur: i.priceEur,
-      pdfUrl: i.pdfUrl, previewPages: i.previewPages ?? 5, featured: i.featured, published: i.published,
+      pdfUrl: i.pdfUrl, previewPages: i.previewPages ?? 5, pricePrintCfa: i.pricePrintCfa ?? 30000, pricePrintEur: i.pricePrintEur ?? 3, featured: i.featured, published: i.published,
     });
     setIssueDialog(true);
   };
@@ -247,7 +247,8 @@ export function MagazineAdmin() {
                   <div className="flex min-w-0 flex-1 flex-col">
                     <p className="text-[10px] font-bold uppercase tracking-wide text-primary">N° {i.issueNumber} · {i.paidOrders} vente(s)</p>
                     <p className="line-clamp-2 font-editorial text-sm font-bold">{i.title}</p>
-                    <p className="mt-1 text-sm font-semibold text-primary">{fmtGnf(i.priceCfa)} / {i.priceEur} €</p>
+                    <p className="mt-1 text-sm font-semibold text-primary">{fmtGnf(i.priceCfa)} / {i.priceEur} $</p>
+                    <p className="text-[11px] text-muted-foreground">Papier : {fmtGnf(i.pricePrintCfa ?? 30000)} / {i.pricePrintEur ?? 3} $</p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
                       {i.pdfUrl ? 'PDF ✓' : 'PDF manquant'} · aperçu {i.previewPages ?? 0} page(s)
                     </p>
@@ -330,6 +331,7 @@ export function MagazineAdmin() {
                     <p className="flex items-center gap-2">
                       <span className="font-mono text-xs font-bold text-primary">{o.orderNumber}</span>
                       <Badge variant="outline" className="text-[10px]">{o.type === 'SINGLE' ? 'Numéro' : 'Abonnement'}</Badge>
+                      {o.variant === 'PRINT' ? <Badge className="bg-primary text-[10px] text-white">Papier · à livrer</Badge> : null}
                       {o.status === 'PENDING' ? <Badge className="bg-amber-500 text-[10px] text-white">À valider</Badge> : null}
                       {o.status === 'PAID' ? <Badge className="bg-emerald-600 text-[10px] text-white">Payée</Badge> : null}
                       {o.status === 'CANCELLED' ? <Badge variant="destructive" className="text-[10px]">Annulée</Badge> : null}
@@ -340,6 +342,11 @@ export function MagazineAdmin() {
                       {' '}· {formatDate(o.createdAt, true)}
                     </p>
                     {o.paymentRef ? <p className="text-xs text-muted-foreground">Réf. paiement : {o.paymentRef}</p> : null}
+                    {o.variant === 'PRINT' ? (
+                      <p className="text-xs font-medium text-primary">
+                        Livrer à : {o.deliveryAddress}{o.deliveryCity ? `, ${o.deliveryCity}` : ''}{o.deliveryNote ? ` — ${o.deliveryNote}` : ''} (frais de port à charge de l'acheteur)
+                      </p>
+                    ) : null}
                   </div>
                   {o.status === 'PENDING' ? (
                     <div className="flex gap-2">
@@ -378,6 +385,12 @@ export function MagazineAdmin() {
               </Field>
               <Field label="Prix en dollars ($ USD)">
                 <Input type="number" min={0} value={issueForm.priceEur} onChange={(e) => setIssueForm((f) => ({ ...f, priceEur: Number(e.target.value) || 0 }))} />
+              </Field>
+              <Field label="Prix version PAPIER (GNF)" hint="Exemplaire physique livré à domicile (frais de livraison à la charge de l'acheteur).">
+                <Input type="number" min={0} value={issueForm.pricePrintCfa} onChange={(e) => setIssueForm((f) => ({ ...f, pricePrintCfa: Number(e.target.value) || 0 }))} />
+              </Field>
+              <Field label="Prix version PAPIER ($ USD)">
+                <Input type="number" min={0} value={issueForm.pricePrintEur} onChange={(e) => setIssueForm((f) => ({ ...f, pricePrintEur: Number(e.target.value) || 0 }))} />
               </Field>
               <Field label="PDF du numéro (livré après paiement)" hint="Collez le lien de partage Google Drive du PDF (doit etre public) — ou importez le fichier. L'acheteur le reçoit dès validation du paiement.">
                 <div className="space-y-2">

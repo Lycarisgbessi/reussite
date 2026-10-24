@@ -3,6 +3,7 @@ export interface AdminIssue {
   id: string; slug: string; title: string; issueNumber: number; description: string;
   coverUrl: string; previewImages: string[]; priceCfa: number; priceEur: number;
   pdfUrl: string; previewPages: number; featured: boolean; published: boolean; paidOrders: number;
+  pricePrintCfa: number; pricePrintEur: number;
   releaseDate: string;
 }
 export interface AdminPlan {
@@ -14,4 +15,5 @@ export interface AdminOrder {
   buyerName: string; buyerEmail: string; buyerPhone: string;
   amountCfa: number; amountEur: number; currency: string;
   paymentMethod: string; paymentRef: string; status: string; createdAt: string;
+  variant: string; deliveryAddress: string; deliveryCity: string; deliveryNote: string;
 }

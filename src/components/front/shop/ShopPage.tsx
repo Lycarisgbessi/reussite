@@ -33,6 +33,8 @@ export interface ShopIssue {
   coverUrl: string;
   priceCfa: number;
   priceEur: number;
+  pricePrintCfa: number;
+  pricePrintEur: number;
   featured: boolean;
   releaseDate: string;
   previewImages?: string[];
@@ -161,6 +163,7 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
                       <div className="mt-3 flex items-baseline gap-2">
                         <span className="text-lg font-bold text-primary">{fmtGnf(issue.priceCfa)}</span>
                         <span className="text-xs text-muted-foreground">/ {fmtUsd(issue.priceEur)}</span>
+                        <span className="block text-[11px] text-muted-foreground">Papier livré : {fmtGnf(issue.pricePrintCfa)}</span>
                       </div>
                       <div className="mt-3 flex gap-2">
                         <Button size="sm" className="flex-1 rounded-full" onClick={() => setCheckout({ type: 'SINGLE', issue })}>
@@ -391,6 +394,8 @@ const PAYMENT_METHODS = [
 function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: () => void }) {
   const { t } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [variant, setVariant] = useState<'DIGITAL' | 'PRINT'>('DIGITAL');
+  const [delivery, setDelivery] = useState({ address: '', city: '', note: '' });
   const [form, setForm] = useState({ buyerName: '', buyerEmail: '', buyerPhone: '', currency: 'XOF', paymentMethod: 'MOBILE_MONEY', paymentRef: '', note: '' });
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ orderNumber: string; amountCfa: number; amountEur: number; currency: string; instructions?: { mobileMoney?: { network: string; number: string }[]; steps: string[] } } | null>(null);
@@ -405,18 +410,30 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
   if (!checkout) return null;
   const isSingle = checkout.type === 'SINGLE';
   const label = isSingle ? checkout.issue?.title : checkout.plan?.name;
-  const amountCfa = isSingle ? checkout.issue!.priceCfa : checkout.plan!.priceCfa;
-  const amountEur = isSingle ? checkout.issue!.priceEur : checkout.plan!.priceEur;
+  const amountCfa = isSingle
+    ? (variant === 'PRINT' ? checkout.issue!.pricePrintCfa : checkout.issue!.priceCfa)
+    : checkout.plan!.priceCfa;
+  const amountEur = isSingle
+    ? (variant === 'PRINT' ? checkout.issue!.pricePrintEur : checkout.issue!.priceEur)
+    : checkout.plan!.priceEur;
   const amount = form.currency === 'EUR' ? fmtUsd(amountEur) : fmtGnf(amountCfa);
 
   const submit = async () => {
     setBusy(true);
     setFormError(null);
     try {
+      if (isSingle && variant === 'PRINT' && (!delivery.address.trim() || !delivery.city.trim())) {
+        setFormError('Adresse et ville de livraison requises pour la version papier.');
+        return;
+      }
       const res = await publicApi.createOrder({
         type: checkout.type,
         issueId: isSingle ? checkout.issue!.id : undefined,
         planId: !isSingle ? checkout.plan!.id : undefined,
+        variant: isSingle ? variant : undefined,
+        deliveryAddress: isSingle && variant === 'PRINT' ? delivery.address.trim() : undefined,
+        deliveryCity: isSingle && variant === 'PRINT' ? delivery.city.trim() : undefined,
+        deliveryNote: isSingle && variant === 'PRINT' ? delivery.note.trim() : undefined,
         buyerName: form.buyerName.trim(),
         buyerEmail: form.buyerEmail.trim(),
         buyerPhone: form.buyerPhone.trim(),
@@ -496,6 +513,39 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
                   </div>
                 </div>
 
+                {isSingle ? (
+                  <>
+                    <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Version souhaitée</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <button type="button" onClick={() => setVariant('DIGITAL')}
+                        className={cn('rounded-lg border-2 p-3 text-left transition-all',
+                          variant === 'DIGITAL' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40')}>
+                        <span className="flex items-center gap-2 text-sm font-bold">
+                          <BookOpen className="size-4 text-primary" aria-hidden="true" /> Numérique (PDF)
+                        </span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {fmtGnf(checkout.issue!.priceCfa)} ≈ {fmtUsd(checkout.issue!.priceEur)} — reçu par email / téléchargement
+                        </span>
+                      </button>
+                      <button type="button" onClick={() => setVariant('PRINT')}
+                        className={cn('rounded-lg border-2 p-3 text-left transition-all',
+                          variant === 'PRINT' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40')}>
+                        <span className="flex items-center gap-2 text-sm font-bold">
+                          <Package className="size-4 text-primary" aria-hidden="true" /> Papier (livraison)
+                        </span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {fmtGnf(checkout.issue!.pricePrintCfa)} ≈ {fmtUsd(checkout.issue!.pricePrintEur)} — livré à domicile, frais de port à votre charge
+                        </span>
+                      </button>
+                    </div>
+                    {variant === 'PRINT' ? (
+                      <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                        Les frais de livraison sont à la charge de l'acheteur — vous serez contacté pour convenir du mode d'expédition.
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
+
                 <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Devise</p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {[
@@ -530,6 +580,16 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
                   <Input type="email" value={form.buyerEmail} onChange={(e) => setForm((f) => ({ ...f, buyerEmail: e.target.value }))} placeholder="Email (réception du numéro) *" aria-label="Email" className="h-11" />
                   <Input type="tel" value={form.buyerPhone} onChange={(e) => setForm((f) => ({ ...f, buyerPhone: e.target.value }))} placeholder="Téléphone (Mobile Money)" aria-label="Téléphone" className="h-11" />
                 </div>
+
+                {isSingle && variant === 'PRINT' ? (
+                  <div className="grid gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-primary">Livraison à domicile</p>
+                    <Input value={delivery.address} onChange={(e) => setDelivery((d) => ({ ...d, address: e.target.value }))} placeholder="Adresse complète de livraison *" aria-label="Adresse de livraison" className="h-11" />
+                    <Input value={delivery.city} onChange={(e) => setDelivery((d) => ({ ...d, city: e.target.value }))} placeholder="Ville / quartier *" aria-label="Ville de livraison" className="h-11" />
+                    <Input value={delivery.note} onChange={(e) => setDelivery((d) => ({ ...d, note: e.target.value }))} placeholder="Repère, instructions (optionnel)" aria-label="Instructions de livraison" className="h-11" />
+                    <p className="text-[11px] text-muted-foreground">Frais de port à la charge de l'acheteur.</p>
+                  </div>
+                ) : null}
 
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Moyen de paiement</p>

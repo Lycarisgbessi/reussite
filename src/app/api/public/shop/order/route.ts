@@ -17,8 +17,9 @@ export async function POST(req: NextRequest) {
       throw new HttpError(429, 'Trop de tentatives, réessayez dans une minute.');
     }
     const body = await readBody<{
-      type?: string; issueId?: string; planId?: string;
+      type?: string; issueId?: string; planId?: string; variant?: string;
       buyerName?: string; buyerEmail?: string; buyerPhone?: string;
+      deliveryAddress?: string; deliveryCity?: string; deliveryNote?: string;
       currency?: string; paymentMethod?: string; paymentRef?: string; note?: string;
     }>(req);
 
@@ -33,14 +34,30 @@ export async function POST(req: NextRequest) {
     let amountEur = 0;
     let issueId: string | null = null;
     let planId: string | null = null;
+    const variant = body.variant === 'PRINT' ? 'PRINT' : 'DIGITAL';
+    let deliveryAddress = '';
+    let deliveryCity = '';
+    let deliveryNote = '';
 
     if (type === 'SINGLE') {
       if (!body.issueId) throw new HttpError(400, 'Numéro manquant.');
       const issue = await db.magazineIssue.findUnique({ where: { id: body.issueId } });
       if (!issue || !issue.published) throw new HttpError(404, 'Numéro introuvable.');
       issueId = issue.id;
-      amountCfa = issue.priceCfa;
-      amountEur = issue.priceEur;
+      if (variant === 'PRINT') {
+        // Version papier : prix papier + livraison à domicile (frais à la charge de l'acheteur)
+        amountCfa = issue.pricePrintCfa;
+        amountEur = issue.pricePrintEur;
+        deliveryAddress = String(body.deliveryAddress ?? '').trim().slice(0, 300);
+        deliveryCity = String(body.deliveryCity ?? '').trim().slice(0, 80);
+        deliveryNote = String(body.deliveryNote ?? '').trim().slice(0, 300);
+        if (!deliveryAddress || !deliveryCity) {
+          throw new HttpError(400, 'Adresse et ville de livraison requises pour la version papier.');
+        }
+      } else {
+        amountCfa = issue.priceCfa;
+        amountEur = issue.priceEur;
+      }
     } else {
       if (!body.planId) throw new HttpError(400, 'Formule d’abonnement manquante.');
       const plan = await db.subscriptionPlan.findUnique({ where: { id: body.planId } });
@@ -62,6 +79,10 @@ export async function POST(req: NextRequest) {
         buyerName,
         buyerEmail,
         buyerPhone: String(body.buyerPhone ?? '').slice(0, 40),
+        variant,
+        deliveryAddress,
+        deliveryCity,
+        deliveryNote,
         amountCfa,
         amountEur,
         currency,

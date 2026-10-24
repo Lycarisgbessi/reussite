@@ -7,7 +7,7 @@
 // ═══════════════════════════════════════════════════════════════
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import type { ArticleSummary } from '@/lib/types';
 import { SmartImage } from '../mag/SmartImage';
 import { CategoryBadge } from '../mag/ArticleCard';
@@ -108,6 +108,44 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                         <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </div>
+
+                    {/* Aperçu vidéo : badge au coin inférieur droit de la
+                        couverture ; au survol, la vidéo se joue en mini
+                        lecteur sans quitter le carrousel. */}
+                    {article.videoBadge ? (
+                      <span
+                        className="group/video absolute bottom-3 right-3 z-10 block transition-transform duration-300 hover:scale-105"
+                        aria-label="Cet article contient une vidéo"
+                      >
+                        <span className="hero-video-pop relative block h-20 w-32 overflow-hidden rounded-lg border-2 border-white/85 shadow-xl sm:h-24 sm:w-40">
+                          {/* Vignette par défaut (avant survol) */}
+                          <span className="absolute inset-0">
+                            <img
+                              src={`https://i.ytimg.com/vi/${article.videoBadge}/mqdefault.jpg`}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </span>
+                          {/* Lecteur au survol (autoplay muet) */}
+                          <iframe
+                            src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${article.videoBadge}`}
+                              title={`Aperçu vidéo — ${article.title}`}
+                            className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-300 group-hover/video:opacity-100"
+                            allow="autoplay; encrypted-media; picture-in-picture"
+                            loading="lazy"
+                          />
+                          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 transition-opacity group-hover/video:opacity-0">
+                            <span className="flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-lg">
+                              <Play className="ml-0.5 size-4" fill="currentColor" strokeWidth={0} />
+                            </span>
+                          </span>
+                          <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                            Vidéo
+                          </span>
+                        </span>
+                      </span>
+                    ) : null}
                   </a>
                 </div>
               </div>

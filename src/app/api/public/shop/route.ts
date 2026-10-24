@@ -40,6 +40,8 @@ export async function GET(req: NextRequest) {
           coverUrl: i.coverUrl,
           priceCfa: i.priceCfa,
           priceEur: i.priceEur,
+          pricePrintCfa: i.pricePrintCfa,
+          pricePrintEur: i.pricePrintEur,
           featured: i.featured,
           releaseDate: i.releaseDate.toISOString(),
         })),

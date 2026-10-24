@@ -70,6 +70,8 @@ export interface ArticleAuthor {
 }
 
 export interface ArticleSummary {
+  /** YouTube ID de la 1re vidéo du contenu (badge d'aperçu au hero). */
+  videoBadge?: string | null;
   id: string;
   slug: string;
   title: string;

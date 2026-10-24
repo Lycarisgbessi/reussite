@@ -21,6 +21,7 @@ import { SearchOverlay } from './SearchOverlay';
 import { NewsletterPopup } from './NewsletterPopup';
 import { CookieBanner } from './CookieBanner';
 import { ScrollToTop } from './ScrollToTop';
+import { MagazineTeaserCorner } from './announcers/MagazineTeaserCorner';
 import { InstallBanner } from './InstallBanner';
 import { ChatWidget } from './ChatWidget';
 import { AdSlot, InterstitialAd, StickyMobileAd } from './ads/AdSlot';
@@ -157,6 +158,7 @@ export default function FrontOffice() {
       <NewsletterPopup />
       <CookieBanner />
       <ScrollToTop />
+      <MagazineTeaserCorner />
       <StickyMobileAd />
       <InterstitialAd />
     </div>

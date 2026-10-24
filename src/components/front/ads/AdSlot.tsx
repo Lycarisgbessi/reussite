@@ -5,9 +5,12 @@
 // HEADER_BANNER · SIDEBAR_TOP · SIDEBAR_STICKY · IN_ARTICLE ·
 // NATIVE · FOOTER_BANNER · STICKY_MOBILE · INTERSTITIAL
 // Respecte les flags settings.ads*Enabled + tracking impressions/clics.
+// ANIMATION : rotation automatique entre les créas disponibles, et
+// si une seule (ou aucune) créa est active, un slide « réservez cet
+// espace » s'intercale pour inciter les visiteurs à publiciter.
 // ═══════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Megaphone, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { publicApi } from '@/lib/api';
 import { useMagazineStore } from '@/lib/store';
@@ -41,6 +44,8 @@ const SIZE_CLASSES: Record<string, string> = {
   FOOTER_BANNER: 'mx-auto h-16 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-20',
 };
 
+const ROTATE_MS = 5000;
+
 interface AdSlotProps {
   placement: string;
   className?: string;
@@ -51,8 +56,10 @@ interface AdSlotProps {
 
 export function AdSlot({ placement, className, category, label = 'Publicité' }: AdSlotProps) {
   const settings = useMagazineStore((s) => s.bootstrap?.settings);
-  const [banner, setBanner] = useState<AdBanner | null>(null);
+  const [banners, setBanners] = useState<AdBanner[]>([]);
   const [done, setDone] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const pausedRef = useRef(false);
 
   const enabled = !settings || !PLACEMENT_FLAGS[placement] || Boolean(settings[PLACEMENT_FLAGS[placement]]);
 
@@ -61,18 +68,19 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
   const [prevKey, setPrevKey] = useState(slotKey);
   if (prevKey !== slotKey) {
     setPrevKey(slotKey);
-    setBanner(null);
+    setBanners([]);
     setDone(false);
+    setSlide(0);
   }
 
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
     publicApi
-      .ad(placement, category)
+      .adMany(placement, category, 4)
       .then((res) => {
         if (!cancelled) {
-          setBanner(res.banner || null);
+          setBanners(res.banners);
           setDone(true);
         }
       })
@@ -84,71 +92,121 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
     };
   }, [placement, category, enabled]);
 
-  if (!done || !enabled || !banner) return null;
+  // Rotation automatique : créas + slide « réservez cet espace »
+  // intercalé dès qu'il y a de la place (toujours si 0 ou 1 créa).
+  const promoCount = banners.length >= 3 ? 0 : 1;
+  const totalSlides = banners.length + promoCount;
 
+  useEffect(() => {
+    if (totalSlides <= 1) return;
+    const id = setInterval(() => {
+      if (!pausedRef.current) setSlide((sl) => (sl + 1) % totalSlides);
+    }, ROTATE_MS);
+    return () => clearInterval(id);
+  }, [totalSlides]);
+
+  if (!done || !enabled || totalSlides === 0) return null;
+
+  const currentBanner = banners.length > 0 ? banners[slide % banners.length] : null;
+  const isPromoSlide = currentBanner === null || slide >= banners.length;
   const onClick = () => {
-    publicApi.adClick(banner.id).catch(() => {});
+    if (currentBanner && !isPromoSlide) publicApi.adClick(currentBanner.id).catch(() => {});
   };
 
-  const adLabel = `Publicité ${banner.advertiser || ''}`.trim();
-
-  // Créative vidéo (MP4 autoplay muet) — clic = URL de destination.
-  const creative =
-    banner.mediaType === 'VIDEO' && banner.videoUrl ? (
-      <a
-        href={banner.targetUrl || '#'}
-        target="_blank"
-        rel="sponsored noopener noreferrer"
-        onClick={onClick}
-        className="block h-full w-full overflow-hidden rounded-lg"
-        aria-label={adLabel}
-      >
-        <video
-          src={banner.videoUrl}
-          muted
-          loop
-          autoPlay
-          playsInline
-          preload="metadata"
-          className="h-full w-full object-cover"
-          aria-label={adLabel}
-        />
-      </a>
-    ) : banner.imageUrl ? (
-      <a
-        href={banner.targetUrl || '#'}
-        target="_blank"
-        rel="sponsored noopener noreferrer"
-        onClick={onClick}
-        className="block h-full w-full overflow-hidden rounded-lg"
-        aria-label={adLabel}
-      >
-        <SmartImage
-          src={banner.imageUrl}
-          alt={adLabel}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
-        />
-      </a>
-    ) : banner.htmlCode ? (
-      <div
-        className="h-full w-full overflow-hidden"
-        onClick={onClick}
-        dangerouslySetInnerHTML={{ __html: banner.htmlCode }}
-      />
-    ) : null;
-
-  if (!creative) return null;
+  const adLabel = `Publicité ${currentBanner?.advertiser || ''}`.trim();
+  const isVideoSlide = !isPromoSlide && currentBanner?.mediaType === 'VIDEO' && currentBanner.videoUrl;
 
   return (
     <div
-      className={cn('relative', SIZE_CLASSES[placement] || '', className)}
+      className={cn('group relative', SIZE_CLASSES[placement] || '', className)}
       role="complementary"
       aria-label="Espace publicitaire"
+      onMouseEnter={() => { pausedRef.current = true; }}
+      onMouseLeave={() => { pausedRef.current = false; }}
     >
-      {creative}
+      <div className="relative h-full w-full overflow-hidden">
+        {isPromoSlide ? (
+          /* ── Slide « réservez cet espace » — animé, incite à publiciter ── */
+          <a
+            href="#/contact"
+            className="ad-fade flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/15 via-card to-accent/50 px-4 text-center"
+            aria-label="Réserver cet espace publicitaire"
+          >
+            <span className="relative flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+              <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" aria-hidden="true" />
+              <Megaphone className="size-5" aria-hidden="true" />
+            </span>
+            <p className="font-editorial text-sm font-bold leading-tight text-foreground sm:text-base">
+              Votre marque ici ?
+            </p>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Réservez cet espace publicitaire et touchez des milliers de décideurs de décideurs.
+            </p>
+            <span className="cta-pulse mt-1 rounded-full bg-primary px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
+              Réserver cet espace
+            </span>
+          </a>
+        ) : isVideoSlide && currentBanner ? (
+          <a
+            href={currentBanner.targetUrl || '#'}
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            onClick={onClick}
+            className="ad-fade block h-full w-full overflow-hidden rounded-lg"
+            aria-label={adLabel}
+          >
+            <video
+              src={currentBanner.videoUrl}
+              muted
+              loop
+              autoPlay
+              playsInline
+              preload="metadata"
+              className="h-full w-full object-cover"
+              aria-label={adLabel}
+            />
+          </a>
+        ) : currentBanner?.imageUrl ? (
+          <a
+            href={currentBanner.targetUrl || '#'}
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            onClick={onClick}
+            className="ad-fade block h-full w-full overflow-hidden rounded-lg"
+            aria-label={adLabel}
+          >
+            <SmartImage
+              src={currentBanner.imageUrl}
+              alt={adLabel}
+              className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+            />
+          </a>
+        ) : currentBanner?.htmlCode ? (
+          <div
+            className="ad-fade h-full w-full overflow-hidden"
+            onClick={onClick}
+            dangerouslySetInnerHTML={{ __html: currentBanner.htmlCode }}
+          />
+        ) : null}
+      </div>
+
+      {/* Étiquette + indicateurs de rotation */}
       <span className="pointer-events-none absolute right-1.5 top-1.5 rounded bg-black/45 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/90">
-        {placement === 'NATIVE' ? 'Sponsorisé' : label}
+        {isPromoSlide ? 'Publicité' : placement === 'NATIVE' ? 'Sponsorisé' : label}
       </span>
+      {totalSlides > 1 ? (
+        <span className="pointer-events-none absolute bottom-1.5 left-1/2 flex -translate-x-1/2 items-center gap-1" aria-hidden="true">
+          {Array.from({ length: totalSlides }).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                'h-1 rounded-full transition-all',
+                i === slide ? 'w-4 bg-white/90' : 'w-1 bg-white/45',
+              )}
+            />
+          ))}
+        </span>
+      ) : null}
     </div>
   );
 }

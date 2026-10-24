@@ -106,6 +106,9 @@ export const publicApi = {
     request<{ ok: boolean; message: string }>('/api/public/contact', { method: 'POST', body: JSON.stringify(data) }),
 
   ad: (placement: string, category?: string) => request<{ banner: AdBanner | null }>(`/api/public/ads${qs({ placement, category })}`),
+  /** Plusieurs créas distinctes pour un emplacement (rotation animée). */
+  adMany: (placement: string, category?: string, count = 4) =>
+    request<{ banner: AdBanner | null; banners: AdBanner[] }>(`/api/public/ads${qs({ placement, category, count })}`),
 
   adClick: (campaignId: string) => request<{ ok: boolean }>(`/api/public/ads/${campaignId}/click`, { method: 'POST' }),
 
@@ -140,8 +143,9 @@ export const publicApi = {
   shop: () => request<{ issues: ShopIssue[]; plans: ShopPlan[] }>('/api/public/shop'),
   shopIssue: (idOrSlug: string) => request<{ issue: ShopIssue }>(`/api/public/shop/issues/${encodeURIComponent(idOrSlug)}`),
   createOrder: (data: {
-    type: 'SINGLE' | 'SUBSCRIPTION'; issueId?: string; planId?: string;
+    type: 'SINGLE' | 'SUBSCRIPTION'; issueId?: string; planId?: string; variant?: 'DIGITAL' | 'PRINT';
     buyerName: string; buyerEmail: string; buyerPhone?: string;
+    deliveryAddress?: string; deliveryCity?: string; deliveryNote?: string;
     currency?: string; paymentMethod?: string; paymentRef?: string; note?: string;
   }) => request<{
     order: { orderNumber: string; type: string; amountCfa: number; amountEur: number; currency: string; status: string };
@@ -152,6 +156,7 @@ export const publicApi = {
 export interface ShopIssue {
   id: string; slug: string; title: string; issueNumber: number; description: string;
   coverUrl: string; previewImages?: string[]; priceCfa: number; priceEur: number;
+  pricePrintCfa: number; pricePrintEur: number;
   featured: boolean; releaseDate: string;
 }
 export interface ShopPlan {

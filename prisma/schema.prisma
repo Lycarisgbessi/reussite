@@ -380,6 +380,8 @@ model MagazineIssue {
   priceEur    Int      @default(8)    // euros (vente internationale)
   pdfUrl      String   @default("")   // livré après paiement
   previewPages Int     @default(5)    // nb de pages visibles gratuitement (rendues depuis le PDF)
+  pricePrintCfa Int    @default(30000) // version papier (GNF) — livraison à domicile
+  pricePrintEur Int    @default(3)     // version papier ($)
   featured    Boolean  @default(false)
   published   Boolean  @default(true)
   releaseDate DateTime @default(now())
@@ -419,6 +421,10 @@ model Order {
   currency      String   @default("XOF")
   paymentMethod String   @default("MOBILE_MONEY") // MOBILE_MONEY | BANK_TRANSFER | CARD
   paymentRef    String   @default("") // référence fournie par l'acheteur
+  variant       String   @default("DIGITAL") // DIGITAL | PRINT
+  deliveryAddress String @default("")  // livraison version papier
+  deliveryCity    String @default("")
+  deliveryNote    String @default("")
   status        String   @default("PENDING") // PENDING | PAID | CANCELLED
   note          String   @default("")
   createdAt     DateTime @default(now())

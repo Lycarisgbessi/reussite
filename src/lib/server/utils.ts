@@ -256,7 +256,11 @@ export function publishedFilter(): Prisma.ArticleWhereInput {
 }
 
 export function serializeArticleSummary(a: ArticleWithRelations): ArticleSummary {
+  // Aperçu vidéo : 1re vidéo intégrée au corps de l'article (badge hero)
+  const blocks = parseJsonSafe<ContentBlock[]>(a.content, []);
+  const videoBlock = blocks.find((b): b is Extract<ContentBlock, { type: 'video' }> => b.type === 'video');
   return {
+    videoBadge: videoBlock?.youtubeId || null,
     id: a.id,
     slug: a.slug,
     title: a.title,

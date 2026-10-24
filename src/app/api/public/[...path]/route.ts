@@ -676,11 +676,20 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: stri
         return handleSuggest(sp);
 
       case 'ads': {
-        // GET /api/public/ads?placement=KEY&category=slug
+        // GET /api/public/ads?placement=KEY&category=slug[&count=N]
+        // count>1 : plusieurs créas distinctes (rotation animée côté client).
         const placement = sp.get('placement');
         if (!placement) throw new HttpError(400, 'Emplacement publicitaire manquant.');
-        const banner = await pickAd(placement, sp.get('category'), req.headers.get('user-agent') ?? '');
-        return ok({ banner });
+        const ua = req.headers.get('user-agent') ?? '';
+        const banner = await pickAd(placement, sp.get('category'), ua);
+        const count = Math.min(5, Math.max(1, Number(sp.get('count')) || 1));
+        const banners = banner ? [banner] : [];
+        for (let k = 1; k < count && banners.length < count; k++) {
+          const extra = await pickAd(placement, sp.get('category'), ua);
+          if (!extra || banners.some((b) => b.id === extra.id)) break;
+          banners.push(extra);
+        }
+        return ok({ banner, banners });
       }
 
       case 'favorites':
