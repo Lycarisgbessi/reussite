@@ -107,17 +107,18 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
     <header>
       {/* ── Topbar fine (noir permanent) ────────────────────────── */}
       <div
-        className={`hidden border-b sm:block ${theme === 'dark' || settings?.mastheadBackground === 'black' ? 'border-white/10 bg-neutral-950' : 'border-black/25 bg-[#8B1215]'}`}
+        className={`border-b ${theme === 'dark' || settings?.mastheadBackground === 'black' ? 'border-white/10 bg-neutral-950' : 'border-black/25 bg-[#8B1215]'}`}
         role="banner"
       >
         <div className="relative mx-auto grid h-11 max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 text-[12px] text-white">
           <div className="flex min-w-0 items-center gap-3">
+            <span className="flex min-w-0 items-center gap-1 text-[11px] font-medium text-white sm:text-[12px]">
+              <Thermometer className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
+              <span className="truncate">Conakry {weather ?? '…'}</span>
+              <span className="hidden shrink-0 sm:inline">· {tz}</span>
+            </span>
             <p className="hidden shrink-0 font-medium tracking-wide lg:block">{today || '\u00a0'}</p>
             <span className="hidden h-3.5 w-px bg-white/15 lg:block" aria-hidden="true" />
-            <span className="hidden shrink-0 items-center gap-1 font-medium text-white lg:flex">
-              <Thermometer className="size-3 shrink-0 text-brand-bright" aria-hidden="true" />
-              Conakry {weather ?? '…'} · {tz}
-            </span>
           </div>
           {/* Slogan — cellule centrale dédiée (aucune superposition) */}
           <p className="hidden justify-self-center whitespace-nowrap font-editorial text-[12.5px] font-semibold italic tracking-wide text-white xl:block">
@@ -179,7 +180,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
       >
         {/* Masthead élargi : logo en GRAND au centre-gauche, couvertures à droite.
             Hauteur généreuse (h-24 → h-32) pour bien cadrer sans débordement. */}
-        <div className="mx-auto flex h-36 max-w-7xl items-center justify-between gap-12 px-6 py-4 sm:h-40 lg:h-48">
+        <div className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:h-36 sm:gap-12 sm:px-6 sm:py-4 lg:h-48">
           <a
             href="#/"
             className="flex min-w-0 shrink items-center gap-5"
@@ -191,7 +192,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             <img
               src="/images/logo-reussite-white.png"
               alt="Réussite Magazine — Trimestriel des décideurs africains"
-              className="h-24 w-auto shrink-0 sm:h-28 md:h-32 lg:h-36"
+              className="h-14 w-auto shrink-0 sm:h-24 md:h-28 lg:h-36"
             />
           </a>
 

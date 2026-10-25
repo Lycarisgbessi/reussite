@@ -43,7 +43,7 @@ export function MagazineTeaserCorner() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 500);
+    const onScroll = () => setScrolled(window.scrollY > 350);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -91,8 +91,10 @@ export function MagazineTeaserCorner() {
   return (
     <div
       className={cn(
-        'fixed left-4 z-30 hidden sm:block',
-        playerVisible ? 'bottom-[108px]' : 'bottom-4',
+        'fixed left-3 z-30 sm:left-4',
+        playerVisible
+          ? 'bottom-[120px] sm:bottom-[108px]'
+          : 'bottom-[62px] sm:bottom-4',
       )}
       role="complementary"
       aria-label="Numéros du magazine"
@@ -140,7 +142,7 @@ export function MagazineTeaserCorner() {
                       opacity: abs === 2 ? 0.35 : isActive ? 1 : 0.75,
                     }}
                     transition={SPRING}
-                    style={{ zIndex: 10 - abs, width: '3.4rem', height: '4.3rem', top: 13 }}
+                    style={{ zIndex: 10 - abs, width: '2.5rem', height: '3.15rem', top: 10 }}
                   >
                     <img src={iss.coverUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
                   </motion.span>
@@ -149,18 +151,18 @@ export function MagazineTeaserCorner() {
             </span>
 
             {/* Texte éditorial + CTA */}
-            <span className="flex w-52 flex-col justify-center gap-1.5 py-3.5 pr-5">
-              <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
+            <span className="flex w-[168px] flex-col justify-center gap-1 py-2.5 pr-4 sm:w-52 sm:gap-1.5 sm:py-3.5 sm:pr-5">
+              <span className="flex items-center gap-2 text-[8px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[9px] sm:tracking-[0.22em]">
                 <span className="h-px w-4 bg-primary" aria-hidden="true" />
                 Réussite Magazine
               </span>
-              <span className="font-editorial line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+              <span className="font-editorial line-clamp-2 text-[12px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary sm:text-[13.5px]">
                 {current.title}
               </span>
-              <span className="text-[10px] font-medium text-muted-foreground">
+              <span className="hidden text-[10px] font-medium text-muted-foreground sm:block">
                 Numérique dès 10 000 GNF · papier livré chez vous
               </span>
-              <span className="teaser-shine mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30">
+              <span className="teaser-shine mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30 sm:mt-1.5 sm:px-3.5 sm:text-[10.5px]">
                 Feuilleter ce numéro
                 <ArrowRight className="size-3 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
               </span>

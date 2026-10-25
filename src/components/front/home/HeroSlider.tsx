@@ -96,7 +96,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                     <div
                       className={
                         'absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 ' +
-                        (article.videoBadge ? 'pr-4 sm:pr-6 lg:pr-[360px]' : '')
+                        (article.videoBadge ? 'pr-[200px] sm:pr-[280px] lg:pr-[360px]' : '')
                       }
                     >
                       <CategoryBadge
@@ -127,7 +127,7 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                         onMouseLeave={() => setHoveredVideo((v) => (v === article.videoBadge ? null : v))}
                         aria-hidden="true"
                       >
-                        <span className="hero-video-pop relative block h-40 w-64 overflow-hidden rounded-xl border-2 border-white/85 shadow-2xl transition-transform duration-300 group-hover/video:scale-[1.03] sm:h-48 sm:w-80">
+                        <span className="hero-video-pop relative block h-28 w-44 overflow-hidden rounded-xl border-2 border-white/85 shadow-2xl transition-transform duration-300 group-hover/video:scale-[1.03] sm:h-40 sm:w-64 lg:h-48 lg:w-80">
                           {/* Vignette par défaut (lecteur monté au survol) */}
                           <span className="absolute inset-0">
                             <img
@@ -153,8 +153,8 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                           ) : null}
                           {hoveredVideo !== article.videoBadge ? (
                             <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-200">
-                              <span className="flex size-14 items-center justify-center rounded-full bg-primary/95 text-white shadow-2xl">
-                                <Play className="ml-1 size-6" fill="currentColor" strokeWidth={0} />
+                              <span className="flex size-10 items-center justify-center rounded-full bg-primary/95 text-white shadow-2xl sm:size-14">
+                                <Play className="ml-0.5 size-4 sm:ml-1 sm:size-6" fill="currentColor" strokeWidth={0} />
                               </span>
                             </span>
                           ) : null}
