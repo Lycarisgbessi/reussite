@@ -92,9 +92,10 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
     };
   }, [placement, category, enabled]);
 
-  // Rotation automatique : créas + slide « réservez cet espace »
-  // intercalé dès qu'il y a de la place (toujours si 0 ou 1 créa).
-  const promoCount = banners.length >= 3 ? 0 : 1;
+  // Rotation automatique : créas + slides auto-promo intercalés —
+  // l'espace publicitaire fait SA propre publicité en continu, même
+  // sans annonceur : c'est sa personnalité taquine.
+  const promoCount = banners.length === 0 ? 3 : banners.length >= 3 ? 1 : 2;
   const totalSlides = banners.length + promoCount;
 
   useEffect(() => {
@@ -109,6 +110,8 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
 
   const currentBanner = banners.length > 0 ? banners[slide % banners.length] : null;
   const isPromoSlide = currentBanner === null || slide >= banners.length;
+  // Les slides auto-promo se relayaent entre elles (0=marque, 1=audience, 2=créa)
+  const promoVariant = banners.length === 0 ? slide % 3 : (slide - banners.length + 3) % 3;
   const onClick = () => {
     if (currentBanner && !isPromoSlide) publicApi.adClick(currentBanner.id).catch(() => {});
   };
@@ -118,7 +121,7 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
 
   return (
     <div
-      className={cn('group relative', SIZE_CLASSES[placement] || '', className)}
+      className={cn('group relative ad-tease', SIZE_CLASSES[placement] || '', className)}
       role="complementary"
       aria-label="Espace publicitaire"
       onMouseEnter={() => { pausedRef.current = true; }}
@@ -140,13 +143,17 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
             </span>
             <span className="min-w-0">
               <span className="ad-slide-up block font-editorial text-base font-bold leading-tight text-foreground sm:text-lg">
-                Votre marque ici ?
+                {promoVariant === 1 ? 'Votre audience est ici.' : promoVariant === 2 ? 'Votre créa, en mouvement.' : 'Votre marque ici ?'}
               </span>
               <span className="ad-slide-up mt-1 block text-xs leading-snug text-muted-foreground sm:text-[13px]" style={{ animationDelay: '120ms' }}>
-                Réservez cet espace publicitaire et touchez des milliers de décideurs.
+                {promoVariant === 1
+                  ? 'Des milliers de décideurs lisent Réussite chaque semaine. Votre campagne tourne ici.'
+                  : promoVariant === 2
+                    ? 'Vidéo, GIF animé ou bannière : votre créative tourne ici toutes les 5 secondes.'
+                    : 'Réservez cet espace publicitaire et touchez des milliers de décideurs.'}
               </span>
               <span className="ad-slide-up mt-2 inline-block rounded-full bg-primary px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30 cta-pulse" style={{ animationDelay: '220ms' }}>
-                Réserver cet espace
+                {promoVariant === 1 ? 'Lancer ma campagne' : promoVariant === 2 ? 'Voir les formats' : 'Réserver cet espace'}
               </span>
             </span>
           </a>

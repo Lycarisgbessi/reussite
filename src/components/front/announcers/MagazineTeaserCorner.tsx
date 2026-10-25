@@ -1,12 +1,14 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// MAGAZINE TEASER CORNER — encart éditorial fixe en bas à gauche,
-// élégant et discret, qui met les numéros du magazine en avant :
-// unes en fondu enchaîné, typographie serif, filet rouge signature.
-// Apparaît en glissement après un léger scroll, fermable.
+// MAGAZINE TEASER CORNER — encart TAQUIN en bas à gauche.
+// Personnalité : il joue à cache-cache avec le lecteur — il sort,
+// fait défiler les unes en mini-coverflow rotatif (même sensation
+// que le carrousel du header), puis SE CACHE hors écran comme
+// quelqu'un qui fuit… avant de réapparaître. Pause au survol.
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowRight, X } from 'lucide-react';
 import { publicApi } from '@/lib/api';
 import { useBottomLayers } from '@/lib/bottomLayers';
@@ -14,12 +16,18 @@ import { cn } from '@/lib/utils';
 
 interface TeaserIssue { id: string; title: string; coverUrl: string; }
 
+// Cycle taquin : 9 s visible → 6 s caché → revient…
+const VISIBLE_MS = 9000;
+const HIDDEN_MS = 6000;
+const SPRING = { type: 'spring', stiffness: 90, damping: 14, mass: 0.9 } as const;
+
 export function MagazineTeaserCorner() {
   const [issues, setIssues] = useState<TeaserIssue[]>([]);
-  const [idx, setIdx] = useState(0);
+  const [active, setActive] = useState(0);
   const [closed, setClosed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [teasing, setTeasing] = useState(false); // true = caché
   const playerVisible = useBottomLayers((st) => st.playerVisible);
 
   useEffect(() => {
@@ -41,15 +49,39 @@ export function MagazineTeaserCorner() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Fondu enchaîné lent, en pause au survol
+  // Mini-coverflow : les unes défilent tant qu'on est visible
   useEffect(() => {
-    if (hovered || issues.length < 2) return;
-    const id = setInterval(() => setIdx((i) => (i + 1) % issues.length), 5200);
+    if (hovered || teasing || issues.length < 2) return;
+    const id = setInterval(() => setActive((a) => (a + 1) % issues.length), 2800);
     return () => clearInterval(id);
-  }, [hovered, issues.length]);
+  }, [hovered, teasing, issues.length]);
+
+  // Cache-cache taquin : alterne sortie/entrée (pause au survol)
+  useEffect(() => {
+    if (closed || !scrolled || issues.length === 0) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const cycle = (visible: boolean) => {
+      if (cancelled) return;
+      timer = setTimeout(() => {
+        if (cancelled) return;
+        if (hovered) { cycle(visible); return; } // survolé → il reste
+        setTeasing(!visible);
+        cycle(!visible);
+      }, visible ? VISIBLE_MS : HIDDEN_MS);
+    };
+    cycle(true);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [closed, scrolled, issues.length, hovered]);
 
   if (closed || issues.length === 0 || !scrolled) return null;
-  const current = issues[idx];
+  const current = issues[active];
+
+  const offset = (i: number) => {
+    const n = issues.length;
+    const d = i - active;
+    return ((d + n + n / 2) % n) - n / 2;
+  };
 
   const close = () => {
     setClosed(true);
@@ -59,92 +91,104 @@ export function MagazineTeaserCorner() {
   return (
     <div
       className={cn(
-        'fixed left-4 z-30 hidden transition-all duration-700 sm:block',
+        'fixed left-4 z-30 hidden sm:block',
         playerVisible ? 'bottom-[108px]' : 'bottom-4',
-        scrolled ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
       )}
       role="complementary"
       aria-label="Numéros du magazine"
     >
-      <div
-        className="group relative"
+      <motion.div
+        initial={{ x: '-130%', opacity: 0, rotate: -6 }}
+        animate={
+          teasing
+            ? // Se cache : sort de l'écran vers la gauche, comme il est venu
+              { x: '-130%', opacity: 0, rotate: -8 }
+            : // Ressort taquin : effet de ressort + inclinaison espiègle
+              { x: 0, opacity: 1, rotate: 0 }
+        }
+        transition={SPRING}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        <a
-          href="#/shop"
-          aria-label={`Feuilleter le magazine : ${current.title}`}
-          className="relative flex items-stretch gap-0 overflow-hidden rounded-lg border border-border/70 bg-card shadow-[0_10px_35px_-10px_rgba(0,0,0,0.45)] transition-shadow duration-500 hover:shadow-[0_14px_45px_-10px_rgba(164,22,26,0.35)]"
-        >
-          {/* Une du numéro : fondu enchaîné + léger travelling */}
-          <span className="relative block h-[132px] w-[94px] shrink-0 overflow-hidden bg-neutral-200 dark:bg-neutral-800">
-            {issues.map((iss, i) => (
-              <img
-                key={iss.id}
-                src={iss.coverUrl}
-                alt=""
-                className={cn(
-                  'absolute inset-0 h-full w-full object-cover transition-all duration-[1200ms] ease-out',
-                  i === idx ? 'scale-100 opacity-100' : 'scale-[1.06] opacity-0',
-                )}
-                loading="lazy"
-              />
-            ))}
-            <span className="pointer-events-none absolute inset-0 rounded-l-lg ring-1 ring-inset ring-black/10" aria-hidden="true" />
-          </span>
+        <div className="group relative overflow-visible rounded-lg border border-border/70 bg-card shadow-[0_12px_40px_-10px_rgba(0,0,0,0.5)]">
+          <a
+            href="#/shop"
+            aria-label={`Feuilleter le magazine : ${current.title}`}
+            className="relative flex items-stretch"
+          >
+            {/* Mini-coverflow des unes (même langage que le header) */}
+            <span
+              className="relative block h-[126px] w-[150px] shrink-0"
+              style={{ perspective: '700px' }}
+              aria-hidden="true"
+            >
+              {issues.map((iss, i) => {
+                const d = offset(i);
+                const abs = Math.abs(d);
+                if (abs > 2) return null;
+                const isActive = d === 0;
+                return (
+                  <motion.span
+                    key={iss.id}
+                    className="absolute left-1/2 block overflow-hidden rounded-[3px] border border-white/20 bg-neutral-900 shadow-xl will-change-transform"
+                    initial={false}
+                    animate={{
+                      x: d * 38 - 24,
+                      rotateY: d * -40,
+                      z: isActive ? 40 : -abs * 40,
+                      scale: isActive ? 1 : 0.8,
+                      opacity: abs === 2 ? 0.35 : isActive ? 1 : 0.75,
+                    }}
+                    transition={SPRING}
+                    style={{ zIndex: 10 - abs, width: '3.4rem', height: '4.3rem', top: 13 }}
+                  >
+                    <img src={iss.coverUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  </motion.span>
+                );
+              })}
+            </span>
 
-          {/* Texte éditorial + CTA incitatif */}
-          <span className="flex w-56 flex-col justify-center gap-1.5 py-3.5 pl-4 pr-5">
-            <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
-              <span className="h-px w-4 bg-primary" aria-hidden="true" />
-              Réussite Magazine
+            {/* Texte éditorial + CTA */}
+            <span className="flex w-52 flex-col justify-center gap-1.5 py-3.5 pr-5">
+              <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
+                <span className="h-px w-4 bg-primary" aria-hidden="true" />
+                Réussite Magazine
+              </span>
+              <span className="font-editorial line-clamp-2 text-[13.5px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+                {current.title}
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground">
+                Numérique dès 10 000 GNF · papier livré chez vous
+              </span>
+              <span className="teaser-shine mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30">
+                Feuilleter ce numéro
+                <ArrowRight className="size-3 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+              </span>
             </span>
-            <span className="font-editorial line-clamp-2 text-[14px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
-              {current.title}
-            </span>
-            <span className="text-[10px] font-medium text-muted-foreground">
-              Numérique dès 10 000 GNF · papier livré chez vous
-            </span>
-            <span className="teaser-shine mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30">
-              Feuilleter ce numéro
-              <ArrowRight className="size-3 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
-            </span>
-          </span>
-          {/* Reflet balayant la carte */}
-          <span className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <span className="teaser-sheen absolute inset-y-0 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-          </span>
+          </a>
 
-          {/* Filet signature animé au bas de la carte */}
+          {/* Filet signature animé */}
           <span
             className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-primary transition-transform duration-700"
             style={{ transform: hovered ? 'scaleX(1)' : 'scaleX(0.35)' }}
             aria-hidden="true"
           />
-        </a>
 
-        {/* Indicateurs — points discrets */}
-        <span className="absolute -bottom-1.5 left-1/2 flex -translate-x-1/2 translate-y-full items-center gap-1 pt-1" aria-hidden="true">
-          {issues.slice(0, 5).map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                'h-1 rounded-full transition-all duration-500',
-                i === idx % 5 ? 'w-3.5 bg-primary' : 'w-1 bg-primary/30',
-              )}
-            />
-          ))}
-        </span>
+          {/* Reflet balayant */}
+          <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg" aria-hidden="true">
+            <span className="teaser-sheen absolute inset-y-0 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          </span>
 
-        <button
-          type="button"
-          onClick={close}
-          aria-label="Fermer"
-          className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all duration-300 hover:text-foreground group-hover:opacity-100"
-        >
-          <X className="size-3" />
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Fermer"
+            className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all duration-300 hover:text-foreground group-hover:opacity-100"
+          >
+            <X className="size-3" />
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 }

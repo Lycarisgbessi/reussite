@@ -449,3 +449,17 @@ a, button {
   50% { box-shadow: 0 0 16px 3px rgba(164,22,26,0.55); }
 }
 .teaser-shine { animation: teaser-shine-kf 2.6s ease-in-out infinite; }
+
+/* ── Espace pub taquin : petit « coucou » périodique (tapote
+   l'épaule du lecteur toutes les ~12 s, puis se tient tranquille) ── */
+@keyframes ad-tease-kf {
+  0%, 88% { transform: rotate(0deg) translateY(0); }
+  90% { transform: rotate(-0.7deg) translateY(-2px); }
+  92% { transform: rotate(0.6deg) translateY(-1px); }
+  94% { transform: rotate(-0.3deg) translateY(0); }
+  96%, 100% { transform: rotate(0deg) translateY(0); }
+}
+.ad-tease { animation: ad-tease-kf 12s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ad-tease { animation: none; }
+}

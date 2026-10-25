@@ -24,8 +24,8 @@ export function HeroSlider({ articles }: HeroSliderProps) {
   const [selected, setSelected] = useState(0);
   const pausedRef = useRef(false);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
-  // Lecture vidéo autonome (badge du hero) : id YouTube en lecture
-  const [playing, setPlaying] = useState<string | null>(null);
+  // Badge vidéo : id YouTube survolé (le lecteur se monte et joue)
+  const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
 
   const onSelect = useCallback(() => {
     if (emblaApi) setSelected(emblaApi.selectedScrollSnap());
@@ -93,7 +93,12 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                       className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/5"
                       aria-hidden="true"
                     />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+                    <div
+                      className={
+                        'absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 ' +
+                        (article.videoBadge ? 'pr-4 sm:pr-6 lg:pr-[360px]' : '')
+                      }
+                    >
                       <CategoryBadge
                         name={article.category?.name || t('hero.aria')}
                         color={article.category?.color}
@@ -111,31 +116,19 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                       </span>
                     </div>
 
-                    {/* Aperçu vidéo : grand badge au coin inférieur droit de
-                        la couverture. Survol = mini-lecteur muet ; clic =
-                        lecture autonome avec contrôles et son, sans quitter
-                        le carrousel. */}
+                    {/* Aperçu vidéo : grand badge au coin inférieur droit.
+                        Survol = la vidéo se joue (mini-lecteur) ; clic =
+                        ouvrir l'ARTICLE (on garde le lecteur sur le site,
+                        jamais de renvoi vers YouTube). */}
                     {article.videoBadge ? (
                       <span
                         className="group/video absolute bottom-3 right-3 z-20 block"
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Lire la vidéo de : ${article.title}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setPlaying(playing === article.videoBadge ? null : (article.videoBadge ?? null));
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setPlaying(playing === article.videoBadge ? null : (article.videoBadge ?? null));
-                          }
-                        }}
+                        onMouseEnter={() => setHoveredVideo(article.videoBadge ?? null)}
+                        onMouseLeave={() => setHoveredVideo((v) => (v === article.videoBadge ? null : v))}
+                        aria-hidden="true"
                       >
-                        <span className="hero-video-pop relative block h-40 w-64 overflow-hidden rounded-xl border-2 border-white/85 shadow-2xl transition-transform duration-300 hover:scale-[1.04] sm:h-48 sm:w-80">
-                          {/* Vignette par défaut (avant survol / lecture) */}
+                        <span className="hero-video-pop relative block h-40 w-64 overflow-hidden rounded-xl border-2 border-white/85 shadow-2xl transition-transform duration-300 group-hover/video:scale-[1.03] sm:h-48 sm:w-80">
+                          {/* Vignette par défaut (lecteur monté au survol) */}
                           <span className="absolute inset-0">
                             <img
                               src={`https://i.ytimg.com/vi/${article.videoBadge}/maxresdefault.jpg`}
@@ -148,36 +141,25 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                               }}
                             />
                           </span>
-                          {/* Lecteur au survol (autoplay muet) */}
-                          {playing !== article.videoBadge ? (
+                          {/* Lecteur joué au survol (monté à ce moment :
+                              l'autoplay part réellement) */}
+                          {hoveredVideo === article.videoBadge ? (
                             <iframe
-                              key={`preview-${article.videoBadge}`}
                               src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${article.videoBadge}`}
                               title={`Aperçu vidéo — ${article.title}`}
-                              className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-300 group-hover/video:opacity-100"
-                              allow="autoplay; encrypted-media; picture-in-picture"
-                              loading="lazy"
-                            />
-                          ) : (
-                            /* Lecture autonome demandée : contrôles + son */
-                            <iframe
-                              key={`play-${article.videoBadge}`}
-                              src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&controls=1&modestbranding=1&rel=0`}
-                              title={`Vidéo — ${article.title}`}
                               className="absolute inset-0 h-full w-full"
                               allow="autoplay; encrypted-media; picture-in-picture"
-                              allowFullScreen
                             />
-                          )}
-                          {playing !== article.videoBadge ? (
-                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-300 group-hover/video:opacity-0">
-                              <span className="flex size-14 items-center justify-center rounded-full bg-primary/95 text-white shadow-2xl transition-transform duration-300 group-hover/video:scale-110">
+                          ) : null}
+                          {hoveredVideo !== article.videoBadge ? (
+                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-200">
+                              <span className="flex size-14 items-center justify-center rounded-full bg-primary/95 text-white shadow-2xl">
                                 <Play className="ml-1 size-6" fill="currentColor" strokeWidth={0} />
                               </span>
                             </span>
                           ) : null}
                           <span className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                            ▶ Vidéo — cliquez pour jouer
+                            {hoveredVideo === article.videoBadge ? '▶ Lecture… cliquez pour l’article' : '▶ Vidéo incluse — lire l’article'}
                           </span>
                         </span>
                       </span>
