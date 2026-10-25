@@ -443,7 +443,7 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
                 {t('nav.videos')}
               </a>
             </li>
-            <li>
+            <li className="flex items-center">
               <span className="hidden h-4 w-px bg-white/25 lg:block" aria-hidden="true" />
               <a
                 href="#/podcasts"

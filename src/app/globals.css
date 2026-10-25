@@ -390,22 +390,50 @@ a, button {
   50% { transform: translateX(4px); }
 }
 
-/* ── Encart magazines coin bas-gauche : bump + halo ── */
-@keyframes teaser-bump-kf {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  30% { transform: scale(1.05) rotate(-1.2deg); }
-  60% { transform: scale(0.99) rotate(0.6deg); }
-}
-.teaser-bump { animation: teaser-bump-kf 700ms ease-in-out; }
-@keyframes teaser-glow-kf {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(164,22,26,0.0); }
-  50% { box-shadow: 0 0 14px 2px rgba(164,22,26,0.28); }
-}
-.teaser-glow { animation: teaser-glow-kf 4.2s ease-in-out infinite; }
-
 /* ── Badge vidéo du hero : légère respiration pour capter l'œil ── */
 @keyframes hero-video-pop-kf {
   0%, 100% { box-shadow: 0 0 0 0 rgba(164,22,26,0.0); }
   50% { box-shadow: 0 0 16px 3px rgba(164,22,26,0.45); }
 }
 .hero-video-pop { animation: hero-video-pop-kf 3s ease-in-out infinite; }
+
+/* ── Publicités animées : entrées vives + fond animé ── */
+@keyframes ad-slide-in {
+  from { opacity: 0; transform: translateX(46px) scale(0.97); }
+  60%  { opacity: 1; transform: translateX(-5px) scale(1.01); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+.ad-slide { animation: ad-slide-in 720ms cubic-bezier(0.22,1,0.36,1) both; }
+.ad-slide-up { display: block; animation: ad-slide-up-kf 560ms cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes ad-slide-up-kf {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Créas publicitaires : balayage énergique avec léger rebond */
+@keyframes ad-sweep-kf {
+  from { opacity: 0; transform: translateX(60px) skewX(-4deg) scale(1.04); }
+  55% { opacity: 1; transform: translateX(-4px) skewX(0.5deg) scale(1); }
+  to { opacity: 1; transform: translateX(0) skewX(0) scale(1); }
+}
+.ad-sweep { animation: ad-sweep-kf 640ms cubic-bezier(0.22,1,0.36,1) both; }
+/* Fond du slide promo : dégradé rouge animé en douceur */
+@keyframes ad-bg-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.bg-ad-gradient {
+  background: linear-gradient(115deg, rgba(164,22,26,0.14) 0%, rgba(255,255,255,0.6) 30%, rgba(164,22,26,0.10) 55%, rgba(255,255,255,0.55) 80%, rgba(164,22,26,0.16) 100%);
+  background-size: 220% 220%;
+  animation: ad-bg-pan 7s ease-in-out infinite;
+}
+.dark .bg-ad-gradient {
+  background: linear-gradient(115deg, rgba(164,22,26,0.22) 0%, rgba(30,30,30,0.9) 30%, rgba(164,22,26,0.16) 55%, rgba(30,30,30,0.85) 80%, rgba(164,22,26,0.24) 100%);
+  background-size: 220% 220%;
+}
+/* Icône mégaphone flottante */
+@keyframes ad-float-kf {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-5px) rotate(3deg); }
+}
+.ad-float { animation: ad-float-kf 2.6s ease-in-out infinite; }

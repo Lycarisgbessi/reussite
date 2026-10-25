@@ -154,8 +154,6 @@ export function HomePage() {
 
           {/* Sidebar */}
           <aside className="space-y-8">
-            <AdSlot placement="SIDEBAR_TOP" />
-
             {/* ── INTERVIEWS — bloc signature, attirance immédiate sans excès ── */}
             {interviews.length > 0 ? (
               <section
@@ -210,6 +208,9 @@ export function HomePage() {
                 <InterviewTicker items={interviews.slice(1)} />
               </section>
             ) : null}
+
+
+            <AdSlot placement="SIDEBAR_TOP" />
 
             {/* ── TENDANCES : désormais sous les interviews ── */}
             <section aria-label={t('home.popularTitle')}>

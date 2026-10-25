@@ -1,14 +1,13 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// MAGAZINE TEASER CORNER — encart animé fixe en bas à gauche de
-// l'écran, qui attire l'attention sur les numéros du magazine :
-// miniatures des unes qui se relaient + CTA vers la boutique.
-// Discret (fermable), masqué sur mobile si le lecteur podcast est
-// visible, n'apparaît qu'après un léger scroll.
+// MAGAZINE TEASER CORNER — encart éditorial fixe en bas à gauche,
+// élégant et discret, qui met les numéros du magazine en avant :
+// unes en fondu enchaîné, typographie serif, filet rouge signature.
+// Apparaît en glissement après un léger scroll, fermable.
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, BookOpen, X } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import { publicApi } from '@/lib/api';
 import { useBottomLayers } from '@/lib/bottomLayers';
 import { cn } from '@/lib/utils';
@@ -20,7 +19,7 @@ export function MagazineTeaserCorner() {
   const [idx, setIdx] = useState(0);
   const [closed, setClosed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [bumped, setBumped] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const playerVisible = useBottomLayers((st) => st.playerVisible);
 
   useEffect(() => {
@@ -30,30 +29,24 @@ export function MagazineTeaserCorner() {
     publicApi
       .shop()
       .then((res) => {
-        const list = res.issues.filter((i) => i.coverUrl).slice(0, 6);
-        setIssues(list);
+        setIssues(res.issues.filter((i) => i.coverUrl).slice(0, 6));
       })
       .catch(() => {});
   }, []);
 
-  // Apparition après un léger scroll
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 400);
+    const onScroll = () => setScrolled(window.scrollY > 500);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Relayé des miniatures + « bump » périodique pour capter l'œil
+  // Fondu enchaîné lent, en pause au survol
   useEffect(() => {
-    if (issues.length < 1) return;
-    const id = setInterval(() => {
-      setIdx((i) => (i + 1) % issues.length);
-      setBumped(true);
-      setTimeout(() => setBumped(false), 700);
-    }, 4200);
+    if (hovered || issues.length < 2) return;
+    const id = setInterval(() => setIdx((i) => (i + 1) % issues.length), 5200);
     return () => clearInterval(id);
-  }, [issues.length]);
+  }, [hovered, issues.length]);
 
   if (closed || issues.length === 0 || !scrolled) return null;
   const current = issues[idx];
@@ -66,68 +59,84 @@ export function MagazineTeaserCorner() {
   return (
     <div
       className={cn(
-        'fixed left-3 z-30 hidden transition-[bottom] sm:block',
-        playerVisible ? 'bottom-[104px]' : 'bottom-3',
+        'fixed left-4 z-30 hidden transition-all duration-700 sm:block',
+        playerVisible ? 'bottom-[108px]' : 'bottom-4',
+        scrolled ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
       )}
       role="complementary"
       aria-label="Numéros du magazine"
     >
       <div
-        className={cn(
-          'relative flex items-center gap-3 overflow-hidden rounded-xl border-2 border-primary/70 bg-card pl-2 pr-3 py-2 shadow-xl shadow-primary/20 transition-transform duration-500',
-          bumped && 'teaser-bump',
-        )}
+        className="group relative"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
-        {/* Halo pulsé */}
-        <span className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-primary/40 teaser-glow" aria-hidden="true" />
-
-        <a href="#/shop" className="relative flex items-center gap-3" aria-label={`Découvrir le magazine : ${current.title}`}>
-          <span className="relative block h-16 w-11 shrink-0 overflow-hidden rounded-md border border-primary/30 shadow-md">
+        <a
+          href="#/shop"
+          aria-label={`Feuilleter le magazine : ${current.title}`}
+          className="relative flex items-stretch gap-0 overflow-hidden rounded-lg border border-border/70 bg-card shadow-[0_10px_35px_-10px_rgba(0,0,0,0.45)] transition-shadow duration-500 hover:shadow-[0_14px_45px_-10px_rgba(164,22,26,0.35)]"
+        >
+          {/* Une du numéro : fondu enchaîné + léger travelling */}
+          <span className="relative block h-[104px] w-[74px] shrink-0 overflow-hidden bg-neutral-200 dark:bg-neutral-800">
             {issues.map((iss, i) => (
               <img
                 key={iss.id}
                 src={iss.coverUrl}
                 alt=""
                 className={cn(
-                  'absolute inset-0 h-full w-full object-cover transition-all duration-700',
-                  i === idx ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0',
+                  'absolute inset-0 h-full w-full object-cover transition-all duration-[1200ms] ease-out',
+                  i === idx ? 'scale-100 opacity-100' : 'scale-[1.06] opacity-0',
                 )}
                 loading="lazy"
               />
             ))}
+            <span className="pointer-events-none absolute inset-0 rounded-l-lg ring-1 ring-inset ring-black/10" aria-hidden="true" />
           </span>
-          <span className="max-w-44">
-            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.14em] text-primary">
-              <BookOpen className="size-3" aria-hidden="true" /> Le magazine
+
+          {/* Texte éditorial */}
+          <span className="flex w-44 flex-col justify-center gap-1 py-3 pl-3.5 pr-4">
+            <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
+              <span className="h-px w-4 bg-primary" aria-hidden="true" />
+              Réussite Magazine
             </span>
-            <span className="mt-0.5 line-clamp-2 block text-[12px] font-bold leading-tight">
+            <span className="font-editorial line-clamp-2 text-[13px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
               {current.title}
             </span>
-            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+            <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors group-hover:text-primary">
               Feuilleter & commander
-              <ArrowUpRight className="size-3" aria-hidden="true" />
+              <ArrowRight className="size-3 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
             </span>
           </span>
+
+          {/* Filet signature animé au bas de la carte */}
+          <span
+            className="absolute inset-x-0 bottom-0 h-[2px] origin-left bg-primary transition-transform duration-700"
+            style={{ transform: hovered ? 'scaleX(1)' : 'scaleX(0.35)' }}
+            aria-hidden="true"
+          />
         </a>
+
+        {/* Indicateurs — points discrets */}
+        <span className="absolute -bottom-1.5 left-1/2 flex -translate-x-1/2 translate-y-full items-center gap-1 pt-1" aria-hidden="true">
+          {issues.slice(0, 5).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                'h-1 rounded-full transition-all duration-500',
+                i === idx % 5 ? 'w-3.5 bg-primary' : 'w-1 bg-primary/30',
+              )}
+            />
+          ))}
+        </span>
 
         <button
           type="button"
           onClick={close}
           aria-label="Fermer"
-          className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-secondary hover:text-foreground"
+          className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-all duration-300 hover:text-foreground group-hover:opacity-100"
         >
-          <X className="size-3.5" />
+          <X className="size-3" />
         </button>
-
-        {/* Indicateurs de rotation */}
-        <span className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5" aria-hidden="true">
-          {issues.slice(0, 5).map((_, i) => (
-            <span
-              key={i}
-              className={cn('h-0.5 rounded-full transition-all', i === idx % 5 ? 'w-3 bg-primary' : 'w-1 bg-primary/35')}
-            />
-          ))}
-        </span>
       </div>
     </div>
   );

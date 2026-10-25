@@ -36,12 +36,12 @@ const PLACEMENT_FLAGS: Record<string, keyof SiteSettings> = {
  * Bannières header/footer : format « leaderboard » compact et centré.
  */
 const SIZE_CLASSES: Record<string, string> = {
-  HEADER_BANNER: 'mx-auto h-16 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-20',
+  HEADER_BANNER: 'mx-auto h-24 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-28',
   SIDEBAR_TOP: 'h-[250px] w-full overflow-hidden rounded-md border bg-card',
   SIDEBAR_STICKY: 'h-[600px] w-full overflow-hidden rounded-md border bg-card',
   IN_ARTICLE: 'mx-auto h-[250px] w-full max-w-[336px] overflow-hidden rounded-md border bg-card',
   NATIVE: 'aspect-[4/3] w-full',
-  FOOTER_BANNER: 'mx-auto h-16 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-20',
+  FOOTER_BANNER: 'mx-auto h-24 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-28',
 };
 
 const ROTATE_MS = 5000;
@@ -129,21 +129,25 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
           /* ── Slide « réservez cet espace » — animé, incite à publiciter ── */
           <a
             href="#/contact"
-            className="ad-fade flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/15 via-card to-accent/50 px-4 text-center"
+            className="ad-slide flex h-full w-full items-center justify-center gap-4 bg-ad-gradient px-5 text-center"
             aria-label="Réserver cet espace publicitaire"
           >
-            <span className="relative flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" aria-hidden="true" />
-              <Megaphone className="size-5" aria-hidden="true" />
+            <span className="relative hidden shrink-0 items-center justify-center sm:flex">
+              <span className="ad-float flex size-12 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40" aria-hidden="true">
+                <Megaphone className="size-6" />
+              </span>
+              <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" aria-hidden="true" />
             </span>
-            <p className="font-editorial text-sm font-bold leading-tight text-foreground sm:text-base">
-              Votre marque ici ?
-            </p>
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              Réservez cet espace publicitaire et touchez des milliers de décideurs de décideurs.
-            </p>
-            <span className="cta-pulse mt-1 rounded-full bg-primary px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
-              Réserver cet espace
+            <span className="min-w-0">
+              <span className="ad-slide-up block font-editorial text-base font-bold leading-tight text-foreground sm:text-lg">
+                Votre marque ici ?
+              </span>
+              <span className="ad-slide-up mt-1 block text-xs leading-snug text-muted-foreground sm:text-[13px]" style={{ animationDelay: '120ms' }}>
+                Réservez cet espace publicitaire et touchez des milliers de décideurs.
+              </span>
+              <span className="ad-slide-up mt-2 inline-block rounded-full bg-primary px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30 cta-pulse" style={{ animationDelay: '220ms' }}>
+                Réserver cet espace
+              </span>
             </span>
           </a>
         ) : isVideoSlide && currentBanner ? (
@@ -152,7 +156,7 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
             target="_blank"
             rel="sponsored noopener noreferrer"
             onClick={onClick}
-            className="ad-fade block h-full w-full overflow-hidden rounded-lg"
+            className="ad-sweep block h-full w-full overflow-hidden rounded-lg"
             aria-label={adLabel}
           >
             <video
@@ -172,7 +176,7 @@ export function AdSlot({ placement, className, category, label = 'Publicité' }:
             target="_blank"
             rel="sponsored noopener noreferrer"
             onClick={onClick}
-            className="ad-fade block h-full w-full overflow-hidden rounded-lg"
+            className="ad-sweep block h-full w-full overflow-hidden rounded-lg"
             aria-label={adLabel}
           >
             <SmartImage
