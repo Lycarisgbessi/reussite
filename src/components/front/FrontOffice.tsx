@@ -24,7 +24,7 @@ import { ScrollToTop } from './ScrollToTop';
 import { MagazineTeaserCorner } from './announcers/MagazineTeaserCorner';
 import { InstallBanner } from './InstallBanner';
 import { ChatWidget } from './ChatWidget';
-import { AdSlot, InterstitialAd, StickyMobileAd } from './ads/AdSlot';
+import { AdSlot, InterstitialAd, SidePeekAd, StickyMobileAd } from './ads/AdSlot';
 import { HomeSkeleton } from './mag/Skeletons';
 import { HomePage } from './home/HomePage';
 import { ArticlePage } from './article/ArticlePage';
@@ -159,6 +159,7 @@ export default function FrontOffice() {
       <CookieBanner />
       <ScrollToTop />
       <MagazineTeaserCorner />
+      <SidePeekAd />
       <StickyMobileAd />
       <InterstitialAd />
     </div>
