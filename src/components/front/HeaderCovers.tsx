@@ -1,15 +1,24 @@
 'use client';
 
 // ═══════════════════════════════════════════════════════════════
-// HEADER COVERS — carrousel « coverflow » des unes du magazine :
-// défilement automatique continu, sensation de ROTATION claire
-// (forte inclinaison des voisines, dossier central projeté devant),
-// espacements resserrés. Clic sur une couverture → page Boutique
-// ouverte sur ce numéro (aperçu).
+// HEADER COVERS — carrousel « coverflow » des unes du magazine.
+// FLUIDITÉ HAUT DE GAMME : animation physique à ressort (spring)
+// sur le seul `transform` — les couvertures glissent en continu
+// comme portées par un plateau tournant, sans à-coups mécaniques.
+// Géométrie resserrée : les couvertures se serrent au centre
+// (pas de 56px), laissant un large respir entre le groupe, le
+// logo (gauche) et le bouton recherche (droite).
+// Clic sur une couverture → boutique ouverte sur ce numéro.
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { COVERS, coverSrc, type CoverItem } from './coversData';
 import { publicApi } from '@/lib/api';
+
+// Géométrie de la roue
+const STEP_PX = 56;       // pas horizontal resserré entre couvertures
+const ROT_Y = 45;         // inclinaison marquée → sensation de rotation
+const SPRING = { type: 'spring', stiffness: 70, damping: 15, mass: 0.85 } as const;
 
 export function HeaderCovers() {
   // Numéros de la boutique (couverture renseignée au dashboard) —
@@ -57,21 +66,14 @@ export function HeaderCovers() {
     return ((d + n + n / 2) % n) - n / 2; // -3..3
   };
 
-  // Géométrie de la rotation : pas resserré (66px) pour que les
-  // voisines se serrent, forte inclinaison (±42°) + retrait en
-  // profondeur pour marquer l'effet de roue qui tourne.
-  const STEP_PX = 66;
-  const ROT_Y = 42;
-  const Z_STEP = 74;
-
   return (
     <div
-      className="hidden shrink-0 items-center justify-center px-8 md:flex"
+      className="hidden shrink-0 items-center justify-center px-10 md:flex lg:px-14"
       aria-label="Couvertures des numéros"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative flex h-44 items-center lg:h-48" style={{ perspective: '1100px' }}>
+      <div className="relative flex h-44 items-center lg:h-48" style={{ perspective: '1200px' }}>
         {covers.map((c, i) => {
           const d = offset(i);
           const abs = Math.abs(d);
@@ -79,19 +81,25 @@ export function HeaderCovers() {
           const isActive = d === 0;
           const link = c.id || c.slug ? `#/shop?numero=${c.id ?? c.slug}` : '#/shop';
           return (
-            <a
+            <motion.a
               key={c.file || (c.src ?? '') + i}
               href={link}
               aria-label={`Voir le numéro : ${c.label}`}
-              className="absolute left-1/2 block cursor-pointer overflow-hidden rounded-[3px] border-white/25 bg-neutral-900 shadow-2xl transition-all duration-[850ms] [transition-timing-function:cubic-bezier(0.45,0,0.25,1)] will-change-transform hover:brightness-110"
-              style={{
-                width: isActive ? '8.6rem' : '5.2rem',
-                height: isActive ? '10.4rem' : '6.5rem',
-                zIndex: 10 - abs,
-                transform: `translateX(calc(-50% + ${d * STEP_PX}px)) rotateY(${d * -ROT_Y}deg) translateZ(${isActive ? 90 : -abs * Z_STEP}px) scale(${isActive ? 1 : 0.9})`,
-                opacity: abs === 2 ? 0.5 : isActive ? 1 : 0.8,
-                borderWidth: isActive ? 2 : 1,
+              className="absolute left-1/2 block cursor-pointer overflow-hidden rounded-[3px] border border-white/25 bg-neutral-900 shadow-2xl will-change-transform hover:brightness-110"
+              initial={false}
+              animate={{
+                // Plateau tournant : translation, rotation, profondeur,
+                // échelle — tout passe par transform (jamais le layout).
+                // Centrage : left-1/2 + marge -50% de largeur (style),
+                // x reste numérique pur → interpolation fluide du spring.
+                x: d * STEP_PX,
+                rotateY: d * -ROT_Y,
+                z: isActive ? 90 : -abs * 80,
+                scale: isActive ? 1.62 : abs === 1 ? 1.04 : 0.88,
+                opacity: abs === 2 ? 0.45 : isActive ? 1 : 0.8,
               }}
+              transition={SPRING}
+              style={{ zIndex: 10 - abs, width: '5.2rem', height: '6.5rem', marginLeft: '-2.6rem' }}
             >
               <img
                 src={c.src || coverSrc(c.file)}
@@ -105,7 +113,7 @@ export function HeaderCovers() {
                   {c.label}
                 </span>
               ) : null}
-            </a>
+            </motion.a>
           );
         })}
       </div>
