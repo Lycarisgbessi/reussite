@@ -437,3 +437,15 @@ a, button {
   50% { transform: translateY(-5px) rotate(3deg); }
 }
 .ad-float { animation: ad-float-kf 2.6s ease-in-out infinite; }
+
+/* ── Encart magazines : reflet balayant + CTA brillant ── */
+@keyframes teaser-sheen-kf {
+  0% { left: -45%; }
+  55%, 100% { left: 125%; }
+}
+.teaser-sheen { animation: teaser-sheen-kf 4.6s ease-in-out infinite; }
+@keyframes teaser-shine-kf {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(164,22,26,0.35); }
+  50% { box-shadow: 0 0 16px 3px rgba(164,22,26,0.55); }
+}
+.teaser-shine { animation: teaser-shine-kf 2.6s ease-in-out infinite; }

@@ -77,7 +77,7 @@ export function MagazineTeaserCorner() {
           className="relative flex items-stretch gap-0 overflow-hidden rounded-lg border border-border/70 bg-card shadow-[0_10px_35px_-10px_rgba(0,0,0,0.45)] transition-shadow duration-500 hover:shadow-[0_14px_45px_-10px_rgba(164,22,26,0.35)]"
         >
           {/* Une du numéro : fondu enchaîné + léger travelling */}
-          <span className="relative block h-[104px] w-[74px] shrink-0 overflow-hidden bg-neutral-200 dark:bg-neutral-800">
+          <span className="relative block h-[132px] w-[94px] shrink-0 overflow-hidden bg-neutral-200 dark:bg-neutral-800">
             {issues.map((iss, i) => (
               <img
                 key={iss.id}
@@ -93,19 +93,26 @@ export function MagazineTeaserCorner() {
             <span className="pointer-events-none absolute inset-0 rounded-l-lg ring-1 ring-inset ring-black/10" aria-hidden="true" />
           </span>
 
-          {/* Texte éditorial */}
-          <span className="flex w-44 flex-col justify-center gap-1 py-3 pl-3.5 pr-4">
+          {/* Texte éditorial + CTA incitatif */}
+          <span className="flex w-56 flex-col justify-center gap-1.5 py-3.5 pl-4 pr-5">
             <span className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
               <span className="h-px w-4 bg-primary" aria-hidden="true" />
               Réussite Magazine
             </span>
-            <span className="font-editorial line-clamp-2 text-[13px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
+            <span className="font-editorial line-clamp-2 text-[14px] font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
               {current.title}
             </span>
-            <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors group-hover:text-primary">
-              Feuilleter & commander
+            <span className="text-[10px] font-medium text-muted-foreground">
+              Numérique dès 10 000 GNF · papier livré chez vous
+            </span>
+            <span className="teaser-shine mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30">
+              Feuilleter ce numéro
               <ArrowRight className="size-3 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
             </span>
+          </span>
+          {/* Reflet balayant la carte */}
+          <span className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <span className="teaser-sheen absolute inset-y-0 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/25 to-transparent" />
           </span>
 
           {/* Filet signature animé au bas de la carte */}

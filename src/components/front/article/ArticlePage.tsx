@@ -178,7 +178,8 @@ export function ArticlePage({ slug }: { slug: string }) {
       {/* Barre de progression de lecture */}
       <div ref={progressRef} className="reading-progress w-0" aria-hidden="true" />
 
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10 xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-10">
+      <div className="mx-auto w-full max-w-4xl xl:mx-0 xl:max-w-none">
         {/* Fil d'Ariane */}
         <nav aria-label={t('article.breadcrumb')} className="mb-6 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
           <a href="#/" className="transition-colors hover:text-primary">
@@ -246,6 +247,11 @@ export function ArticlePage({ slug }: { slug: string }) {
             </span>
           </div>
         </header>
+
+        {/* Encart publicitaire — haut d'article */}
+        <div className="mt-8">
+          <AdSlot placement="IN_ARTICLE" category={categorySlug} />
+        </div>
 
         {/* Image de couverture */}
         <figure className="mt-8">
@@ -325,6 +331,11 @@ export function ArticlePage({ slug }: { slug: string }) {
           </div>
         ) : null}
 
+        {/* Encart publicitaire — bas d'article */}
+        <div className="mt-10">
+          <AdSlot placement="IN_ARTICLE" category={categorySlug} />
+        </div>
+
         {/* Auteur */}
         <div className="mt-10">
           <AuthorBox author={article.authorFull} />
@@ -335,6 +346,15 @@ export function ArticlePage({ slug }: { slug: string }) {
 
         {/* Commentaires */}
         <CommentsSection articleId={article.id} comments={comments} />
+      </div>
+
+        {/* ── Latéral droit : encarts publicitaires sticky ── */}
+        <aside className="hidden xl:block" aria-label="Publicités">
+          <div className="sticky top-20 space-y-6">
+            <AdSlot placement="SIDEBAR_TOP" category={categorySlug} />
+            <AdSlot placement="SIDEBAR_STICKY" category={categorySlug} />
+          </div>
+        </aside>
       </div>
 
       {/* À lire aussi */}

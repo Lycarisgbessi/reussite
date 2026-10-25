@@ -24,6 +24,8 @@ export function HeroSlider({ articles }: HeroSliderProps) {
   const [selected, setSelected] = useState(0);
   const pausedRef = useRef(false);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
+  // Lecture vidéo autonome (badge du hero) : id YouTube en lecture
+  const [playing, setPlaying] = useState<string | null>(null);
 
   const onSelect = useCallback(() => {
     if (emblaApi) setSelected(emblaApi.selectedScrollSnap());
@@ -109,39 +111,73 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                       </span>
                     </div>
 
-                    {/* Aperçu vidéo : badge au coin inférieur droit de la
-                        couverture ; au survol, la vidéo se joue en mini
-                        lecteur sans quitter le carrousel. */}
+                    {/* Aperçu vidéo : grand badge au coin inférieur droit de
+                        la couverture. Survol = mini-lecteur muet ; clic =
+                        lecture autonome avec contrôles et son, sans quitter
+                        le carrousel. */}
                     {article.videoBadge ? (
                       <span
-                        className="group/video absolute bottom-3 right-3 z-10 block transition-transform duration-300 hover:scale-105"
-                        aria-label="Cet article contient une vidéo"
+                        className="group/video absolute bottom-3 right-3 z-20 block"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Lire la vidéo de : ${article.title}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setPlaying(playing === article.videoBadge ? null : (article.videoBadge ?? null));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPlaying(playing === article.videoBadge ? null : (article.videoBadge ?? null));
+                          }
+                        }}
                       >
-                        <span className="hero-video-pop relative block h-20 w-32 overflow-hidden rounded-lg border-2 border-white/85 shadow-xl sm:h-24 sm:w-40">
-                          {/* Vignette par défaut (avant survol) */}
+                        <span className="hero-video-pop relative block h-40 w-64 overflow-hidden rounded-xl border-2 border-white/85 shadow-2xl transition-transform duration-300 hover:scale-[1.04] sm:h-48 sm:w-80">
+                          {/* Vignette par défaut (avant survol / lecture) */}
                           <span className="absolute inset-0">
                             <img
-                              src={`https://i.ytimg.com/vi/${article.videoBadge}/mqdefault.jpg`}
+                              src={`https://i.ytimg.com/vi/${article.videoBadge}/maxresdefault.jpg`}
                               alt=""
                               className="h-full w-full object-cover"
                               loading="lazy"
+                              onError={(ev) => {
+                                (ev.target as HTMLImageElement).src =
+                                  `https://i.ytimg.com/vi/${article.videoBadge}/mqdefault.jpg`;
+                              }}
                             />
                           </span>
                           {/* Lecteur au survol (autoplay muet) */}
-                          <iframe
-                            src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${article.videoBadge}`}
+                          {playing !== article.videoBadge ? (
+                            <iframe
+                              key={`preview-${article.videoBadge}`}
+                              src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${article.videoBadge}`}
                               title={`Aperçu vidéo — ${article.title}`}
-                            className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-300 group-hover/video:opacity-100"
-                            allow="autoplay; encrypted-media; picture-in-picture"
-                            loading="lazy"
-                          />
-                          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35 transition-opacity group-hover/video:opacity-0">
-                            <span className="flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-lg">
-                              <Play className="ml-0.5 size-4" fill="currentColor" strokeWidth={0} />
+                              className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-300 group-hover/video:opacity-100"
+                              allow="autoplay; encrypted-media; picture-in-picture"
+                              loading="lazy"
+                            />
+                          ) : (
+                            /* Lecture autonome demandée : contrôles + son */
+                            <iframe
+                              key={`play-${article.videoBadge}`}
+                              src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&controls=1&modestbranding=1&rel=0`}
+                              title={`Vidéo — ${article.title}`}
+                              className="absolute inset-0 h-full w-full"
+                              allow="autoplay; encrypted-media; picture-in-picture"
+                              allowFullScreen
+                            />
+                          )}
+                          {playing !== article.videoBadge ? (
+                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-300 group-hover/video:opacity-0">
+                              <span className="flex size-14 items-center justify-center rounded-full bg-primary/95 text-white shadow-2xl transition-transform duration-300 group-hover/video:scale-110">
+                                <Play className="ml-1 size-6" fill="currentColor" strokeWidth={0} />
+                              </span>
                             </span>
-                          </span>
-                          <span className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                            Vidéo
+                          ) : null}
+                          <span className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            ▶ Vidéo — cliquez pour jouer
                           </span>
                         </span>
                       </span>

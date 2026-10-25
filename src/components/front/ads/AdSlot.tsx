@@ -36,12 +36,12 @@ const PLACEMENT_FLAGS: Record<string, keyof SiteSettings> = {
  * Bannières header/footer : format « leaderboard » compact et centré.
  */
 const SIZE_CLASSES: Record<string, string> = {
-  HEADER_BANNER: 'mx-auto h-24 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-28',
+  HEADER_BANNER: 'mx-auto h-28 w-[calc(100%-1rem)] max-w-5xl overflow-hidden rounded-md border bg-card md:h-36',
   SIDEBAR_TOP: 'h-[250px] w-full overflow-hidden rounded-md border bg-card',
   SIDEBAR_STICKY: 'h-[600px] w-full overflow-hidden rounded-md border bg-card',
-  IN_ARTICLE: 'mx-auto h-[250px] w-full max-w-[336px] overflow-hidden rounded-md border bg-card',
+  IN_ARTICLE: 'mx-auto h-[170px] w-[calc(100%+2rem)] -mx-4 max-w-[680px] overflow-hidden rounded-md border bg-card md:h-[180px]',
   NATIVE: 'aspect-[4/3] w-full',
-  FOOTER_BANNER: 'mx-auto h-24 w-full max-w-3xl overflow-hidden rounded-md border bg-card md:h-28',
+  FOOTER_BANNER: 'mx-auto h-28 w-[calc(100%-1rem)] max-w-5xl overflow-hidden rounded-md border bg-card md:h-36',
 };
 
 const ROTATE_MS = 5000;
