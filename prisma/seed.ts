@@ -82,6 +82,9 @@ async function main() {
   await prisma.adPlacement.deleteMany()
   await prisma.siteSetting.deleteMany()
   await prisma.flashInfo.deleteMany()
+  await prisma.order.deleteMany()
+  await prisma.magazineIssue.deleteMany()
+  await prisma.subscriptionPlan.deleteMany()
   console.log('   ✔ Base purgée')
 
   // ───────────────────────────────────────────────────────────
@@ -1237,6 +1240,129 @@ async function main() {
     await prisma.auditLog.create({ data: { userId: a.userId, userName: a.userName, action: a.action, details: a.details, createdAt: daysAgo(a.days, a.hour, 5) } })
   }
   console.log(`   ✔ 8 entrées d'audit`)
+
+  // ───────────────────────────────────────────────────────────
+  // 13-BIS. BOUTIQUE — NUMÉROS DU MAGAZINE & ABONNEMENTS
+  // ───────────────────────────────────────────────────────────
+  console.log('🛍️  Création des numéros du magazine et abonnements…')
+  await prisma.magazineIssue.createMany({
+    data: [
+      {
+        slug: 'reussite-numero-12-innovation-afrique-emergente',
+        title: 'Réussite — N° 12 : Cap sur l\'Innovation & l\'Afrique Émergente',
+        issueNumber: 12,
+        description: `AU SOMMAIRE DE CE NUMÉRO EXCEPTIONNEL :
+• Grand Entretien : Les capitaines d'industrie qui façonnent la nouvelle économie ouest-africaine.
+• Dossier Spécial : Financement des startups & PME — Comment lever des fonds en 2026.
+• Enquête : L'intelligence artificielle au service de l'agriculture et du commerce de proximité.
+• Success Story : De Conakry à l'international, les parcours inspirants de nos jeunes champions.
+• Décryptage : Les opportunités du marché unique africain (ZLECAf).`,
+        coverUrl: '/images/cover-numero-special.jpg',
+        previewImages: JSON.stringify([
+          '/images/cover-numero-special.jpg',
+          '/images/cover-interview-1.jpg',
+          '/images/cover-financement-1.jpg',
+          '/images/cover-ia-1.jpg',
+          '/images/cover-entrepreneuriat-1.jpg',
+        ]),
+        previewPages: 5,
+        priceCfa: 10000,
+        priceEur: 1,
+        pricePrintCfa: 30000,
+        pricePrintEur: 3,
+        featured: true,
+        published: true,
+        releaseDate: daysAgo(5),
+      },
+      {
+        slug: 'reussite-numero-11-nouvelles-frontieres-business',
+        title: 'Réussite — N° 11 : Les Nouvelles Frontières du Business',
+        issueNumber: 11,
+        description: `DANS CE NUMÉRO :
+• Leadership & Résilience : Diriger en temps d'incertitude économique.
+• Dossier Banque & Fintech : La révolution du paiement mobile et du micro-crédit.
+• Focus : Les femmes leaders à la tête des plus grands groupes privés.
+• Analyse sectorielle : Mines, infrastructures et développement durable.`,
+        coverUrl: '/images/cover-business-1.jpg',
+        previewImages: JSON.stringify([
+          '/images/cover-business-1.jpg',
+          '/images/cover-dossier-1.jpg',
+          '/images/cover-startups-1.jpg',
+          '/images/cover-management-1.jpg',
+          '/images/cover-tribune-1.jpg',
+        ]),
+        previewPages: 5,
+        priceCfa: 10000,
+        priceEur: 1,
+        pricePrintCfa: 30000,
+        pricePrintEur: 3,
+        featured: false,
+        published: true,
+        releaseDate: daysAgo(95),
+      },
+      {
+        slug: 'reussite-numero-10-essor-des-champions-nationaux',
+        title: 'Réussite — N° 10 : L\'Essor des Champions Nationaux',
+        issueNumber: 10,
+        description: `DANS CE NUMÉRO :
+• Dossier Spécial : Transformation locale et création de valeur ajoutée.
+• Entretien exclusif avec les ministres en charge de l'Économie et de l'Industrie.
+• Enquête : Agro-industrie, le nouvel eldorado des investisseurs privés.
+• Guide pratique : 10 conseils d'experts pour structurer sa comptabilité d'entreprise.`,
+        coverUrl: '/images/cover-startups-2.jpg',
+        previewImages: JSON.stringify([
+          '/images/cover-startups-2.jpg',
+          '/images/cover-interview-2.jpg',
+          '/images/cover-business-2.jpg',
+          '/images/cover-dossier-2.jpg',
+          '/images/cover-success-1.jpg',
+        ]),
+        previewPages: 5,
+        priceCfa: 10000,
+        priceEur: 1,
+        pricePrintCfa: 30000,
+        pricePrintEur: 3,
+        featured: false,
+        published: true,
+        releaseDate: daysAgo(185),
+      },
+    ],
+  })
+
+  await prisma.subscriptionPlan.createMany({
+    data: [
+      {
+        name: 'Abonnement Annuel VIP',
+        description: 'Recevez les 4 numéros trimestriels dès leur parution par email, avec accès illimité aux archives.',
+        durationMonths: 12,
+        issuesCount: 4,
+        priceCfa: 35000,
+        priceEur: 4,
+        perks: JSON.stringify([
+          '4 numéros de Réussite Magazine livrés par email',
+          'Accès intégral et immédiat aux archives numériques',
+          'Invitations prioritaires aux webinaires et masterclasses',
+          'Suppléments thématiques offerts tout au long de l\'année',
+        ]),
+        active: true,
+      },
+      {
+        name: 'Abonnement Découverte (6 mois)',
+        description: 'La formule idéale pour découvrir les 2 prochains numéros de référence.',
+        durationMonths: 6,
+        issuesCount: 2,
+        priceCfa: 18000,
+        priceEur: 2,
+        perks: JSON.stringify([
+          '2 numéros consécutifs livrés en PDF HD',
+          'Newsletter hebdomadaire exclusive des abonnés',
+          'Sans engagement de renouvellement',
+        ]),
+        active: true,
+      },
+    ],
+  })
+  console.log('   ✔ 3 numéros du magazine (avec 5 pages d\'aperçu chacun) + 2 formules d\'abonnement créés')
 
   // ───────────────────────────────────────────────────────────
   // 14. VÉRIFICATIONS FINALES

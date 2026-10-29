@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   BookOpen, Pencil, Plus, Trash2, Loader2, ShoppingBag, PackageCheck,
-  CreditCard, Ban, Eye, EyeOff,
+  CreditCard, Ban, Eye, EyeOff, ArrowUp, ArrowDown, ImagePlus, Sparkles,
 } from 'lucide-react';
 import { isAuthError, formatDate } from '../ui/helpers';
 
@@ -58,10 +58,13 @@ export function MagazineAdmin() {
   const [issueForm, setIssueForm] = React.useState({ ...EMPTY_ISSUE });
   const [deleteIssue, setDeleteIssue] = React.useState<IssueRow | null>(null);
   const [coverPickerOpen, setCoverPickerOpen] = React.useState(false);
+  const [previewPickerOpen, setPreviewPickerOpen] = React.useState(false);
   const [uploadingPdf, setUploadingPdf] = React.useState(false);
   const [uploadingCover, setUploadingCover] = React.useState(false);
+  const [uploadingPage, setUploadingPage] = React.useState(false);
   const pdfInputRef = React.useRef<HTMLInputElement>(null);
   const coverInputRef = React.useRef<HTMLInputElement>(null);
+  const pageInputRef = React.useRef<HTMLInputElement>(null);
 
   // Formule : dialog
   const [planDialog, setPlanDialog] = React.useState(false);
@@ -434,10 +437,150 @@ export function MagazineAdmin() {
                   <Input value={issueForm.pdfUrl} onChange={(e) => setIssueForm((f) => ({ ...f, pdfUrl: e.target.value }))} placeholder="https://drive.google.com/file/d/…/view ou https://…" />
                 </div>
               </Field>
-              <Field label="Pages d'aperçu gratuites (générées depuis le PDF)" hint="Aucune image à importer : la boutique affiche elle-même les X premières pages du PDF. Ex. 5 = pages 1 à 5 visibles, le reste réservé aux acheteurs. 0 = aucun aperçu.">
-                <Input type="number" min={0} max={50} value={issueForm.previewPages}
-                  onChange={(e) => setIssueForm((f) => ({ ...f, previewPages: Math.min(50, Math.max(0, Number(e.target.value) || 0)) }))} />
+              <Field label="Nombre de pages d'aperçu" hint="Par défaut 5 pages visibles gratuitement avant le verrou d'achat.">
+                <Input type="number" min={1} max={20} value={issueForm.previewPages}
+                  onChange={(e) => setIssueForm((f) => ({ ...f, previewPages: Math.min(20, Math.max(1, Number(e.target.value) || 5)) }))} />
               </Field>
+            </div>
+
+            {/* Gestion des pages d'aperçu (Option 1 : Images HD sécurisées) */}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                    <BookOpen className="size-3.5" />
+                    Pages d'aperçu gratuit ({issueForm.previewImages.length} page{issueForm.previewImages.length > 1 ? 's' : ''})
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Images haute définition sécurisées des premières pages (feuilletées par le visiteur en mode Flipbook).
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={pageInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      e.target.value = '';
+                      if (files.length === 0) return;
+                      setUploadingPage(true);
+                      try {
+                        for (const file of files) {
+                          const res = await adminApi.uploadMedia(file, { alt: `Page d'aperçu — ${issueForm.title || 'numéro'}` });
+                          setIssueForm((f) => ({ ...f, previewImages: [...f.previewImages, res.media.url] }));
+                        }
+                        toast({ title: 'Page(s) ajoutée(s)', description: `${files.length} page(s) ajoutée(s) à l'aperçu.` });
+                      } catch (err) {
+                        handleErr(err, 'Import impossible.');
+                      } finally {
+                        setUploadingPage(false);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs bg-background"
+                    disabled={uploadingPage}
+                    onClick={() => pageInputRef.current?.click()}
+                  >
+                    {uploadingPage ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <ImagePlus className="size-3.5 mr-1.5 text-primary" />}
+                    Ajouter des pages (PC)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setPreviewPickerOpen(true)}
+                  >
+                    Choisir en médiathèque
+                  </Button>
+                  {issueForm.coverUrl && issueForm.previewImages.length === 0 ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 text-xs font-medium"
+                      onClick={() => setIssueForm((f) => ({ ...f, previewImages: [f.coverUrl] }))}
+                    >
+                      <Sparkles className="size-3.5 mr-1 text-primary" /> Utiliser la une comme Page 1
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              {issueForm.previewImages.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+                  {issueForm.previewImages.map((imgUrl, idx) => (
+                    <div key={idx} className="group relative flex flex-col items-center rounded-lg border bg-card p-1.5 shadow-sm">
+                      <span className="absolute left-2.5 top-2.5 z-10 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-white shadow">
+                        Page {idx + 1}
+                      </span>
+                      <img src={imgUrl} alt={`Page ${idx + 1}`} className="aspect-[3/4] w-full rounded object-cover border" />
+                      <div className="mt-1.5 flex w-full items-center justify-between gap-1">
+                        <div className="flex gap-0.5">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => {
+                              const arr = [...issueForm.previewImages];
+                              const temp = arr[idx - 1];
+                              arr[idx - 1] = arr[idx];
+                              arr[idx] = temp;
+                              setIssueForm((f) => ({ ...f, previewImages: arr }));
+                            }}
+                            className="flex size-5 items-center justify-center rounded hover:bg-muted disabled:opacity-20"
+                            title="Déplacer à gauche"
+                          >
+                            <ArrowUp className="size-3 -rotate-90" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === issueForm.previewImages.length - 1}
+                            onClick={() => {
+                              const arr = [...issueForm.previewImages];
+                              const temp = arr[idx + 1];
+                              arr[idx + 1] = arr[idx];
+                              arr[idx] = temp;
+                              setIssueForm((f) => ({ ...f, previewImages: arr }));
+                            }}
+                            className="flex size-5 items-center justify-center rounded hover:bg-muted disabled:opacity-20"
+                            title="Déplacer à droite"
+                          >
+                            <ArrowDown className="size-3 -rotate-90" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIssueForm((f) => ({
+                              ...f,
+                              previewImages: f.previewImages.filter((_, i) => i !== idx),
+                            }));
+                          }}
+                          className="flex size-5 items-center justify-center rounded text-destructive hover:bg-destructive/10"
+                          title="Supprimer cette page"
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-primary/30 p-4 text-center">
+                  <BookOpen className="mx-auto size-6 text-muted-foreground/60" />
+                  <p className="mt-1 text-xs font-semibold text-foreground/90">Aucune page d'aperçu ajoutée</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    Ajoutez jusqu'à 5 pages (couverture, sommaire, édito, dossier principal) pour le feuilletage public.
+                  </p>
+                </div>
+              )}
             </div>
 
             <Field label="Couverture" hint="Importez la une : elle alimente automatiquement le carrousel du header du site.">
@@ -584,6 +727,16 @@ export function MagazineAdmin() {
         onOpenChange={setCoverPickerOpen}
         onSelect={(m) => { setIssueForm((f) => ({ ...f, coverUrl: m.url })); setCoverPickerOpen(false); }}
         title="Couverture du numéro"
+      />
+      <MediaPicker
+        open={previewPickerOpen}
+        onOpenChange={setPreviewPickerOpen}
+        onSelect={(m) => {
+          setIssueForm((f) => ({ ...f, previewImages: [...f.previewImages, m.url] }));
+          setPreviewPickerOpen(false);
+          toast({ title: 'Page ajoutée', description: 'La page a été ajoutée aux aperçus.' });
+        }}
+        title="Ajouter une page d'aperçu"
       />
       
 

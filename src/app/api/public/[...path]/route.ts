@@ -695,6 +695,41 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: stri
       case 'favorites':
         return handleFavoritesGet(sp);
 
+      case 'shop': {
+        // GET /api/public/shop/issues/:id
+        if (second === 'issues' && third) {
+          const issue = await db.magazineIssue.findFirst({
+            where: { OR: [{ id: third }, { slug: third }], published: true },
+          });
+          if (!issue) throw new HttpError(404, 'Numéro introuvable.');
+          return ok({
+            issue: {
+              id: issue.id,
+              slug: issue.slug,
+              title: issue.title,
+              issueNumber: issue.issueNumber,
+              description: issue.description,
+              coverUrl: issue.coverUrl,
+              previewImages: (() => {
+                try {
+                  return JSON.parse(issue.previewImages || '[]');
+                } catch {
+                  return [];
+                }
+              })(),
+              previewPages: issue.previewPages ?? 5,
+              priceCfa: issue.priceCfa,
+              priceEur: issue.priceEur,
+              pricePrintCfa: issue.pricePrintCfa,
+              pricePrintEur: issue.pricePrintEur,
+              featured: issue.featured,
+              releaseDate: issue.releaseDate.toISOString(),
+            },
+          });
+        }
+        break;
+      }
+
       default:
         break;
     }

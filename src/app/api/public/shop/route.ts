@@ -38,6 +38,8 @@ export async function GET(req: NextRequest) {
           issueNumber: i.issueNumber,
           description: i.description,
           coverUrl: i.coverUrl,
+          previewImages: parseJson<string[]>(i.previewImages, []),
+          previewPages: i.previewPages ?? 5,
           priceCfa: i.priceCfa,
           priceEur: i.priceEur,
           pricePrintCfa: i.pricePrintCfa,

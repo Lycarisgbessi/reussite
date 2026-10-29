@@ -1803,6 +1803,8 @@ async function handleShopIssueCreate(ctx: Ctx) {
       previewImages: JSON.stringify(Array.isArray(body.previewImages) ? body.previewImages.map(String) : []),
       priceCfa: Math.max(0, Math.trunc(toNumberOr(body.priceCfa, 5000))),
       priceEur: Math.max(0, Math.trunc(toNumberOr(body.priceEur, 8))),
+      pricePrintCfa: Math.max(0, Math.trunc(toNumberOr(body.pricePrintCfa, 30000))),
+      pricePrintEur: Math.max(0, Math.trunc(toNumberOr(body.pricePrintEur, 3))),
       pdfUrl: String(body.pdfUrl ?? ''),
       previewPages: Math.min(50, Math.max(0, Math.trunc(toNumberOr(body.previewPages, 5)))),
       featured: toBool(body.featured),
@@ -1825,6 +1827,8 @@ async function handleShopIssueUpdate(ctx: Ctx) {
   if (body.previewImages !== undefined) data.previewImages = JSON.stringify(Array.isArray(body.previewImages) ? body.previewImages.map(String) : []);
   if (body.priceCfa !== undefined) data.priceCfa = Math.max(0, Math.trunc(toNumberOr(body.priceCfa, existing.priceCfa)));
   if (body.priceEur !== undefined) data.priceEur = Math.max(0, Math.trunc(toNumberOr(body.priceEur, existing.priceEur)));
+  if (body.pricePrintCfa !== undefined) data.pricePrintCfa = Math.max(0, Math.trunc(toNumberOr(body.pricePrintCfa, existing.pricePrintCfa)));
+  if (body.pricePrintEur !== undefined) data.pricePrintEur = Math.max(0, Math.trunc(toNumberOr(body.pricePrintEur, existing.pricePrintEur)));
   if (body.pdfUrl !== undefined) data.pdfUrl = String(body.pdfUrl);
   if (body.previewPages !== undefined) data.previewPages = Math.min(50, Math.max(0, Math.trunc(toNumberOr(body.previewPages, existing.previewPages))));
   if (body.issueNumber !== undefined) data.issueNumber = Math.max(1, Math.trunc(toNumberOr(body.issueNumber, existing.issueNumber)));
@@ -1920,6 +1924,10 @@ async function handleShopOrdersList(ctx: Ctx) {
       currency: o.currency,
       paymentMethod: o.paymentMethod,
       paymentRef: o.paymentRef,
+      variant: o.variant,
+      deliveryAddress: o.deliveryAddress,
+      deliveryCity: o.deliveryCity,
+      deliveryNote: o.deliveryNote,
       status: o.status,
       createdAt: o.createdAt.toISOString(),
     })),
