@@ -1804,6 +1804,7 @@ async function handleShopIssueCreate(ctx: Ctx) {
       issueNumber: Math.max(1, Math.trunc(toNumberOr(body.issueNumber, 1))),
       description: String(body.description ?? ''),
       coverUrl: String(body.coverUrl ?? ''),
+      coverLocked: toBool(body.coverLocked),
       previewImages: JSON.stringify(Array.isArray(body.previewImages) ? body.previewImages.map(String) : []),
       priceCfa: Math.max(0, Math.trunc(toNumberOr(body.priceCfa, 5000))),
       priceEur: Math.max(0, Math.trunc(toNumberOr(body.priceEur, 8))),
@@ -1837,6 +1838,7 @@ async function handleShopIssueUpdate(ctx: Ctx) {
   if (body.title !== undefined) data.title = String(body.title).trim() || existing.title;
   if (body.description !== undefined) data.description = String(body.description);
   if (body.coverUrl !== undefined) data.coverUrl = String(body.coverUrl);
+  if (body.coverLocked !== undefined) data.coverLocked = toBool(body.coverLocked);
   if (body.previewImages !== undefined) data.previewImages = JSON.stringify(Array.isArray(body.previewImages) ? body.previewImages.map(String) : []);
   if (body.priceCfa !== undefined) data.priceCfa = Math.max(0, Math.trunc(toNumberOr(body.priceCfa, existing.priceCfa)));
   if (body.priceEur !== undefined) data.priceEur = Math.max(0, Math.trunc(toNumberOr(body.priceEur, existing.priceEur)));

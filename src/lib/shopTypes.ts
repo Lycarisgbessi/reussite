@@ -1,7 +1,7 @@
 // Types boutique (côté back-office)
 export interface AdminIssue {
   id: string; slug: string; title: string; issueNumber: number; description: string;
-  coverUrl: string; previewImages: string[]; priceCfa: number; priceEur: number;
+  coverUrl: string; coverLocked: boolean; previewImages: string[]; priceCfa: number; priceEur: number;
   pdfUrl: string; previewPages: number; featured: boolean; published: boolean; paidOrders: number;
   pricePrintCfa: number; pricePrintEur: number;
   releaseDate: string;

@@ -34,7 +34,7 @@ const fmtGnf = (n: number) => `${(n ?? 0).toLocaleString('fr-FR')} GNF`;
 import type { AdminIssue as IssueRow, AdminPlan as PlanRow, AdminOrder as OrderRow } from '@/lib/shopTypes';
 
 const EMPTY_ISSUE = {
-  title: '', issueNumber: 1, description: '', coverUrl: '', previewImages: [] as string[],
+  title: '', issueNumber: 1, description: '', coverUrl: '', coverLocked: false, previewImages: [] as string[],
   priceCfa: 10000, priceEur: 1, pricePrintCfa: 30000, pricePrintEur: 3, pdfUrl: '', previewPages: 5, featured: false, published: true,
 };
 const EMPTY_PLAN = {
@@ -101,7 +101,7 @@ export function MagazineAdmin() {
   const openIssueEdit = (i: IssueRow) => {
     setEditingIssue(i);
     setIssueForm({
-      title: i.title, issueNumber: i.issueNumber, description: i.description, coverUrl: i.coverUrl,
+      title: i.title, issueNumber: i.issueNumber, description: i.description, coverUrl: i.coverUrl, coverLocked: i.coverLocked ?? false,
       previewImages: [...i.previewImages], priceCfa: i.priceCfa, priceEur: i.priceEur,
       pdfUrl: i.pdfUrl, previewPages: i.previewPages ?? 5, pricePrintCfa: i.pricePrintCfa ?? 30000, pricePrintEur: i.pricePrintEur ?? 3, featured: i.featured, published: i.published,
     });
@@ -505,7 +505,7 @@ export function MagazineAdmin() {
               )}
             </div>
 
-            <Field label="Couverture" hint="Importez la une : elle alimente automatiquement le carrousel du header du site.">
+            <Field label="Couverture" hint="Par défaut, la PAGE 1 du PDF devient automatiquement la couverture (carte boutique + carrousel du header). Verrouillez seulement si vous voulez imposer une image différente.">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   {issueForm.coverUrl ? (
@@ -544,6 +544,10 @@ export function MagazineAdmin() {
                     <Button type="button" variant="ghost" size="sm" onClick={() => setCoverPickerOpen(true)}>
                       Ou choisir dans la médiathèque
                     </Button>
+                    <label className="flex items-center gap-2 pt-1 text-[11px] font-medium text-muted-foreground">
+                      <Switch checked={issueForm.coverLocked} onCheckedChange={(v) => setIssueForm((f) => ({ ...f, coverLocked: v }))} aria-label="Verrouiller la couverture" />
+                      Verrouiller cette couverture (ignorer la page 1 du PDF)
+                    </label>
                   </div>
                 </div>
               </div>

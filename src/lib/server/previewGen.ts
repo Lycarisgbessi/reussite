@@ -5,16 +5,21 @@
 //   2. Rendu des N premières pages en Node (pdf.js + canvas natif)
 //   3. Upload de chaque page vers Cloudinary (JPEG ~200-500 Ko)
 //   4. Écriture des URLs dans MagazineIssue.previewImages
+//   BONUS : la PAGE 1 devient automatiquement la couverture du
+//   numéro (coverUrl) — alimente la carte boutique ET le carrousel
+//   du header, sans aucun import manuel.
 // Le flipbook public affiche alors les VRAIES pages ; le PDF complet
 // n'est jamais exposé (aucune fuite réseau).
 // ═══════════════════════════════════════════════════════════════
 import { db } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
 import { cloudinaryConfigured, uploadImageBuffer } from './cloudinary';
 import { fetchFileBytes } from './drive';
 
 export interface RegenResult {
   ok: boolean;
   pages: string[];
+  coverUrl?: string;
   error?: string;
 }
 
@@ -98,11 +103,16 @@ export async function regenerateIssuePreview(issueId: string): Promise<RegenResu
     await doc.destroy();
   }
 
-  // 4. Persister
-  await db.magazineIssue.update({
-    where: { id: issueId },
-    data: { previewImages: JSON.stringify(pages) },
-  });
+  // 4. Persister — la page 1 devient la couverture (sauf si la
+  //    couverture existante a été verrouillée manuellement via
+  //    l'attribut « coverLocked » du formulaire admin).
+  const data: Prisma.MagazineIssueUpdateInput = { previewImages: JSON.stringify(pages) };
+  let coverUrl: string | undefined;
+  if (pages.length > 0 && !issue.coverLocked) {
+    coverUrl = pages[0];
+    data.coverUrl = coverUrl;
+  }
+  await db.magazineIssue.update({ where: { id: issueId }, data });
 
-  return { ok: true, pages };
+  return { ok: true, pages, coverUrl };
 }

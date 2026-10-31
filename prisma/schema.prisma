@@ -375,6 +375,7 @@ model MagazineIssue {
   issueNumber Int      @default(1)
   description String   @default("")
   coverUrl    String   @default("")
+  coverLocked Boolean  @default(false) // vrai = garder la couverture manuelle (sinon page 1 du PDF)
   previewImages String @default("[]") // JSON: pages d'aperçu [url,…]
   priceCfa    Int      @default(5000) // FCFA
   priceEur    Int      @default(8)    // euros (vente internationale)
