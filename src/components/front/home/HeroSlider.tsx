@@ -26,6 +26,15 @@ export function HeroSlider({ articles }: HeroSliderProps) {
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
   // Badge vidéo : id YouTube survolé (le lecteur se monte et joue)
   const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
+  // Son : les navigateurs interdisent un son sans interaction préalable.
+  // Dès le 1er clic/tap n'importe où sur le site, on mémorise le droit
+  // au son → les vidéos du hero jouent AVEC son ensuite.
+  const [soundAllowed, setSoundAllowed] = useState(false);
+  useEffect(() => {
+    const unlock = () => setSoundAllowed(true);
+    window.addEventListener('pointerdown', unlock, { once: true, capture: true });
+    return () => window.removeEventListener('pointerdown', unlock, true);
+  }, []);
 
   const onSelect = useCallback(() => {
     if (emblaApi) setSelected(emblaApi.selectedScrollSnap());
@@ -117,18 +126,18 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                     </div>
 
                     {/* Aperçu vidéo : grand badge au coin inférieur droit.
-                        Survol = la vidéo se joue (mini-lecteur) ; clic =
-                        ouvrir l'ARTICLE (on garde le lecteur sur le site,
-                        jamais de renvoi vers YouTube). */}
+                        Survol = lecture (avec son dès que le visiteur a
+                        interagi une fois avec le site — règle navigateur).
+                        Clic = OUVRIR L'ARTICLE : un calque lien couvre
+                        l'iframe, YouTube ne reçoit jamais le clic. */}
                     {article.videoBadge ? (
                       <span
                         className="group/video absolute bottom-3 right-3 z-20 block"
                         onMouseEnter={() => setHoveredVideo(article.videoBadge ?? null)}
                         onMouseLeave={() => setHoveredVideo((v) => (v === article.videoBadge ? null : v))}
-                        aria-hidden="true"
                       >
-                        <span className="hero-video-pop relative block h-28 w-44 overflow-hidden rounded-xl border-2 border-white/85 shadow-2xl transition-transform duration-300 group-hover/video:scale-[1.03] sm:h-40 sm:w-64 lg:h-48 lg:w-80">
-                          {/* Vignette par défaut (lecteur monté au survol) */}
+                        <span className="hero-video-pop relative block h-28 w-44 overflow-hidden rounded-xl border-2 border-white/85 shadow-2xl sm:h-40 sm:w-64 lg:h-48 lg:w-80">
+                          {/* Vignette par défaut */}
                           <span className="absolute inset-0">
                             <img
                               src={`https://i.ytimg.com/vi/${article.videoBadge}/maxresdefault.jpg`}
@@ -141,25 +150,24 @@ export function HeroSlider({ articles }: HeroSliderProps) {
                               }}
                             />
                           </span>
-                          {/* Lecteur joué au survol (monté à ce moment :
-                              l'autoplay part réellement) */}
+                          {/* Lecteur monté au survol : son si autorisé */}
                           {hoveredVideo === article.videoBadge ? (
                             <iframe
-                              src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${article.videoBadge}`}
+                              src={`https://www.youtube-nocookie.com/embed/${article.videoBadge}?autoplay=1&mute=${soundAllowed ? 0 : 1}&controls=0&modestbranding=1&rel=0&loop=1&playlist=${article.videoBadge}`}
                               title={`Aperçu vidéo — ${article.title}`}
-                              className="absolute inset-0 h-full w-full"
-                              allow="autoplay; encrypted-media; picture-in-picture"
+                              className="pointer-events-none absolute inset-0 h-full w-full"
+                              allow="autoplay; encrypted-media"
                             />
                           ) : null}
                           {hoveredVideo !== article.videoBadge ? (
-                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-200">
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/30">
                               <span className="flex size-10 items-center justify-center rounded-full bg-primary/95 text-white shadow-2xl sm:size-14">
                                 <Play className="ml-0.5 size-4 sm:ml-1 sm:size-6" fill="currentColor" strokeWidth={0} />
                               </span>
                             </span>
                           ) : null}
-                          <span className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                            {hoveredVideo === article.videoBadge ? '▶ Lecture… cliquez pour l’article' : '▶ Vidéo incluse — lire l’article'}
+                          <span className="absolute left-2 top-2 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            {soundAllowed ? '▶ Vidéo — cliquez pour lire l’article' : '▶ Vidéo incluse'}
                           </span>
                         </span>
                       </span>
