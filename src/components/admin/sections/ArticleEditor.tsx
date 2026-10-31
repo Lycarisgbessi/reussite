@@ -44,7 +44,134 @@ import {
   ListOrdered, Languages, RefreshCw,
 } from 'lucide-react';
 import { wrapSelection, insertLink, renderInline } from '@/components/front/mag/richText';
+import { blocksToFluent, fluentToBlocks, fluentWordCount } from '@/lib/admin/fluentContent';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// ═══════════════════════════════════════════════════════════════
+// FLUENT EDITOR — UNE SEULE zone de contenu pour tout l'article.
+// Titres, citations, listes, images, vidéos, encadrés, séparateurs
+// et tous les styles s'écrivent au même endroit avec des marqueurs
+// simples insérés par la barre d'outils (aucune gestion de blocs).
+// ═══════════════════════════════════════════════════════════════
+function FluentEditor({ value, onChange, onPickImage, blocksCount, words }: {
+  value: string;
+  onChange: (v: string) => void;
+  onPickImage: () => void;
+  blocksCount: number;
+  words: number;
+}) {
+  const taRef = React.useRef<HTMLTextAreaElement>(null);
+
+  /** Encadre la sélection avec un marqueur et restitue le focus. */
+  const wrap = (before: string, after = before, placeholder = 'texte') => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = value.slice(start, end) || placeholder;
+    const next = value.slice(0, start) + before + selected + after + value.slice(end);
+    onChange(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + before.length, start + before.length + selected.length);
+    });
+  };
+
+  /** Insère du texte au curseur (retours à la ligne propres). */
+  const insert = (snippet: string) => {
+    const ta = taRef.current;
+    const pos = ta ? ta.selectionEnd : value.length;
+    const prefix = value.slice(0, pos);
+    const glue = prefix === '' || prefix.endsWith('\n\n') || snippet.startsWith('\n')
+      ? (prefix.endsWith('\n') || prefix === '' ? '' : '\n')
+      : '\n\n';
+    onChange(value.slice(0, pos) + glue + snippet + value.slice(pos));
+    requestAnimationFrame(() => ta?.focus());
+  };
+
+  const addLink = () => {
+    const url = window.prompt('Adresse du lien (https://…)');
+    if (!url) return;
+    wrap('[', '](' + url + ')', 'texte du lien');
+  };
+
+  const addVideo = () => {
+    const url = window.prompt('Lien ou ID de la vidéo YouTube :');
+    if (!url) return;
+    insert('{{video}} ' + url);
+  };
+
+  const TOOLBAR: { icon: React.ReactNode; label: string; action: () => void }[] = [
+    { icon: <Heading2 className="h-4 w-4" />, label: 'Titre de section (##)', action: () => insert('## ') },
+    { icon: <Type className="h-4 w-4" />, label: 'Sous-titre (###)', action: () => insert('### ') },
+    { icon: <Bold className="h-4 w-4" />, label: 'Gras', action: () => wrap('**') },
+    { icon: <Italic className="h-4 w-4" />, label: 'Italique', action: () => wrap('*') },
+    { icon: <Underline className="h-4 w-4" />, label: 'Souligné', action: () => wrap('__') },
+    { icon: <Highlighter className="h-4 w-4" />, label: 'Surligné', action: () => wrap('==') },
+    { icon: <Strikethrough className="h-4 w-4" />, label: 'Barré', action: () => wrap('~~') },
+    { icon: <Link2 className="h-4 w-4" />, label: 'Lien', action: addLink },
+    { icon: <Quote className="h-4 w-4" />, label: 'Citation (>)', action: () => insert('> ') },
+    { icon: <ListIcon className="h-4 w-4" />, label: 'Liste à puces (-)', action: () => insert('- ') },
+    { icon: <ListOrdered className="h-4 w-4" />, label: 'Liste numérotée (1.)', action: () => insert('1. ') },
+    { icon: <ImageIcon className="h-4 w-4" />, label: 'Insérer une image (médiathèque)', action: onPickImage },
+    { icon: <Youtube className="h-4 w-4" />, label: 'Intégrer une vidéo YouTube', action: addVideo },
+    { icon: <Sparkles className="h-4 w-4" />, label: 'Encadré à retenir (!!!)', action: () => insert('!!! À retenir :: ') },
+    { icon: <SquareDashed className="h-4 w-4" />, label: 'Séparateur (---)', action: () => insert('---') },
+  ];
+
+  return (
+    <div className="rounded-xl border border-border/70 bg-card shadow-sm focus-within:ring-1 focus-within:ring-primary/40">
+      {/* Barre d'outils riche */}
+      <div className="custom-scrollbar flex flex-wrap items-center gap-0.5 overflow-x-auto rounded-t-xl border-b border-border/60 bg-muted/40 px-2 py-1.5">
+        {TOOLBAR.map((tool) => (
+          <button
+            key={tool.label}
+            type="button"
+            title={tool.label}
+            aria-label={tool.label}
+            onClick={tool.action}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+          >
+            {tool.icon}
+          </button>
+        ))}
+        <span className="ml-auto shrink-0 pl-2 text-[10px] font-medium tabular-nums text-muted-foreground">
+          {words} mot{words > 1 ? 's' : ''} · {blocksCount} élément{blocksCount > 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {/* LA zone unique de rédaction */}
+      <textarea
+        ref={taRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={`Rédigez tout l’article ici, sans gérer de blocs.
+
+Un simple paragraphe : sélectionnez du texte puis utilisez la barre (gras, italique, souligné, surligné, barré, lien).
+## Un intertitre · ### Un sous-titre
+> Une citation marquante
+- une puce · 1. une liste numérotée
+![légende](image) · vidéo YouTube · !!! À retenir :: message clé · --- séparateur.`}
+        aria-label="Contenu de l'article"
+        spellCheck
+        className="block-editor-textarea custom-scrollbar min-h-[440px] w-full resize-y px-4 py-4 font-editorial text-[15px] leading-[1.9] outline-none"
+      />
+
+      {/* Aide-mémoire dépliable */}
+      <details className="border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground">
+        <summary className="cursor-pointer select-none font-medium">Aide-mémoire des marqueurs</summary>
+        <ul className="mt-1.5 grid gap-1 sm:grid-cols-2">
+          <li><code className="rounded bg-muted px-1">## Titre</code> intertitre · <code className="rounded bg-muted px-1">### Sous-titre</code></li>
+          <li><code className="rounded bg-muted px-1">**gras**</code> <code className="rounded bg-muted px-1">*italique*</code> <code className="rounded bg-muted px-1">__souligné__</code> <code className="rounded bg-muted px-1">==surligné==</code> <code className="rounded bg-muted px-1">~~barré~~</code></li>
+          <li><code className="rounded bg-muted px-1">[texte](url)</code> lien · <code className="rounded bg-muted px-1">&gt; citation</code> (+ <code className="rounded bg-muted px-1">&gt; @ Auteur</code>)</li>
+          <li><code className="rounded bg-muted px-1">- puce</code> / <code className="rounded bg-muted px-1">1. numéroté</code> · <code className="rounded bg-muted px-1">---</code> séparateur</li>
+          <li><code className="rounded bg-muted px-1">![légende](url-image)</code> image — via le bouton image</li>
+          <li><code className="rounded bg-muted px-1">{'{{video}}'} lien-YouTube</code> vidéo intégrée</li>
+        </ul>
+      </details>
+    </div>
+  );
+}
 
 // ─── Utilitaires locaux ────────────────────────────────────────
 function uid(): string {
@@ -253,6 +380,9 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
   const [tags, setTags] = React.useState<string[]>([]);
   const [tagInput, setTagInput] = React.useState('');
   const [content, setContent] = React.useState<ContentBlock[]>([newBlock('paragraph')]);
+  // Éditeur fluide : texte unique représentant tout le contenu
+  const [fluent, setFluent] = React.useState('');
+  const wordCount = React.useMemo(() => fluentWordCount(fluent), [fluent]);
 
   // Réglages
   const [status, setStatus] = React.useState<ArticleStatus>('DRAFT');
@@ -401,6 +531,8 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
             setAuthorId(article.author?.id ?? '');
             setTags(article.tags ?? []);
             setContent(article.content?.length ? article.content : [newBlock('paragraph')]);
+      setFluent(blocksToFluent(article.content?.length ? article.content : []));
+            setFluent(blocksToFluent(article.content?.length ? article.content : []));
             setStatus(article.status);
             setScheduledAt(toLocalInput(article.scheduledAt));
             setFeatured(article.featured);
@@ -486,6 +618,11 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
     if (pickerTarget === 'cover') {
       setCoverImage(m.url);
       if (!coverCredit && 'credit' in m && m.credit) setCoverCredit(m.credit);
+    } else if (pickerTarget === 'fluent-image') {
+      const alt = ('alt' in m && m.alt) || m.filename || 'image';
+      const glue = fluent === '' || fluent.endsWith('\n') ? '' : '\n\n';
+      setFluent(fluent + glue + '![' + alt + '](' + m.url + ')');
+      setDirty(true);
     } else if (pickerTarget) {
       patchBlock(pickerTarget, 'image', { url: m.url, alt: ('alt' in m && m.alt) || m.filename });
     }
@@ -786,282 +923,14 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
             </Field>
           </div>
 
-          {/* ═══ Éditeur de blocs ═══ */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[13px] font-semibold">Contenu — {content.length} bloc(s)</p>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4" /> Ajouter un bloc
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {(Object.keys(BLOCK_LABELS) as ContentBlock['type'][]).map((t) => {
-                    const Icon = t === 'paragraph' ? Type
-                      : t === 'heading' ? Heading2
-                      : t === 'quote' ? Quote
-                      : t === 'image' ? ImageIcon
-                      : t === 'video' ? Youtube
-                      : t === 'list' ? ListIcon
-                      : t === 'callout' ? Sparkles
-                      : SquareDashed;
-                    return (
-                      <DropdownMenuItem key={t} onClick={() => addBlock(t)}>
-                        <Icon className="h-4 w-4 text-primary" /> {BLOCK_LABELS[t]}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {content.map((block, index) => {
-              const isFirst = index === 0 && block.type === 'paragraph';
-              return (
-                <div key={block.id} className="group rounded-xl border border-border/70 bg-card shadow-sm transition-shadow focus-within:ring-1 focus-within:ring-primary/40">
-                  {/* Toolbar du bloc */}
-                  <div className="flex items-center gap-1 border-b border-border/60 bg-muted/40 px-2 py-1.5 rounded-t-xl">
-                    <span className="mr-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-                      {BLOCK_LABELS[block.type]}
-                    </span>
-                    {block.type === 'heading' ? (
-                      <Select
-                        value={String(block.level)}
-                        onValueChange={(v) => patchBlock(block.id, 'heading', { level: Number(v) as 2 | 3 })}
-                      >
-                        <SelectTrigger className="h-6 w-20 text-[11px]" aria-label="Niveau de titre">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="2">H2</SelectItem>
-                          <SelectItem value="3">H3</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : null}
-                    <div className="ml-auto flex items-center gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" disabled={index === 0} onClick={() => moveBlock(index, -1)} aria-label="Monter le bloc">
-                        <ArrowUp className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" disabled={index === content.length - 1} onClick={() => moveBlock(index, 1)} aria-label="Descendre le bloc">
-                        <ArrowDown className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => duplicateBlock(index)} aria-label="Dupliquer le bloc">
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeBlock(block.id)} aria-label="Supprimer le bloc">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Corps du bloc selon son type */}
-                  <div className="p-3">
-                    {block.type === 'paragraph' ? (
-                      <RichTextarea
-                        value={block.text}
-                        onChange={(v) => patchBlock(block.id, 'paragraph', { text: v })}
-                        placeholder="Votre texte… (sélectionnez du texte puis utilisez la barre de mise en forme)"
-                        ariaLabel={`Texte du bloc paragraphe ${index + 1}`}
-                      />
-                    ) : null}
-
-                    {block.type === 'heading' ? (
-                      <AutoTextarea
-                        value={block.text}
-                        onChange={(v) => patchBlock(block.id, 'heading', { text: v })}
-                        placeholder="Titre de section…"
-                        ariaLabel={`Texte du titre ${index + 1}`}
-                        className="font-editorial text-lg font-bold min-h-[52px]"
-                      />
-                    ) : null}
-
-                    {block.type === 'quote' ? (
-                      <div className="space-y-2 border-l-4 border-primary/50 pl-3">
-                        <RichTextarea
-                          value={block.text}
-                          onChange={(v) => patchBlock(block.id, 'quote', { text: v })}
-                          placeholder="Texte de la citation…"
-                          ariaLabel={`Citation ${index + 1}`}
-                          className="italic"
-                        />
-                        <Input
-                          value={block.author ?? ''}
-                          onChange={(e) => patchBlock(block.id, 'quote', { author: e.target.value })}
-                          placeholder="Auteur de la citation (optionnel)"
-                          className="h-8 text-xs"
-                          aria-label="Auteur de la citation"
-                        />
-                      </div>
-                    ) : null}
-
-                    {block.type === 'image' ? (
-                      <div className="space-y-2">
-                        {block.url ? (
-                          <div className="relative">
-                            { }
-                            <img src={block.url} alt={block.alt ?? ''} className="max-h-64 w-full rounded-lg object-cover" />
-                            <Button variant="secondary" size="sm" className="absolute right-2 top-2 h-7 text-xs" onClick={() => setPickerTarget(block.id)}>
-                              <ImagePlus className="h-3.5 w-3.5" /> Changer
-                            </Button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPickerTarget(block.id)}
-                            className="flex h-24 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                          >
-                            <ImagePlus className="h-5 w-5" /> Choisir une image
-                          </button>
-                        )}
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          <Input
-                            value={block.alt ?? ''}
-                            onChange={(e) => patchBlock(block.id, 'image', { alt: e.target.value })}
-                            placeholder="Texte alternatif (accessibilité)"
-                            className="h-8 text-xs"
-                            aria-label="Texte alternatif de l’image"
-                          />
-                          <Input
-                            value={block.caption ?? ''}
-                            onChange={(e) => patchBlock(block.id, 'image', { caption: e.target.value })}
-                            placeholder="Légende de l’image"
-                            className="h-8 text-xs"
-                            aria-label="Légende de l’image"
-                          />
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {block.type === 'video' ? (
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <Input
-                            defaultValue={block.youtubeId}
-                            onChange={(e) => {
-                              const id = extractYouTubeId(e.target.value);
-                              if (id && id !== block.youtubeId) patchBlock(block.id, 'video', { youtubeId: id });
-                            }}
-                            placeholder="Lien YouTube (https://youtu.be/…) ou ID"
-                            className="h-8 text-xs"
-                            aria-label="Lien ou ID YouTube"
-                          />
-                        </div>
-                        <Input
-                          value={block.title ?? ''}
-                          onChange={(e) => patchBlock(block.id, 'video', { title: e.target.value })}
-                          placeholder="Titre de la vidéo (optionnel)"
-                          className="h-8 text-xs"
-                          aria-label="Titre de la vidéo"
-                        />
-                        {block.youtubeId ? (
-                          <div className="aspect-video w-full overflow-hidden rounded-lg">
-                            { }
-                            <img src={youtubeThumb(block.youtubeId)} alt="Aperçu de la vidéo YouTube" className="h-full w-full object-cover" />
-                          </div>
-                        ) : (
-                          <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-                            Collez un lien YouTube : l’aperçu apparaîtra automatiquement.
-                          </p>
-                        )}
-                      </div>
-                    ) : null}
-
-                    {block.type === 'list' ? (
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex items-center gap-1" role="group" aria-label="Type de liste">
-                          <Button
-                            variant={block.ordered ? 'ghost' : 'secondary'}
-                            size="sm"
-                            className="h-7 gap-1.5 px-2 text-xs"
-                            onClick={() => patchBlock(block.id, 'list', { ordered: false })}
-                            aria-pressed={!block.ordered}
-                          >
-                            <ListIcon className="h-3.5 w-3.5" /> Puces
-                          </Button>
-                          <Button
-                            variant={block.ordered ? 'secondary' : 'ghost'}
-                            size="sm"
-                            className="h-7 gap-1.5 px-2 text-xs"
-                            onClick={() => patchBlock(block.id, 'list', { ordered: true })}
-                            aria-pressed={Boolean(block.ordered)}
-                          >
-                            <ListOrdered className="h-3.5 w-3.5" /> Numérotée
-                          </Button>
-                          <span className="ml-1 text-[10px] text-muted-foreground/70">Mise en forme : sélectionnez dans un élément puis utilisez B / I / lien</span>
-                          </div>
-                          <RichToolbar target={listActiveInput} />
-                        </div>
-                        {block.items.map((item, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <span className="w-4 text-xs tabular-nums text-muted-foreground">
-                              {block.ordered ? `${i + 1}.` : '•'}
-                            </span>
-                            <input
-                              ref={(el) => { if (el) listInputRefs.current[`${block.id}-${i}`] = el; }}
-                              value={item}
-                              onFocus={() => { listActiveInput.current = listInputRefs.current[`${block.id}-${i}`] ?? null; }}
-                              onChange={(e) => {
-                                const items = [...block.items];
-                                items[i] = e.target.value;
-                                patchBlock(block.id, 'list', { items });
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') { e.preventDefault(); patchBlock(block.id, 'list', { items: [...block.items, ''] }); }
-                              }}
-                              placeholder={`Élément ${i + 1}`}
-                              className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              aria-label={`Élément ${i + 1} de la liste`}
-                            />
-                            <Button
-                              variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                              disabled={block.items.length <= 1}
-                              onClick={() => patchBlock(block.id, 'list', { items: block.items.filter((_, j) => j !== i) })}
-                              aria-label={`Retirer l’élément ${i + 1}`}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => patchBlock(block.id, 'list', { items: [...block.items, ''] })}>
-                          <Plus className="h-3 w-3" /> Ajouter un élément
-                        </Button>
-                      </div>
-                    ) : null}
-
-                    {block.type === 'callout' ? (
-                      <div className="space-y-2 rounded-lg border border-primary/40 bg-primary/5 p-3">
-                        <Input
-                          value={block.title ?? ''}
-                          onChange={(e) => patchBlock(block.id, 'callout', { title: e.target.value })}
-                          placeholder="Titre de l’encadré (ex : À retenir)"
-                          className="h-8 border-none bg-transparent text-sm font-bold text-primary"
-                          aria-label="Titre de l’encadré"
-                        />
-                        <RichTextarea
-                          value={block.text}
-                          onChange={(v) => patchBlock(block.id, 'callout', { text: v })}
-                          placeholder="Message clé à mettre en avant…"
-                          ariaLabel={`Texte de l’encadré ${index + 1}`}
-                        />
-                      </div>
-                    ) : null}
-
-                    {block.type === 'divider' ? (
-                      <p className="py-3 text-center text-xs text-muted-foreground">
-                        <span className="inline-flex w-full items-center gap-3">
-                          <span className="h-px flex-1 border-t border-dashed border-border" />
-                          Séparateur visuel
-                          <span className="h-px flex-1 border-t border-dashed border-border" />
-                        </span>
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {/* ═══ Éditeur de contenu FLUIDE — un seul bloc ═══ */}
+          <FluentEditor
+            value={fluent}
+            onChange={(v) => { setFluent(v); setContent(fluentToBlocks(v)); setDirty(true); }}
+            onPickImage={() => setPickerTarget('fluent-image')}
+            blocksCount={content.length}
+            words={wordCount}
+          />
         </div>
 
         {/* ═══ Panneau réglages ═══ */}
