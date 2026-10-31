@@ -60,7 +60,8 @@ export async function regenerateIssuePreview(issueId: string): Promise<RegenResu
   // 1. Télécharger le PDF
   const { buffer } = await fetchFileBytes(issue.pdfUrl);
 
-  // 2. Ouvrir avec pdf.js (build Node « legacy »)
+  // 2. Ouvrir avec pdf.js (build Node « legacy ») : bundlé par
+  //    webpack, le « fake worker » de Node se résout correctement.
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const doc = await pdfjs.getDocument({
     data: new Uint8Array(buffer),

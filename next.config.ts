@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   // Binaires natifs / gros modules côté serveur uniquement
-  serverExternalPackages: ["@napi-rs/canvas", "pdfjs-dist"],
+  serverExternalPackages: ["@napi-rs/canvas"],
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
