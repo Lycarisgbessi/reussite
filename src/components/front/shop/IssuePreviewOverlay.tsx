@@ -95,14 +95,14 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
   const canPrev = page > 1;
   const canNext = page < maxStep;
 
+  // NB : le zoom est CONSERVÉ en tournant les pages — on lit
+  // tout le magazine au même niveau d'agrandissement.
   const goPrev = () => {
     setPage((p) => Math.max(1, p - 1));
-    setZoom(1);
   };
 
   const goNext = () => {
     setPage((p) => Math.min(maxStep, p + 1));
-    setZoom(1);
   };
 
   const jumpToPage = (targetPageIndex: number) => {
@@ -111,7 +111,6 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
     } else {
       setPage(targetPageIndex + 1);
     }
-    setZoom(1);
   };
 
   // Gestion du plein écran
@@ -139,11 +138,9 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
       } else if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
         setPage((p) => Math.min(maxStep, p + 1));
-        setZoom(1);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         setPage((p) => Math.max(1, p - 1));
-        setZoom(1);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -288,7 +285,18 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
           <div className="relative flex flex-1 flex-col min-h-0 bg-neutral-900/40 overflow-hidden">
             
             {/* Zone de rendu des pages */}
-            <div className="relative flex-1 overflow-auto flex items-center justify-center p-3 sm:p-6 custom-scrollbar">
+            <div
+                  className="relative flex-1 overflow-auto flex items-center justify-center p-3 sm:p-6 custom-scrollbar"
+                  style={{ minHeight: 0 }}
+                  onWheel={(e) => {
+                    if (e.ctrlKey) {
+                      e.preventDefault();
+                      setZoom((z) => Math.min(4, Math.max(0.75, +(z + (e.deltaY < 0 ? 0.25 : -0.25)).toFixed(2))));
+                    }
+                  }}
+                  onDoubleClick={() => setZoom((z) => (z > 1 ? 1 : 2.5))}
+                  title="Double-clic : zoom lecture · Ctrl + molette : zoom précis"
+                >
               
               {/* ÉCRAN DE PAYWALL (Quand le visiteur dépasse les pages gratuites) */}
               {isPaywall ? (
@@ -349,14 +357,19 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.25 }}
-                  className="flex items-center justify-center transition-transform duration-200"
-                  style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+                  className="flex min-h-full items-center justify-center"
                 >
                   {isDoublePage ? (
                     /* MODE DOUBLE-PAGE (OUVRAGE OUVERT) */
-                    <div className="relative flex max-h-[75vh] max-w-[90vw] rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-neutral-950">
+                    <div
+                      className="relative flex rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-neutral-950"
+                      style={{ maxHeight: `${Math.round(75 * zoom)}vh`, maxWidth: `${Math.round(92 * zoom)}vw` }}
+                    >
                       {/* Page Gauche */}
-                      <div className="relative aspect-[3/4] h-[65vh] max-h-[750px] bg-neutral-900 border-r border-white/10">
+                      <div
+                        className="relative aspect-[3/4] bg-neutral-900 border-r border-white/10"
+                        style={{ height: `${Math.round(65 * zoom)}vh`, maxHeight: `${Math.round(750 * zoom)}px` }}
+                      >
                         {leftPageUrl ? (
                           <img
                             src={leftPageUrl}
@@ -377,7 +390,10 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
                       <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-8 bg-gradient-to-r from-black/40 via-black/80 to-black/40 z-20" />
 
                       {/* Page Droite */}
-                      <div className="relative aspect-[3/4] h-[65vh] max-h-[750px] bg-neutral-900">
+                      <div
+                        className="relative aspect-[3/4] bg-neutral-900"
+                        style={{ height: `${Math.round(65 * zoom)}vh`, maxHeight: `${Math.round(750 * zoom)}px` }}
+                      >
                         {rightPageUrl ? (
                           <img
                             src={rightPageUrl}
@@ -411,7 +427,10 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
                     </div>
                   ) : (
                     /* MODE SIMPLE PAGE */
-                    <div className="relative aspect-[3/4] h-[70vh] max-h-[800px] rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-neutral-950">
+                    <div
+                      className="relative aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-neutral-950"
+                      style={{ height: `${Math.round(70 * zoom)}vh`, maxHeight: `${Math.round(800 * zoom)}px` }}
+                    >
                       {leftPageUrl ? (
                         <img
                           src={leftPageUrl}
@@ -503,7 +522,7 @@ export function IssuePreviewOverlay({ issue, onClose, onBuy }: Props) {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setZoom((z) => Math.min(2.0, +(z + 0.25).toFixed(2)))}
+                    onClick={() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2)))}
                     className="flex size-7 items-center justify-center rounded hover:bg-white/20 text-white/80 hover:text-white"
                     title="Zoom avant"
                     aria-label="Zoom avant"

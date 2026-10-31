@@ -95,7 +95,7 @@ export async function regenerateIssuePreview(issueId: string): Promise<RegenResu
   const pages: string[] = [];
   try {
     for (let n = 1; n <= count; n++) {
-      const jpeg = await renderPage(pdfjs, doc, n, 1200);
+      const jpeg = await renderPage(pdfjs, doc, n, 1600); // HD : net même à fort zoom
       const uploaded = await uploadImageBuffer(jpeg, `page-${n}.jpg`);
       pages.push(uploaded.url);
     }
