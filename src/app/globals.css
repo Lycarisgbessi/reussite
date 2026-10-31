@@ -505,3 +505,13 @@ a, button {
 }
 .share-wave { animation: share-wave-kf 6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .share-wave { animation: none; } }
+
+/* ── Partenaires : défilement continu (pause au survol) ── */
+@keyframes partner-marquee-kf {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.partner-marquee { animation: partner-marquee-kf linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .partner-marquee { animation: none; }
+}

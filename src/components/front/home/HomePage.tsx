@@ -327,7 +327,7 @@ export function HomePage() {
           </Reveal>
         ) : null}
 
-        {/* ── Partenaires / sponsorisés ─────────────────────────── */}
+        {/* ── Partenaires : bandeau défilant ultra propre (logo + nom) ── */}
         {data.partners.length > 0 ? (
           <Reveal className="mt-12">
             <section aria-label={t('home.partnersTitle')}>
@@ -335,35 +335,7 @@ export function HomePage() {
                 eyebrow={t('home.partnersEyebrow')}
                 title={settings?.partnersTitle || t('home.partnersTitle')}
               />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                {data.partners.slice(0, 6).map((p, i) => (
-                  <a
-                    key={p.id || i}
-                    href={p.targetUrl || '#'}
-                    target="_blank"
-                    rel="sponsored noopener noreferrer"
-                    onClick={() => publicApi.adClick(p.id).catch(() => {})}
-                    className="article-card relative block min-w-0 overflow-hidden rounded-lg border bg-card"
-                    aria-label={`${t('home.partner')} ${p.advertiser || ''}`}
-                  >
-                    {p.imageUrl ? (
-                      <SmartImage
-                        src={p.imageUrl}
-                        alt={`${t('home.partner')} ${p.advertiser || ''}`}
-                        className="aspect-[4/3] w-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="aspect-[4/3] w-full p-4"
-                        dangerouslySetInnerHTML={{ __html: p.htmlCode || '' }}
-                      />
-                    )}
-                    <span className="absolute left-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-white/90">
-                      {t('ads.sponsored')}
-                    </span>
-                  </a>
-                ))}
-              </div>
+              <PartnerMarquee partners={data.partners} />
             </section>
           </Reveal>
         ) : null}
@@ -377,6 +349,73 @@ export function HomePage() {
   );
 }
 
+
+
+// ─── Partenaires : bandeau défilant (logo + nom), boucle continue ───
+function PartnerMarquee({ partners }: {
+  partners: { id: string; imageUrl: string; htmlCode: string; targetUrl: string; advertiser: string }[];
+}) {
+  const { t } = useI18n();
+  // Liste doublée pour une boucle parfaitement continue
+  const items = [...partners.slice(0, 8), ...partners.slice(0, 8)];
+
+  return (
+    <div
+      className="group relative -mx-4 overflow-hidden py-2"
+      role="region"
+      aria-label="Nos partenaires"
+    >
+      {/* Fondu latéral pour une sortie/entrée douce */}
+      <span className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent" aria-hidden="true" />
+      <span className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent" aria-hidden="true" />
+
+      <div
+        className="flex w-max gap-5 pr-5 partner-marquee group-hover:[animation-play-state:paused]"
+        style={{ animationDuration: `${Math.max(18, partners.length * 7)}s` }}
+      >
+        {items.map((p, i) => (
+          <a
+            key={`${p.id}-${i}`}
+            href={p.targetUrl || '#'}
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            onClick={() => publicApi.adClick(p.id).catch(() => {})}
+            className="flex h-24 w-52 shrink-0 items-center gap-3.5 rounded-xl border bg-card px-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+            aria-label={`${t('home.partner')} ${p.advertiser || ''}`}
+          >
+            {p.imageUrl ? (
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/60">
+                <img
+                  src={p.imageUrl}
+                  alt={p.advertiser || 'Partenaire'}
+                  className="max-h-12 max-w-12 object-contain"
+                  loading="lazy"
+                />
+              </span>
+            ) : p.htmlCode ? (
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/60 [&_img]:max-h-12 [&_img]:max-w-12 [&_img]:object-contain"
+                dangerouslySetInnerHTML={{ __html: p.htmlCode }}
+              />
+            ) : (
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-editorial text-xl font-bold text-primary" aria-hidden="true">
+                {(p.advertiser || 'P').trim().charAt(0).toUpperCase()}
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-bold leading-tight">
+                {p.advertiser || 'Partenaire'}
+              </span>
+              <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                {t('ads.sponsored')}
+              </span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ─── Balayage des interviews : fenêtre de 3 qui tourne en continu ──
 function InterviewTicker({ items }: { items: ArticleSummary[] }) {
