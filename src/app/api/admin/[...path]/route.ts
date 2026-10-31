@@ -8,6 +8,7 @@
 import type { NextRequest } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
+import { regenerateIssuePreview } from '@/lib/server/previewGen';
 import { hashPassword, logAudit, requireAuth } from '@/lib/server/auth';
 import {
   articleInclude, ensureDefaultPlacements, estimateReadingTime, extractYouTubeId, findFreeSlug,
@@ -25,6 +26,9 @@ import { autoFeatureArticle, autoFlashArticle } from '@/lib/server/autoPublish';
 import type { AdminUser, HomeBlockConfig } from '@/lib/types';
 
 export const runtime = 'nodejs';
+// La régénération d'aperçu (téléchargement PDF + upload Cloudinary)
+// peut être longue : budget maximal autorisé.
+export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 // ─── Contexte d'un handler ────────────────────────────────────
@@ -1811,8 +1815,17 @@ async function handleShopIssueCreate(ctx: Ctx) {
       published: toBool(body.published, true),
     },
   });
+  let preview: { ok: boolean; pages: string[]; error?: string } | null = null;
+  if (created.pdfUrl && created.previewPages > 0) {
+    try {
+      preview = await regenerateIssuePreview(created.id);
+    } catch (e) {
+      preview = { ok: false, pages: [], error: e instanceof Error ? e.message : 'Génération impossible.' };
+    }
+  }
+  const fresh = preview?.ok ? await db.magazineIssue.findUnique({ where: { id: created.id } }) : created;
   logAudit(ctx.user.id, ctx.user.name, 'SHOP_ISSUE_CREATE', `Numéro « ${created.title} » créé`);
-  return ok({ issue: created });
+  return ok({ issue: fresh, preview });
 }
 
 async function handleShopIssueUpdate(ctx: Ctx) {
@@ -1835,8 +1848,28 @@ async function handleShopIssueUpdate(ctx: Ctx) {
   if (body.featured !== undefined) data.featured = toBool(body.featured);
   if (body.published !== undefined) data.published = toBool(body.published, true);
   const updated = await db.magazineIssue.update({ where: { id }, data });
+
+  // Aperçu auto : si le PDF ou le nombre de pages a changé (ou demande
+  // explicite), régénérer les images des premières pages depuis le PDF.
+  let preview: { ok: boolean; pages: string[]; error?: string } | null = null;
+  const pdfChanged = body.pdfUrl !== undefined && String(body.pdfUrl) !== existing.pdfUrl;
+  const pagesChanged = body.previewPages !== undefined && updated.previewPages !== existing.previewPages;
+  const forced = body.regenPreview === true;
+  if (updated.pdfUrl && updated.previewPages > 0 && (pdfChanged || pagesChanged || forced)) {
+    try {
+      const res = await regenerateIssuePreview(id);
+      preview = res;
+      logAudit(ctx.user.id, ctx.user.name, 'SHOP_PREVIEW_REGEN',
+        `Aperçu de « ${updated.title} » régénéré depuis le PDF (${res.pages.length} page(s))`);
+    } catch (e) {
+      preview = { ok: false, pages: [], error: e instanceof Error ? e.message : 'Génération impossible.' };
+    }
+  }
+  const fresh = preview?.ok
+    ? await db.magazineIssue.findUnique({ where: { id } })
+    : updated;
   logAudit(ctx.user.id, ctx.user.name, 'SHOP_ISSUE_UPDATE', `Numéro « ${updated.title} » modifié`);
-  return ok({ issue: updated });
+  return ok({ issue: fresh, preview });
 }
 
 async function handleShopIssueDelete(ctx: Ctx) {

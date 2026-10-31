@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   BookOpen, Pencil, Plus, Trash2, Loader2, ShoppingBag, PackageCheck,
-  CreditCard, Ban, Eye, EyeOff, ArrowUp, ArrowDown, ImagePlus, Sparkles,
+  CreditCard, Ban, Eye, EyeOff, Sparkles,
 } from 'lucide-react';
 import { isAuthError, formatDate } from '../ui/helpers';
 
@@ -61,10 +61,9 @@ export function MagazineAdmin() {
   const [previewPickerOpen, setPreviewPickerOpen] = React.useState(false);
   const [uploadingPdf, setUploadingPdf] = React.useState(false);
   const [uploadingCover, setUploadingCover] = React.useState(false);
-  const [uploadingPage, setUploadingPage] = React.useState(false);
+  const [regenerating, setRegenerating] = React.useState(false);
   const pdfInputRef = React.useRef<HTMLInputElement>(null);
   const coverInputRef = React.useRef<HTMLInputElement>(null);
-  const pageInputRef = React.useRef<HTMLInputElement>(null);
 
   // Formule : dialog
   const [planDialog, setPlanDialog] = React.useState(false);
@@ -443,143 +442,66 @@ export function MagazineAdmin() {
               </Field>
             </div>
 
-            {/* Gestion des pages d'aperçu (Option 1 : Images HD sécurisées) */}
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Aperçu : généré automatiquement depuis le PDF */}
+            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    <BookOpen className="size-3.5" />
-                    Pages d'aperçu gratuit ({issueForm.previewImages.length} page{issueForm.previewImages.length > 1 ? 's' : ''})
+                    <Sparkles className="size-3.5" />
+                    Pages d'aperçu — générées depuis le PDF ({issueForm.previewImages.length} page{issueForm.previewImages.length > 1 ? 's' : ''})
                   </h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Images haute définition sécurisées des premières pages (feuilletées par le visiteur en mode Flipbook).
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                    Rien à importer : le système télécharge le PDF, extrait les {issueForm.previewPages || 5} premières pages
+                    en images HD et alimente le feuilletage public. Recliquez après tout changement de PDF ou de nombre de pages.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <input
-                    ref={pageInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files || []);
-                      e.target.value = '';
-                      if (files.length === 0) return;
-                      setUploadingPage(true);
-                      try {
-                        for (const file of files) {
-                          const res = await adminApi.uploadMedia(file, { alt: `Page d'aperçu — ${issueForm.title || 'numéro'}` });
-                          setIssueForm((f) => ({ ...f, previewImages: [...f.previewImages, res.media.url] }));
-                        }
-                        toast({ title: 'Page(s) ajoutée(s)', description: `${files.length} page(s) ajoutée(s) à l'aperçu.` });
-                      } catch (err) {
-                        handleErr(err, 'Import impossible.');
-                      } finally {
-                        setUploadingPage(false);
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9 rounded-full"
+                  disabled={!issueForm.pdfUrl || !editingIssue || regenerating}
+                  onClick={async () => {
+                    if (!editingIssue) return;
+                    setRegenerating(true);
+                    try {
+                      const res = await adminApi.shopUpdateIssue(editingIssue.id, { regenPreview: true });
+                      const iss = (res as { issue?: { previewImages?: string[] } }).issue;
+                      const preview = (res as { preview?: { ok?: boolean; error?: string; pages?: string[] } }).preview;
+                      if (iss?.previewImages) {
+                        setIssueForm((f) => ({ ...f, previewImages: [...iss.previewImages!] }));
                       }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs bg-background"
-                    disabled={uploadingPage}
-                    onClick={() => pageInputRef.current?.click()}
-                  >
-                    {uploadingPage ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <ImagePlus className="size-3.5 mr-1.5 text-primary" />}
-                    Ajouter des pages (PC)
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => setPreviewPickerOpen(true)}
-                  >
-                    Choisir en médiathèque
-                  </Button>
-                  {issueForm.coverUrl && issueForm.previewImages.length === 0 ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="h-8 text-xs font-medium"
-                      onClick={() => setIssueForm((f) => ({ ...f, previewImages: [f.coverUrl] }))}
-                    >
-                      <Sparkles className="size-3.5 mr-1 text-primary" /> Utiliser la une comme Page 1
-                    </Button>
-                  ) : null}
-                </div>
+                      if (preview?.ok) {
+                        toast({ title: 'Aperçu régénéré', description: `${preview.pages?.length ?? 0} page(s) extraites du PDF.` });
+                      } else if (preview?.error) {
+                        toast({ variant: 'destructive', title: 'Génération impossible', description: preview.error });
+                      }
+                    } catch (err) {
+                      handleErr(err, 'Régénération impossible.');
+                    } finally {
+                      setRegenerating(false);
+                    }
+                  }}
+                >
+                  {regenerating ? <Loader2 className="size-3.5 animate-spin" /> : <BookOpen className="size-3.5" />}
+                  {regenerating ? 'Génération…' : 'Régénérer depuis le PDF'}
+                </Button>
               </div>
 
               {issueForm.previewImages.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+                <div className="grid grid-cols-3 gap-2 pt-1 sm:grid-cols-6">
                   {issueForm.previewImages.map((imgUrl, idx) => (
-                    <div key={idx} className="group relative flex flex-col items-center rounded-lg border bg-card p-1.5 shadow-sm">
-                      <span className="absolute left-2.5 top-2.5 z-10 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-white shadow">
+                    <div key={idx} className="relative flex flex-col items-center rounded-lg border bg-card p-1.5 shadow-sm">
+                      <span className="absolute left-1.5 top-1.5 z-10 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-white">
                         Page {idx + 1}
                       </span>
-                      <img src={imgUrl} alt={`Page ${idx + 1}`} className="aspect-[3/4] w-full rounded object-cover border" />
-                      <div className="mt-1.5 flex w-full items-center justify-between gap-1">
-                        <div className="flex gap-0.5">
-                          <button
-                            type="button"
-                            disabled={idx === 0}
-                            onClick={() => {
-                              const arr = [...issueForm.previewImages];
-                              const temp = arr[idx - 1];
-                              arr[idx - 1] = arr[idx];
-                              arr[idx] = temp;
-                              setIssueForm((f) => ({ ...f, previewImages: arr }));
-                            }}
-                            className="flex size-5 items-center justify-center rounded hover:bg-muted disabled:opacity-20"
-                            title="Déplacer à gauche"
-                          >
-                            <ArrowUp className="size-3 -rotate-90" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={idx === issueForm.previewImages.length - 1}
-                            onClick={() => {
-                              const arr = [...issueForm.previewImages];
-                              const temp = arr[idx + 1];
-                              arr[idx + 1] = arr[idx];
-                              arr[idx] = temp;
-                              setIssueForm((f) => ({ ...f, previewImages: arr }));
-                            }}
-                            className="flex size-5 items-center justify-center rounded hover:bg-muted disabled:opacity-20"
-                            title="Déplacer à droite"
-                          >
-                            <ArrowDown className="size-3 -rotate-90" />
-                          </button>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIssueForm((f) => ({
-                              ...f,
-                              previewImages: f.previewImages.filter((_, i) => i !== idx),
-                            }));
-                          }}
-                          className="flex size-5 items-center justify-center rounded text-destructive hover:bg-destructive/10"
-                          title="Supprimer cette page"
-                        >
-                          <Trash2 className="size-3" />
-                        </button>
-                      </div>
+                      <img src={imgUrl} alt={`Page ${idx + 1}`} className="aspect-[3/4] w-full rounded border object-cover" />
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-primary/30 p-4 text-center">
-                  <BookOpen className="mx-auto size-6 text-muted-foreground/60" />
-                  <p className="mt-1 text-xs font-semibold text-foreground/90">Aucune page d'aperçu ajoutée</p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    Ajoutez jusqu'à 5 pages (couverture, sommaire, édito, dossier principal) pour le feuilletage public.
-                  </p>
-                </div>
+                <p className="rounded-lg border border-dashed bg-card px-3 py-4 text-center text-[11px] text-muted-foreground">
+                  Aucune page pour l'instant — renseignez le PDF puis cliquez sur « Régénérer depuis le PDF ».
+                </p>
               )}
             </div>
 
