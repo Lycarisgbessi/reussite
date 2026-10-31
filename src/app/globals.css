@@ -494,3 +494,14 @@ a, button {
 .group:hover .ad-creative-frame::after {
   box-shadow: inset 0 0 0 2px rgba(164,22,26,0.65), 0 0 22px rgba(164,22,26,0.28);
 }
+
+/* ── Boutons de partage : vague périodique (attire l'œil) ── */
+@keyframes share-wave-kf {
+  0%, 82%, 100% { transform: translateY(0); }
+  86% { transform: translateY(-4px) scale(1.06); }
+  90% { transform: translateY(0); }
+  93% { transform: translateY(-2px); }
+  96% { transform: translateY(0); }
+}
+.share-wave { animation: share-wave-kf 6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .share-wave { animation: none; } }

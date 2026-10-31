@@ -561,7 +561,7 @@ const BOOLEAN_SETTINGS = new Set<string>([
   'commentsEnabled', 'darkModeEnabled', 'readerAccountsEnabled', 'flashInfoEnabled',
   'flashInfoAuto', 'autoFeature', 'newsletterPopupEnabled', 'adsHeaderEnabled', 'adsSidebarEnabled',
   'adsInArticleEnabled', 'adsFooterEnabled', 'adsStickyMobileEnabled', 'adsNativeEnabled',
-  'adsInterstitialEnabled',
+  'adsInterstitialEnabled', 'shareButtonsAnimated',
 ]);
 const NUMBER_SETTINGS = new Set<string>(['newsletterPopupDelay', 'newsletterPopupScroll']);
 
@@ -584,6 +584,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   ogImage: '/images/og-default.jpg',
   commentsEnabled: true,
   darkModeEnabled: true,
+  shareButtonsAnimated: true,
   readerAccountsEnabled: true,
   flashInfoEnabled: true,
   flashInfoAuto: true,

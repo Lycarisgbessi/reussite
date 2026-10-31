@@ -3,6 +3,9 @@
 // ═══════════════════════════════════════════════════════════════
 // SHARE BUTTONS — Facebook, X, LinkedIn, WhatsApp, Email,
 // copier le lien. Intent URLs + micro-animation au clic.
+// MODE ANIMÉ (par défaut) : vague périodique + pulsation pour
+// attirer l'œil et inciter au partage — désactivable dans
+// Réglages → « Boutons de partage animés ».
 // ═══════════════════════════════════════════════════════════════
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -10,6 +13,7 @@ import { Check, Facebook, Linkedin, Link2, Mail, MessageCircle, Twitter } from '
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useMagazineStore } from '@/lib/store';
 
 interface ShareButtonsProps {
   title?: string;
@@ -19,6 +23,9 @@ interface ShareButtonsProps {
 export function ShareButtons({ title = '', className }: ShareButtonsProps) {
   const { toast } = useToast();
   const { t } = useI18n();
+  const settings = useMagazineStore((s) => s.bootstrap?.settings);
+  // Animation activée par défaut, coupable depuis le dashboard
+  const animated = settings?.shareButtonsAnimated !== false;
   const [copied, setCopied] = useState(false);
 
   const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -89,7 +96,12 @@ export function ShareButtons({ title = '', className }: ShareButtonsProps) {
         onClick={copy}
         aria-label={t('share.copy')}
         whileTap={{ scale: 0.82 }}
-        className="flex size-10 items-center justify-center rounded-full border bg-card text-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+        whileHover={animated ? { y: -3, scale: 1.08 } : undefined}
+        className={cn(
+          'flex size-10 items-center justify-center rounded-full border bg-card text-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground',
+          animated && 'share-wave',
+        )}
+        style={animated ? { animationDelay: `${items.length * 160}ms` } : undefined}
       >
         {copied ? <Check className="size-4" /> : <Link2 className="size-4" />}
       </motion.button>

@@ -125,6 +125,25 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             « Avec Réussite, Osez l'Avenir… »
           </p>
           <div className="flex items-center justify-end gap-0.5">
+            {/* Réseaux sociaux — très visibles, pilotés depuis Réglages */}
+            {socials.length > 0 ? (
+              <span className="mr-1.5 hidden items-center gap-0.5 sm:flex" aria-label="Réseaux sociaux">
+                {socials.map(({ key, url, Icon, label }) => (
+                  <a
+                    key={key}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    title={label}
+                    className="flex size-6.5 items-center justify-center rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 hover:text-white"
+                  >
+                    <Icon className="size-3.5" fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                  </a>
+                ))}
+                <span className="mx-1 h-3.5 w-px bg-white/15" aria-hidden="true" />
+              </span>
+            ) : null}
 
             {settings?.darkModeEnabled !== false && (
               <button

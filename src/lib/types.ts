@@ -313,6 +313,8 @@ export interface SiteSettings {
   ogImage: string;
   commentsEnabled: boolean;
   darkModeEnabled: boolean;
+  /** Boutons de partage animés (vague + pulsation). */
+  shareButtonsAnimated: boolean;
   readerAccountsEnabled: boolean;
   flashInfoEnabled: boolean;
   flashInfoAuto: boolean;
@@ -436,6 +438,15 @@ export interface AdminStats {
   adStats: AdStatRow[];
   trafficSources: TrafficSourceRow[];
   devices?: { device: string; count: number }[];
+  timing?: {
+    byHour: { hour: number; count: number }[];
+    byWeekday: { day: number; label: string; count: number }[];
+    heatmap: number[][];
+    peakHour: number;
+    peakDay: string;
+    totalEvents: number;
+  };
+  actions?: { type: string; count: number }[];
 }
 
 // ─── Journal d'audit ───────────────────────────────────────────

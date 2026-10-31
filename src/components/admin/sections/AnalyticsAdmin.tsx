@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { isAuthError, formatNumber, formatPercent } from '../ui/helpers';
 import {
-  Users, Eye, MousePointerClick, Megaphone, ExternalLink, TrendingUp, Activity,
+  Users, Eye, MousePointerClick, Megaphone, ExternalLink, TrendingUp, Activity, Clock, CalendarDays, Flame,
 } from 'lucide-react';
 import type { AdminStats } from '@/lib/types';
 
@@ -121,6 +121,149 @@ export function AnalyticsAdmin() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── HEURES DE FRÉQUENTATION (pics) ── */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 font-editorial text-base">
+            <Clock className="h-4 w-4 text-primary" /> Heures de fréquentation
+          </CardTitle>
+          <CardDescription>
+            {stats?.timing ? (
+              <>Pic d'audience : <strong>{String(stats.timing.peakHour).padStart(2, '0')}h</strong> · jour le plus fréquenté : <strong>{stats.timing.peakDay}</strong> (heure locale de Guinée).</>
+            ) : (
+              'Répartition des visites par heure de la journée.'
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pl-1">
+          {loading || !stats?.timing ? (
+            <Skeleton className="h-56 w-full" />
+          ) : (
+            <BarsChart
+              data={stats.timing.byHour.map((h) => ({ hour: `${String(h.hour).padStart(2, '0')}h`, count: h.count }))}
+              xKey="hour"
+              bars={[{ key: 'count', label: 'Visites', color: 'var(--primary)' }]}
+              height={240}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── JOURS DE LA SEMAINE + HEATMAP ── */}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 font-editorial text-base">
+              <CalendarDays className="h-4 w-4 text-primary" /> Jours de la semaine
+            </CardTitle>
+            <CardDescription>Quels jours votre audience vient-elle ?</CardDescription>
+          </CardHeader>
+          <CardContent className="pl-1">
+            {loading || !stats?.timing ? (
+              <Skeleton className="h-56 w-full" />
+            ) : (
+              <BarsChart
+                data={stats.timing.byWeekday.map((d) => ({ day: d.label.slice(0, 3), count: d.count }))}
+                xKey="day"
+                bars={[{ key: 'count', label: 'Visites', color: 'var(--chart-3)' }]}
+                height={240}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 font-editorial text-base">
+              <Flame className="h-4 w-4 text-primary" /> Moments de pic (jour × heure)
+            </CardTitle>
+            <CardDescription>Plus la case est rouge, plus le trafic est fort.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading || !stats?.timing ? (
+              <Skeleton className="h-56 w-full" />
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="min-w-[520px] space-y-1">
+                  {stats.timing.heatmap.map((row, w) => {
+                    const max = Math.max(1, ...stats.timing!.heatmap.flat());
+                    return (
+                      <div key={w} className="flex items-center gap-1.5">
+                        <span className="w-8 shrink-0 text-[10px] font-medium text-muted-foreground">
+                          {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][w]}
+                        </span>
+                        <div className="flex flex-1 gap-0.5">
+                          {row.map((v, h) => {
+                            const intensity = v / max;
+                            return (
+                              <div
+                                key={h}
+                                title={`${['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][w]} ${h}h : ${v} visite(s)`}
+                                className="h-4 flex-1 rounded-sm transition-transform hover:scale-125"
+                                style={{
+                                  backgroundColor:
+                                    v === 0
+                                      ? 'var(--secondary)'
+                                      : `rgba(164,22,26,${0.15 + intensity * 0.85})`,
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center gap-1.5 pt-1 pl-9 text-[9px] text-muted-foreground">
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <span key={h} className="flex-1 text-center">{h % 3 === 0 ? h : ''}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── ACTIONS DES VISITEURS ── */}
+      {(() => {
+        const actions = stats?.actions ?? [];
+        const total = actions.reduce((s, a) => s + a.count, 0) || 1;
+        const FULL_LABELS: Record<string, string> = {
+          PAGE_VIEW: 'Pages vues', ARTICLE_VIEW: 'Lectures d’articles', SEARCH: 'Recherches',
+          NEWSLETTER_SUB: 'Inscriptions newsletter', CONTACT: 'Messages de contact',
+          AD_CLICK: 'Clics publicitaires', AD_IMPRESSION: 'Impressions pub',
+          VIDEO_VIEW: 'Vues de vidéos', PODCAST_VIEW: 'Écoutes de podcasts', FAVORITE: 'Favoris ajoutés',
+        };
+        if (loading) return <Skeleton className="h-40 w-full" />;
+        if (actions.length === 0) return null;
+        return (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="font-editorial text-base">Que font les visiteurs sur le site ?</CardTitle>
+              <CardDescription>Répartition de toutes les actions enregistrées (30 jours).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {actions.map((a) => (
+                  <div key={a.type} className="flex items-center gap-3">
+                    <span className="w-48 shrink-0 truncate text-sm text-muted-foreground">
+                      {FULL_LABELS[a.type] ?? a.type}
+                    </span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-secondary">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((a.count / total) * 100)}%` }} />
+                    </div>
+                    <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                      {formatNumber(a.count)} ({Math.round((a.count / total) * 100)} %)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <div className="grid gap-4 xl:grid-cols-2">
         {/* Sources de trafic */}

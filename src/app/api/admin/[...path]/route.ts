@@ -1423,6 +1423,39 @@ async function buildChart(days: number) {
   return [...buckets.entries()].map(([date, v]) => ({ date, views: v.views, visits: v.visits }));
 }
 
+/** Répartition horaire / jour de semaine + heatmap 7j×24h des visites. */
+async function buildTiming(days: number) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (Math.min(90, Math.max(1, days)) - 1));
+  const events = await db.analyticsEvent.findMany({
+    where: { type: { in: ['PAGE_VIEW', 'ARTICLE_VIEW'] }, createdAt: { gte: start } },
+    select: { createdAt: true },
+    take: 50000,
+  });
+  const hours = Array.from({ length: 24 }, () => 0);
+  const weekdays = Array.from({ length: 7 }, () => 0);
+  const heat = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+  for (const e of events) {
+    const h = e.createdAt.getUTCHours(); // Guinée = UTC+0
+    const w = e.createdAt.getUTCDay();
+    hours[h] += 1;
+    weekdays[w] += 1;
+    heat[w][h] += 1;
+  }
+  const maxHour = hours.indexOf(Math.max(...hours));
+  const maxDay = weekdays.indexOf(Math.max(...weekdays));
+  const DAY_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  return {
+    byHour: hours.map((count, hour) => ({ hour, count })),
+    byWeekday: weekdays.map((count, day) => ({ day, label: DAY_LABELS[day], count })),
+    heatmap: heat,
+    peakHour: maxHour,
+    peakDay: DAY_LABELS[maxDay],
+    totalEvents: events.length,
+  };
+}
+
 async function buildStats(days: number) {
   const window = Math.min(90, Math.max(1, days));
   const now = new Date();
@@ -1504,6 +1537,12 @@ async function buildStats(days: number) {
     // ─── Sources de trafic RÉELLES (referrer enregistré par le navigateur) ───
     trafficSources: buildRealSources(visitMetaRows),
     devices: buildDeviceSplit(visitMetaRows),
+    // ─── Heures / jours de fréquentation (pics) ───
+    timing: await buildTiming(window),
+    // ─── Répartition des actions des visiteurs (30 j) ───
+    actions: trafficRows
+      .map((r) => ({ type: r.type, count: r._count.type }))
+      .sort((a, b) => b.count - a.count),
   });
 }
 

@@ -271,6 +271,7 @@ export function SettingsAdmin() {
           <div className="space-y-3 rounded-xl border border-border/70 bg-card p-5">
             <p className="text-sm font-semibold">Interactions &amp; contenu</p>
             <FeatureSwitch label="Commentaires" description="Autoriser les lecteurs à commenter les articles." checked={settings.commentsEnabled} onChange={(v) => patch({ commentsEnabled: v })} />
+            <FeatureSwitch label="Boutons de partage animés" description="Vague périodique et rebond au survol sur les boutons de partage des articles (attire l'œil et incite au partage)." checked={settings.shareButtonsAnimated !== false} onChange={(v) => patch({ shareButtonsAnimated: v })} />
             <FeatureSwitch label="Mode sombre" description="Bascule clair/sombre pour les visiteurs." checked={settings.darkModeEnabled} onChange={(v) => patch({ darkModeEnabled: v })} />
             <FeatureSwitch label="Comptes lecteurs" description="Favoris et personnalisation pour les lecteurs." checked={settings.readerAccountsEnabled} onChange={(v) => patch({ readerAccountsEnabled: v })} />
             <FeatureSwitch label="Flash info" description="Bandeau défilant en haut du site." checked={settings.flashInfoEnabled} onChange={(v) => patch({ flashInfoEnabled: v })} />
