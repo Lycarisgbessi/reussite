@@ -2,34 +2,51 @@
 // PREVIEW GENERATOR — génère automatiquement les images HD des N
 // premières pages d'un numéro depuis son PDF (Drive ou ailleurs) :
 //   1. Téléchargement du PDF (Drive → lien direct)
-//   2. Upload vers Cloudinary en ressource IMAGE (dossier previews)
-//   3. Rasterisation à la demande par Cloudinary : pg_{n} → JPEG HD
+//   2. Rendu des N premières pages en Node (pdf.js + canvas natif)
+//   3. Upload de chaque page vers Cloudinary (JPEG ~200-500 Ko)
 //   4. Écriture des URLs dans MagazineIssue.previewImages
-// Le flipbook public affiche alors les VRAIES pages, sans jamais
-// exposer le PDF complet (aucune fuite réseau).
+// Le flipbook public affiche alors les VRAIES pages ; le PDF complet
+// n'est jamais exposé (aucune fuite réseau).
 // ═══════════════════════════════════════════════════════════════
 import { db } from '@/lib/db';
-import { cloudinaryConfigured, CLOUDINARY_FOLDER } from './cloudinary';
+import { cloudinaryConfigured, uploadImageBuffer } from './cloudinary';
 import { fetchFileBytes } from './drive';
-
-const PREVIEW_FOLDER = `${CLOUDINARY_FOLDER}/previews`;
-
-/** URL Cloudinary de la page N du PDF uploadé (JPEG HD à la volée). */
-export function pageUrl(publicId: string, page: number, width = 1200): string {
-  return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/f_jpg,q_auto:good,w_${width},pg_${page}/${publicId}.jpg`;
-}
 
 export interface RegenResult {
   ok: boolean;
   pages: string[];
-  publicId?: string;
-  bytes?: number;
   error?: string;
+}
+
+/** Rend la page en JPEG HD via pdf.js + canvas natif. */
+async function renderPage(
+  pdfjs: typeof import('pdfjs-dist/legacy/build/pdf.mjs'),
+  doc: import('pdfjs-dist/types/src/display/api').PDFDocumentProxy,
+  pageNumber: number,
+  targetWidth: number,
+): Promise<Buffer> {
+  const { createCanvas } = await import('@napi-rs/canvas');
+  const page = await doc.getPage(pageNumber);
+  const base = page.getViewport({ scale: 1 });
+  const scale = targetWidth / base.width;
+  const viewport = page.getViewport({ scale });
+  const canvas = createCanvas(Math.round(viewport.width), Math.round(viewport.height));
+  const ctx = canvas.getContext('2d');
+  // Fond blanc (pages transparentes → JPEG propre)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({
+    // @ts-expect-error compat contexte canvas natif vs DOM
+    canvasContext: ctx,
+    viewport,
+  }).promise;
+  page.cleanup();
+  return canvas.toBuffer('image/jpeg', 85);
 }
 
 /**
  * Régénère les pages d'aperçu d'un numéro depuis son PDF.
- * Retourne les URLs générées ; ne modifie pas previewPages.
+ * Ne modifie pas previewPages ; échoue proprement avec un message clair.
  */
 export async function regenerateIssuePreview(issueId: string): Promise<RegenResult> {
   const issue = await db.magazineIssue.findUnique({ where: { id: issueId } });
@@ -41,37 +58,32 @@ export async function regenerateIssuePreview(issueId: string): Promise<RegenResu
   }
 
   // 1. Télécharger le PDF
-  const { buffer, bytes } = await fetchFileBytes(issue.pdfUrl);
+  const { buffer } = await fetchFileBytes(issue.pdfUrl);
 
-  // 2. Uploader en ressource IMAGE (Cloudinary rasterise les PDF
-  //    dans ce mode ; resource_type « raw » ne le permet pas).
-  const { v2: cloudinary } = await import('cloudinary');
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
-  const uploaded = await new Promise<{ secure_url: string; public_id: string; pages?: number }>(
-    (resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: PREVIEW_FOLDER,
-          resource_type: 'image',
-          use_filename: true,
-          unique_filename: true,
-          overwrite: false,
-        },
-        (error, res) => (error || !res ? reject(new Error(error?.message || 'Upload Cloudinary échoué')) : resolve(res)),
-      );
-      stream.end(buffer);
-    },
-  );
+  // 2. Ouvrir avec pdf.js (build Node « legacy »)
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const doc = await pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    isEvalSupported: false,
+    useSystemFonts: true,
+  }).promise;
+  const count = Math.min(issue.previewPages, doc.numPages);
+  if (count < 1) {
+    await doc.destroy();
+    return { ok: false, pages: [], error: 'PDF illisible (0 page).' };
+  }
 
-  // 3. URLs des N premières pages (pg_1..N) — Cloudinary génère le
-  //    JPEG à la demande ; le PDF complet n'est jamais servi public.
-  const count = issue.previewPages;
-  const pages = Array.from({ length: count }, (_, i) => pageUrl(uploaded.public_id, i + 1));
+  // 3. Rendre et uploader chaque page
+  const pages: string[] = [];
+  try {
+    for (let n = 1; n <= count; n++) {
+      const jpeg = await renderPage(pdfjs, doc, n, 1200);
+      const uploaded = await uploadImageBuffer(jpeg, `page-${n}.jpg`);
+      pages.push(uploaded.url);
+    }
+  } finally {
+    await doc.destroy();
+  }
 
   // 4. Persister
   await db.magazineIssue.update({
@@ -79,5 +91,5 @@ export async function regenerateIssuePreview(issueId: string): Promise<RegenResu
     data: { previewImages: JSON.stringify(pages) },
   });
 
-  return { ok: true, pages, publicId: uploaded.public_id, bytes };
+  return { ok: true, pages };
 }
