@@ -41,13 +41,14 @@ export const metadata: Metadata = {
     title: "Réussite Magazine — Trimestriel des décideurs africains",
     description: "Entrepreneuriat, business, management et innovation : articles, dossiers, interviews, vidéos et podcasts.",
     siteName: "Réussite Magazine",
-    images: ["/images/og-default.jpg"],
+    images: [{ url: "/images/og-site.jpg", width: 1200, height: 630, alt: "Réussite Magazine" }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Réussite Magazine",
     description: "Le trimestriel des décideurs africains.",
+    images: ["/images/og-site.jpg"],
   },
 };
 

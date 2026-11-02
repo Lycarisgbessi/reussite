@@ -302,7 +302,7 @@ export function ArticlePage({ slug }: { slug: string }) {
               {t('article.favorite')}
             </Button>
           </div>
-          <ShareButtons title={article.title} />
+          <ShareButtons title={article.title} slug={article.slug} />
         </div>
 
         {/* Corps de l'article + pub in-article après le 2e bloc */}

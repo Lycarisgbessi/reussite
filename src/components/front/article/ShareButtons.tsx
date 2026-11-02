@@ -18,9 +18,13 @@ import { useMagazineStore } from '@/lib/store';
 interface ShareButtonsProps {
   title?: string;
   className?: string;
+  /** Slug de l'article : partage l'URL /article/slug qui porte les
+   *  méta-données OG (image de couverture + description) pour les
+   *  réseaux sociaux, puis redirige vers la SPA. */
+  slug?: string;
 }
 
-export function ShareButtons({ title = '', className }: ShareButtonsProps) {
+export function ShareButtons({ title = '', className, slug }: ShareButtonsProps) {
   const { toast } = useToast();
   const { t } = useI18n();
   const settings = useMagazineStore((s) => s.bootstrap?.settings);
@@ -28,7 +32,11 @@ export function ShareButtons({ title = '', className }: ShareButtonsProps) {
   const animated = settings?.shareButtonsAnimated !== false;
   const [copied, setCopied] = useState(false);
 
-  const url = typeof window !== 'undefined' ? window.location.href : '';
+  const url = typeof window !== 'undefined'
+    ? slug
+      ? `${window.location.origin}/article/${slug}`
+      : window.location.href
+    : '';
   const encUrl = encodeURIComponent(url);
   const encTitle = encodeURIComponent(title);
 
