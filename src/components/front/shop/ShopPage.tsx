@@ -477,6 +477,12 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
         window.location.href = res.order.paymentUrl;
         return;
       }
+      if (res.order?.paymentError) {
+        // Djomy indisponible : la commande est créée, l'acheteur choisit un autre moyen
+        setFormError(`${res.order.paymentError} Votre commande ${res.order.orderNumber} est enregistrée — choisissez Mobile Money ou virement ci-dessous pour finaliser.`);
+        setResult({ ...res.order, instructions: res.instructions });
+        return;
+      }
       setResult(res.order ? { ...res.order, instructions: res.instructions } : null);
       setStep(3);
     } catch (e) {
@@ -626,11 +632,17 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
                   </div>
                 ) : null}
 
+                {form.paymentMethod === 'DJOMY' ? (
+                  <p className="rounded-lg bg-primary/10 px-3 py-2 text-[11px] font-medium text-primary">
+                    Le paiement en ligne Djomy s'effectue en francs guinéens (GNF) : {fmtGnf(amountCfa)}.
+                  </p>
+                ) : null}
+
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Moyen de paiement</p>
                   <div className="space-y-2">
                     {PAYMENT_METHODS.map(({ key, label: l, Icon, hint }) => (
-                      <button key={key} type="button" onClick={() => setForm((f) => ({ ...f, paymentMethod: key }))}
+                      <button key={key} type="button" onClick={() => setForm((f) => ({ ...f, paymentMethod: key, ...(key === 'DJOMY' ? { currency: 'XOF' } : {}) }))}
                         className={cn('flex w-full items-center gap-3 rounded-lg border-2 px-3 py-2.5 text-left transition-all',
                           form.paymentMethod === key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40')}>
                         <Icon className={cn('size-5', form.paymentMethod === key ? 'text-primary' : 'text-muted-foreground')} aria-hidden="true" />
