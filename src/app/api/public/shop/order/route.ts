@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import {
   clientLimitKey, handleRouteError, HttpError, isValidEmail, ok, rateLimit, readBody,
 } from '@/lib/server/utils';
+import { createGatewayPayment, djomyConfigured } from '@/lib/server/djomy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
         amountCfa,
         amountEur,
         currency,
-        paymentMethod: ['MOBILE_MONEY', 'BANK_TRANSFER', 'CARD'].includes(String(body.paymentMethod))
+        paymentMethod: ['MOBILE_MONEY', 'BANK_TRANSFER', 'CARD', 'DJOMY'].includes(String(body.paymentMethod))
           ? String(body.paymentMethod)
           : 'MOBILE_MONEY',
         paymentRef: String(body.paymentRef ?? '').slice(0, 120),
@@ -95,10 +96,41 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // ── Paiement en ligne Djomy : créer la session de paiement ──
+    let paymentUrl: string | undefined;
+    let paymentError: string | undefined;
+    if (order.paymentMethod === 'DJOMY') {
+      if (!djomyConfigured()) {
+        paymentError = 'Paiement en ligne Djomy non configuré (clés API manquantes). Choisissez Mobile Money ou virement.';
+      } else {
+        // Téléphone au format international (ex : 00224628209866)
+        const phone = order.buyerPhone.replace(/[^0-9]/g, '').replace(/^224/, '00224');
+        const payerNumber = phone.startsWith('00') ? phone : `00224${phone.replace(/^0/, '')}`;
+        const res = await createGatewayPayment({
+          amount: order.amountCfa, // Djomy : GNF
+          payerNumber,
+          merchantPaymentReference: order.orderNumber,
+          description: `${order.type === 'SINGLE' ? 'Numéro' : 'Abonnement'} Réussite Magazine — commande ${order.orderNumber}`,
+          origin: req.nextUrl.origin,
+        });
+        if (res.ok && res.paymentUrl) {
+          paymentUrl = res.paymentUrl;
+          await db.order.update({
+            where: { id: order.id },
+            data: { note: `Djomy initié (${res.transactionId ?? ''})` },
+          }).catch(() => {});
+        } else {
+          paymentError = res.error || 'Djomy indisponible.';
+        }
+      }
+    }
+
     return ok({
       order: {
         orderNumber: order.orderNumber,
         type: order.type,
+        paymentUrl,
+        paymentError,
         amountCfa: order.amountCfa,
         amountEur: order.amountEur,
         currency: order.currency,

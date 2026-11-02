@@ -21,7 +21,7 @@ import {
   Sun,
   Thermometer,
   Twitter,
-  Youtube, AtSign, Music2, MessageCircle} from 'lucide-react';
+  Youtube, AtSign, Music2, MessageCircle, ShoppingBag} from 'lucide-react';
 import { navigate, useMagazineStore } from '@/lib/store';
 import { LOCALES, useFormatDate, useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -451,9 +451,11 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
             <li>
               <a
                 href="#/shop"
-                className="flex h-full items-center bg-black/20 px-1.5 text-[10.5px] font-bold uppercase tracking-tight transition-colors hover:bg-black/30 sm:px-2.5 sm:text-[11.5px] lg:px-3"
+                className="group my-1 flex h-[calc(100%-0.5rem)] items-center gap-1.5 rounded-full bg-white px-2.5 text-[10.5px] font-bold uppercase tracking-tight text-primary shadow-md transition-all hover:scale-[1.04] hover:shadow-lg sm:px-3.5 sm:text-[11.5px]"
               >
+                <ShoppingBag className="size-3.5 transition-transform group-hover:-translate-y-0.5" aria-hidden="true" />
                 Boutique
+                <span className="hidden rounded-full bg-primary px-1.5 py-px text-[8.5px] font-black text-white sm:inline">✦</span>
               </a>
             </li>
             <li className="flex items-center">

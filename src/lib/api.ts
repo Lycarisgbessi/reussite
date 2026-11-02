@@ -148,7 +148,7 @@ export const publicApi = {
     deliveryAddress?: string; deliveryCity?: string; deliveryNote?: string;
     currency?: string; paymentMethod?: string; paymentRef?: string; note?: string;
   }) => request<{
-    order: { orderNumber: string; type: string; amountCfa: number; amountEur: number; currency: string; status: string };
+    order: { orderNumber: string; type: string; amountCfa: number; amountEur: number; currency: string; status: string; paymentUrl?: string; paymentError?: string };
     instructions: { mobileMoney: { network: string; number: string }[]; bankTransfer: string; steps: string[] };
   }>('/api/public/shop/order', { method: 'POST', body: JSON.stringify(data) }),
 };

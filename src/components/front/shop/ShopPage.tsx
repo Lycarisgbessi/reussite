@@ -16,6 +16,7 @@ import {
 import { publicApi } from '@/lib/api';
 import { navigate } from '@/lib/store';
 import { useI18n } from '@/lib/i18n';
+import { useToast } from '@/hooks/use-toast';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,7 @@ const fmtUsd = (n: number) => `${n} $`;
 
 export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
   useDocumentTitle('Boutique — Numéros & Abonnements');
+  const { toast } = useToast();
   const [issues, setIssues] = useState<ShopIssue[] | null>(null);
   const [plans, setPlans] = useState<ShopPlan[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +86,27 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
 
   // ── Suivi de commande : télécharger un numéro payé & validé ──
   const [track, setTrack] = useState({ order: '', email: '' });
+
+  // ── Retour du portail Djomy : message + suivi prérempli ──
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    const order = qs.get('order');
+    const payment = qs.get('payment');
+    if (!order || !payment) return;
+    // Nettoyage de l'URL (sans rechargement)
+    window.history.replaceState(null, '', window.location.pathname);
+    if (payment === 'return') {
+      toast({
+        title: 'Paiement transmis à Djomy ✓',
+        description: `Commande ${order} : dès confirmation (quelques secondes en général), saisissez le numéro et votre email ci-dessous pour récupérer votre numéro.`,
+        duration: 12000,
+      });
+    } else if (payment === 'cancel') {
+      toast({ title: 'Paiement annulé', description: `Commande ${order} — vous pouvez réessayer quand vous voulez.` });
+    }
+    setTrack((t) => ({ ...t, order }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [trackBusy, setTrackBusy] = useState(false);
 
   // Ouvre directement le détail d'un numéro si focusIssueId (depuis l'extérieur)
@@ -386,19 +409,21 @@ export function ShopPage({ focusIssueId }: { focusIssueId?: string }) {
 type Checkout = { type: 'SINGLE' | 'SUBSCRIPTION'; issue?: ShopIssue; plan?: ShopPlan } | null;
 
 const PAYMENT_METHODS = [
-  { key: 'MOBILE_MONEY', label: 'Mobile Money', Icon: Smartphone, hint: 'Orange Money, MTN MoMo' },
+  { key: 'DJOMY', label: 'Payer en ligne — Djomy', Icon: CreditCard, hint: 'Orange Money, MTN MoMo, Soutra, PayCard, VISA/Mastercard — paiement immédiat et sécurisé' },
+  { key: 'MOBILE_MONEY', label: 'Mobile Money (manuel)', Icon: Smartphone, hint: 'Orange Money, MTN MoMo' },
   { key: 'BANK_TRANSFER', label: 'Virement bancaire', Icon: Landmark, hint: 'IBAN communiqué par email' },
   { key: 'CARD', label: 'Carte bancaire', Icon: CreditCard, hint: 'Lien sécurisé envoyé par email' },
 ] as const;
 
 function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: () => void }) {
   const { t } = useI18n();
+  const { toast } = useToast();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [variant, setVariant] = useState<'DIGITAL' | 'PRINT'>('DIGITAL');
   const [delivery, setDelivery] = useState({ address: '', city: '', note: '' });
   const [form, setForm] = useState({ buyerName: '', buyerEmail: '', buyerPhone: '', currency: 'XOF', paymentMethod: 'MOBILE_MONEY', paymentRef: '', note: '' });
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ orderNumber: string; amountCfa: number; amountEur: number; currency: string; instructions?: { mobileMoney?: { network: string; number: string }[]; steps: string[] } } | null>(null);
+  const [result, setResult] = useState<{ orderNumber: string; amountCfa: number; amountEur: number; currency: string; paymentUrl?: string; paymentError?: string; instructions?: { mobileMoney?: { network: string; number: string }[]; steps: string[] } } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -426,6 +451,10 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
         setFormError('Adresse et ville de livraison requises pour la version papier.');
         return;
       }
+      if (form.paymentMethod === 'DJOMY' && !form.buyerPhone.trim()) {
+        setFormError('Votre numéro de téléphone est requis pour le paiement en ligne Djomy.');
+        return;
+      }
       const res = await publicApi.createOrder({
         type: checkout.type,
         issueId: isSingle ? checkout.issue!.id : undefined,
@@ -442,6 +471,12 @@ function CheckoutDialog({ checkout, onClose }: { checkout: Checkout; onClose: ()
         paymentRef: form.paymentRef.trim(),
         note: form.note.trim(),
       });
+      if (res.order?.paymentUrl) {
+        // Portail Djomy : le client paie sur la page sécurisée Djomy
+        toast({ title: 'Redirection vers Djomy…', description: 'Complétez votre paiement en toute sécurité.' });
+        window.location.href = res.order.paymentUrl;
+        return;
+      }
       setResult(res.order ? { ...res.order, instructions: res.instructions } : null);
       setStep(3);
     } catch (e) {
