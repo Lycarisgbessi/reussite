@@ -5,7 +5,7 @@
 // • Network-first : pages & API (toujours frais si en ligne)
 // • Web Push : notifications des nouvelles publications
 // ═══════════════════════════════════════════════════════════════
-const VERSION = 'reussite-v2';
+const VERSION = 'reussite-v3'; // bump = purge de TOUS les anciens caches chez chaque visiteur
 const SHELL_CACHE = `${VERSION}-shell`;
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
