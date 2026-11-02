@@ -9,12 +9,18 @@
 // ═══════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowRight, Bell, BellRing, Share, Smartphone, X } from 'lucide-react';
 import { publicApi } from '@/lib/api';
 import { useBottomLayers } from '@/lib/bottomLayers';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { subscribeToPush, isPushEnabled, registerServiceWorker } from '@/lib/push';
 
 interface TeaserIssue { id: string; title: string; coverUrl: string; }
+
+function isIos(): boolean {
+  return typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
 
 // Cycle taquin : 9 s visible → 6 s caché → revient…
 const VISIBLE_MS = 9000;
@@ -28,7 +34,18 @@ export function MagazineTeaserCorner() {
   const [scrolled, setScrolled] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [teasing, setTeasing] = useState(false); // true = caché
+  // Alternance taquine : une apparition sur deux = appel à
+  // installer l'application / activer les notifications.
+  const [mode, setMode] = useState<'magazine' | 'engagement'>('magazine');
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const { toast } = useToast();
   const playerVisible = useBottomLayers((st) => st.playerVisible);
+
+  useEffect(() => {
+    void registerServiceWorker();
+    void isPushEnabled().then(setPushOn);
+  }, []);
 
   useEffect(() => {
     try {
@@ -67,6 +84,7 @@ export function MagazineTeaserCorner() {
         if (cancelled) return;
         if (hovered) { cycle(visible); return; } // survolé → il reste
         setTeasing(!visible);
+        if (!visible) setMode((m) => (m === 'magazine' ? 'engagement' : 'magazine'));
         cycle(!visible);
       }, visible ? VISIBLE_MS : HIDDEN_MS);
     };
@@ -113,6 +131,59 @@ export function MagazineTeaserCorner() {
         onMouseLeave={() => setHovered(false)}
       >
         <div className="group relative overflow-visible rounded-lg border border-border/70 bg-card shadow-[0_12px_40px_-10px_rgba(0,0,0,0.5)]">
+          {mode === 'engagement' && !pushOn ? (
+            /* ── CARTE « NE MANQUEZ PLUS RIEN » : notifications + appli ── */
+            <div className="relative flex items-stretch">
+              <span className="flex h-[126px] w-[132px] shrink-0 flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-primary/20 to-primary/5 sm:h-[132px]">
+                <span className="relative flex size-12 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/40">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" aria-hidden="true" />
+                  <BellRing className="size-6" aria-hidden="true" />
+                </span>
+                <span className="px-2 text-center text-[9px] font-bold uppercase tracking-wider text-primary">
+                  Notifications
+                </span>
+              </span>
+              <span className="flex w-56 flex-col justify-center gap-1.5 py-3 pr-4 sm:pr-5">
+                <span className="flex items-center gap-2 text-[8px] font-bold uppercase tracking-[0.18em] text-primary sm:text-[9px]">
+                  <span className="h-px w-4 bg-primary" aria-hidden="true" />
+                  Restez informé
+                </span>
+                <span className="font-editorial text-[14px] font-bold leading-snug sm:text-[15px]">
+                  Ne manquez plus aucun numéro ni article !
+                </span>
+                <span className="text-[10.5px] leading-snug text-muted-foreground">
+                  Recevez les alertes directement sur votre téléphone — même sans application.
+                </span>
+                <span className="mt-1 flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    disabled={pushBusy}
+                    onClick={async () => {
+                      setPushBusy(true);
+                      try {
+                        await subscribeToPush();
+                        setPushOn(true);
+                        toast({ title: 'Notifications activées ✓', description: 'Vous serez alerté de chaque nouvelle publication.' });
+                      } catch (e) {
+                        toast({ variant: 'destructive', title: 'Activation impossible', description: e instanceof Error ? e.message : 'Réessayez plus tard.' });
+                      } finally {
+                        setPushBusy(false);
+                      }
+                    }}
+                    className="teaser-shine inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-white shadow-md shadow-primary/30"
+                  >
+                    {pushBusy ? 'Activation…' : '🔔 Activer les notifications'}
+                  </button>
+                  <span className="flex items-center gap-1.5 text-[10px] leading-snug text-muted-foreground">
+                    <Smartphone className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                    {isIos()
+                      ? <>Installez l'appli : bouton <Share className="inline size-3" aria-hidden="true" /> puis « Sur l'écran d'accueil »</>
+                      : <>Ou installez l'application depuis la bannière du site</>}
+                  </span>
+                </span>
+              </span>
+            </div>
+          ) : (
           <a
             href="#/shop"
             aria-label={`Feuilleter le magazine : ${current.title}`}
@@ -168,6 +239,7 @@ export function MagazineTeaserCorner() {
               </span>
             </span>
           </a>
+          )}
 
           {/* Filet signature animé */}
           <span
