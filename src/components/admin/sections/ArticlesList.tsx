@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DataTable, type Column } from '../ui/DataTable';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -199,7 +200,7 @@ export function ArticlesList() {
       key: 'category',
       header: 'Catégorie',
       render: (a) => a.category ? (
-        <Badge variant="outline" className="gap-1.5 border-border/70 font-normal">
+        <Badge variant="outline" className="gap-1.5 whitespace-nowrap border-border/70 font-normal">
           <span className="h-2 w-2 rounded-full" style={{ background: a.category.color || 'var(--primary)' }} aria-hidden="true" />
           {a.category.name}
         </Badge>
@@ -210,13 +211,13 @@ export function ArticlesList() {
       header: 'Auteur',
       className: 'hidden md:table-cell',
       render: (a) => (
-        <span className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
+        <span className="flex min-w-0 items-center gap-2">
+          <Avatar className="h-6 w-6 shrink-0">
             <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-primary">
               {a.author?.name?.split(/\s+/).map((p) => p[0]).slice(0, 2).join('') ?? '?'}
             </AvatarFallback>
           </Avatar>
-          <span className="truncate text-sm">{a.author?.name ?? '—'}</span>
+          <span className="min-w-0 flex-1 truncate text-sm">{a.author?.name ?? '—'}</span>
         </span>
       ),
     },
@@ -225,7 +226,7 @@ export function ArticlesList() {
       header: 'Statut',
       render: (a) => {
         const meta = STATUS_META[a.status] ?? STATUS_META.DRAFT;
-        return <Badge variant="outline" className={meta.className}>{meta.label}</Badge>;
+        return <Badge variant="outline" className={cn('whitespace-nowrap', meta.className)}>{meta.label}</Badge>;
       },
     },
     {

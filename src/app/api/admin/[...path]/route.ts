@@ -1865,6 +1865,15 @@ async function handleShopIssueCreate(ctx: Ctx) {
   }
   const fresh = preview?.ok ? await db.magazineIssue.findUnique({ where: { id: created.id } }) : created;
   logAudit(ctx.user.id, ctx.user.name, 'SHOP_ISSUE_CREATE', `Numéro « ${created.title} » créé`);
+  // Notification push : nouveau numéro en vente
+  if (created.published) {
+    broadcastPush({
+      title: 'New magazine issue!',
+      body: `Issue No. ${created.issueNumber} — ${created.title} is now available.`,
+      url: '/#/shop?numero=' + created.id,
+      tag: 'magazine',
+    }).catch(() => {});
+  }
   return ok({ issue: fresh, preview });
 }
 
@@ -1910,6 +1919,15 @@ async function handleShopIssueUpdate(ctx: Ctx) {
     ? await db.magazineIssue.findUnique({ where: { id } })
     : updated;
   logAudit(ctx.user.id, ctx.user.name, 'SHOP_ISSUE_UPDATE', `Numéro « ${updated.title} » modifié`);
+  // Notification push : numéro (re)publié
+  if (updated.published && !existing.published) {
+    broadcastPush({
+      title: 'New magazine issue!',
+      body: `Issue No. ${updated.issueNumber} — ${updated.title} is now available.`,
+      url: '/#/shop?numero=' + updated.id,
+      tag: 'magazine',
+    }).catch(() => {});
+  }
   return ok({ issue: fresh, preview });
 }
 

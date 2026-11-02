@@ -578,6 +578,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   linkedin: 'https://linkedin.com/company/reussitemagazine',
   youtube: 'https://youtube.com/@reussitemagazine',
   whatsapp: '',
+  instagram: '',
+  tiktok: '',
+  contactPhone2: '',
+  contactPhone3: '',
   seoTitle: 'Réussite Magazine — Entrepreneuriat, Business & Innovation',
   seoDescription:
     'Le magazine digital des entrepreneurs : stratégies, financement, management, startups et intelligence artificielle.',

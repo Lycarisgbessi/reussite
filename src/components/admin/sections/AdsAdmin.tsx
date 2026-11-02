@@ -36,7 +36,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Plus, Pencil, Trash2, Loader2, Megaphone, MousePointerClick, Eye,
+  Plus, Pencil, Trash2, Loader2, Megaphone, MousePointerClick, Eye, Bell, Send,
   BarChart3, Download, Globe, Smartphone, Monitor, ImageIcon, Code2, Save, Youtube,
 } from 'lucide-react';
 
@@ -119,6 +119,10 @@ export function AdsAdmin() {
 
   const placementById = React.useMemo(() => new Map(placements.map((p) => [p.id, p])), [placements]);
   const selectedPlacement = form.placementId ? placementById.get(form.placementId) : null;
+  // ── Notification push publicitaire ──
+  const [pushOpen, setPushOpen] = React.useState(false);
+  const [pushForm, setPushForm] = React.useState({ title: '', body: '', url: '' });
+  const [pushBusy, setPushBusy] = React.useState(false);
 
   // ─── Emplacements ─────────────────────────────────────────────
   const updatePlacement = async (p: AdPlacement, patch: Partial<AdPlacement>) => {
@@ -278,9 +282,14 @@ export function AdsAdmin() {
           <TabsTrigger value="campaigns" className="gap-1.5"><Megaphone className="h-3.5 w-3.5" /> Campagnes</TabsTrigger>
           <TabsTrigger value="stats" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Statistiques</TabsTrigger>
         </TabsList>
-        <Button size="sm" className="ml-auto" onClick={openCreate}>
-          <Plus className="h-4 w-4" /> Nouvelle campagne
-        </Button>
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setPushOpen(true)}>
+            <Bell className="h-4 w-4" /> Notification
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4" /> Nouvelle campagne
+          </Button>
+        </div>
       </div>
 
       {/* ═════════ EMPLACEMENTS ═════════ */}
@@ -620,6 +629,75 @@ export function AdsAdmin() {
         loading={busy}
         onConfirm={doDelete}
       />
+
+      {/* ─── Diffuser une notification push publicitaire ─── */}
+      <Dialog open={pushOpen} onOpenChange={setPushOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-editorial">Notification push</DialogTitle>
+            <DialogDescription>
+              Diffusez un message directement sur les téléphones de tous les abonnés
+              (personnes ayant accepté les notifications du site).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <Input
+              value={pushForm.title}
+              onChange={(e) => setPushForm({ ...pushForm, title: e.target.value })}
+              placeholder="Titre — ex : Offre exclusive de notre partenaire"
+              aria-label="Titre de la notification"
+            />
+            <Input
+              value={pushForm.body}
+              onChange={(e) => setPushForm({ ...pushForm, body: e.target.value })}
+              placeholder="Message — ex : -20% pour nos lecteurs jusqu'à dimanche"
+              aria-label="Message de la notification"
+            />
+            <Input
+              value={pushForm.url}
+              onChange={(e) => setPushForm({ ...pushForm, url: e.target.value })}
+              placeholder="Lien ouvert au clic — ex : /shop (optionnel)"
+              aria-label="URL de destination"
+            />
+            <div className="rounded-lg border bg-muted/40 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Aperçu</p>
+              <div className="mt-2 flex items-start gap-2.5 rounded-xl bg-card p-3 shadow">
+                <span className="mt-0.5 flex size-8 items-center justify-center rounded-lg bg-primary text-white"><Bell className="size-4" /></span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{pushForm.title || 'Titre de la notification'}</p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{pushForm.body || 'Votre message apparaîtra ici, sur l’écran du lecteur.'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPushOpen(false)}>Annuler</Button>
+            <Button
+              disabled={pushBusy || !pushForm.title.trim() || !pushForm.body.trim()}
+              onClick={async () => {
+                setPushBusy(true);
+                try {
+                  const res = await adminApi.sendPush({
+                    title: pushForm.title.trim(),
+                    body: pushForm.body.trim(),
+                    url: pushForm.url.trim() || undefined,
+                  });
+                  toast({ title: 'Notification diffusée', description: `${res.sent} envoi(s), ${res.removed} abonnement(s) obsolète(s) purgé(s).` });
+                  setPushOpen(false);
+                  setPushForm({ title: '', body: '', url: '' });
+                } catch (e) {
+                  toast({ variant: 'destructive', title: 'Envoi impossible', description: e instanceof Error ? e.message : 'Vérifiez les clés VAPID.' });
+                } finally {
+                  setPushBusy(false);
+                }
+              }}
+            >
+              {pushBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Diffuser
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 }

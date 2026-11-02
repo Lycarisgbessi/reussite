@@ -6,6 +6,7 @@
 // basse : ©, mentions légales, plan du site, espace rédaction.
 // ═══════════════════════════════════════════════════════════════
 import { useState } from 'react';
+import * as React from 'react';
 import {
   Clock,
   Facebook,
@@ -16,8 +17,7 @@ import {
   MapPin,
   Phone,
   Twitter,
-  Youtube,
-} from 'lucide-react';
+  Youtube, AtSign, Music2, MessageCircle} from 'lucide-react';
 import { navigate, useMagazineStore } from '@/lib/store';
 import { publicApi } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -62,6 +62,9 @@ export function Footer() {
     { key: 'twitter', url: settings?.twitter, Icon: Twitter, label: 'X (Twitter)' },
     { key: 'linkedin', url: settings?.linkedin, Icon: Linkedin, label: 'LinkedIn' },
     { key: 'youtube', url: settings?.youtube, Icon: Youtube, label: 'YouTube' },
+    { key: 'instagram', url: settings?.instagram, Icon: AtSign, label: 'Instagram' },
+    { key: 'tiktok', url: settings?.tiktok, Icon: Music2, label: 'TikTok' },
+    { key: 'whatsapp', url: settings?.whatsapp, Icon: MessageCircle, label: 'WhatsApp' },
   ].filter((s) => s.url);
 
   const subscribe = async (e: React.FormEvent) => {
@@ -86,7 +89,7 @@ export function Footer() {
   // à contactHref ; seul le libellé affiché est traduit.
   const contactRows = [
     { Icon: Mail, value: settings?.contactEmail, label: t('footer.email'), href: contactHref('Email', settings?.contactEmail || '') },
-    { Icon: Phone, value: settings?.contactPhone, label: t('footer.phone'), href: contactHref('Téléphone', settings?.contactPhone || '') },
+    { Icon: Phone, value: [settings?.contactPhone, settings?.contactPhone2, settings?.contactPhone3].filter(Boolean).join(' · '), label: t('footer.phone'), href: contactHref('Téléphone', settings?.contactPhone || '') },
     { Icon: MapPin, value: settings?.contactAddress, label: t('footer.address'), href: contactHref('Adresse', settings?.contactAddress || '') },
     { Icon: Clock, value: settings?.contactHours, label: t('footer.hours') },
   ].filter((r) => r.value);
@@ -233,43 +236,11 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Bandeau partenaires (réglage « Partenaires » du dashboard) */}
-      {partnerEntries.length > 0 ? (
-        <div className="border-t border-white/10">
-          <div className="mx-auto max-w-7xl px-4 py-6">
-            <p className="eyebrow mb-3 text-center text-brand-bright">{t('footer.partners')}</p>
-            <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-              {partnerEntries.map((entry, i) => (
-                <li key={i}>
-                  {entry.url ? (
-                    <a
-                      href={entry.url}
-                      {...(entry.url.startsWith('http')
-                        ? { target: '_blank', rel: 'noopener noreferrer' }
-                        : {})}
-                      className="text-[13px] font-semibold uppercase tracking-wider text-neutral-400 transition-colors hover:text-white"
-                    >
-                      {entry.logoUrl ? (
-                        <img src={entry.logoUrl} alt={entry.name} className="h-7 w-auto opacity-80 transition-opacity hover:opacity-100" loading="lazy" />
-                      ) : (
-                        entry.name
-                      )}
-                    </a>
-                  ) : (
-                    <span className="text-[13px] font-semibold uppercase tracking-wider text-neutral-500">
-                      {entry.logoUrl ? (
-                        <img src={entry.logoUrl} alt={entry.name} className="h-7 w-auto opacity-70" loading="lazy" />
-                      ) : (
-                        entry.name
-                      )}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      ) : null}
+      {/* Bandeau partenaires : défilé compact, même source que la
+          section « Ils nous font confiance » de l'accueil (régie
+          publicitaire, emplacement Partenaires). */}
+      <FooterPartners fallbackEntries={partnerEntries} />
+
 
       {/* Barre basse */}
       <div className="border-t border-white/10">
@@ -346,5 +317,66 @@ export function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+
+// ─── Bandeau partenaires défilant du pied de page ───
+function FooterPartners({ fallbackEntries }: {
+  fallbackEntries: { name: string; url?: string; logoUrl?: string }[];
+}) {
+  const settings = useMagazineStore((s) => s.bootstrap?.settings);
+  const [partners, setPartners] = React.useState<{ name: string; url?: string; logo?: string }[]>([]);
+
+  React.useEffect(() => {
+    publicApi
+      .adMany('NATIVE', undefined, 8)
+      .then((res) => {
+        const list = (res.banners || [])
+          .filter((b) => b.advertiser)
+          .map((b) => ({ name: b.advertiser, url: b.targetUrl || undefined, logo: b.imageUrl || undefined }));
+        setPartners(list.length > 0 ? list : []);
+      })
+      .catch(() => {});
+  }, []);
+
+  const entries: { name: string; url?: string; logo?: string }[] =
+    partners.length > 0
+      ? partners
+      : fallbackEntries.map((e) => ({ name: e.name, url: e.url, logo: e.logoUrl }));
+
+  if (entries.length === 0) return null;
+
+  const doubled = [...entries, ...entries];
+
+  return (
+    <div className="border-t border-white/10 bg-black/40">
+      <div className="group relative mx-auto max-w-7xl overflow-hidden px-4 py-5">
+        <p className="eyebrow mb-3 text-center text-brand-bright">Nos partenaires</p>
+        <span className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-[#0a0a0a] to-transparent" aria-hidden="true" />
+        <span className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-[#0a0a0a] to-transparent" aria-hidden="true" />
+        <div
+          className="flex w-max items-center gap-10 partner-marquee group-hover:[animation-play-state:paused]"
+          style={{ animationDuration: `${Math.max(16, entries.length * 6)}s` }}
+        >
+          {doubled.map((entry, i) => {
+            const content = entry.logo ? (
+              <img src={entry.logo} alt={entry.name} className="h-8 w-auto opacity-75 transition-opacity hover:opacity-100" loading="lazy" />
+            ) : (
+              <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-neutral-300 transition-colors hover:text-white">
+                {entry.name}
+              </span>
+            );
+            return entry.url ? (
+              <a key={i} href={entry.url} target="_blank" rel="noopener noreferrer" className="shrink-0" aria-label={entry.name}>
+                {content}
+              </a>
+            ) : (
+              <span key={i} className="shrink-0">{content}</span>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }

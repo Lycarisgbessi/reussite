@@ -21,7 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Save, Building2, Phone, MapPin, Clock, Share2, Search, SlidersHorizontal, Handshake, Facebook, Twitter, Linkedin, Youtube, MessageCircle, Bell, Send } from 'lucide-react';
+import { Loader2, Save, Building2, Phone, MapPin, Clock, Share2, Search, SlidersHorizontal, Handshake, Facebook, Twitter, Linkedin, Youtube, MessageCircle, AtSign, Music2, Bell, Send } from 'lucide-react';
 
 const THEME_PRESETS = ['#d97706', '#16a34a', '#dc2626', '#ea580c', '#7c3aed', '#0d9488', '#52525b'];
 
@@ -194,7 +194,9 @@ export function SettingsAdmin() {
               <Input type="email" value={settings.contactEmail} onChange={(e) => patch({ contactEmail: e.target.value })} placeholder="contact@reussitemagazine.com" />
             </Field>
             <Field label="Téléphone">
-              <Input value={settings.contactPhone} onChange={(e) => patch({ contactPhone: e.target.value })} placeholder="+33 1 23 45 67 89" />
+              <Input value={settings.contactPhone} onChange={(e) => patch({ contactPhone: e.target.value })} placeholder="+224 628 20 98 66" />
+              <Input value={settings.contactPhone2} onChange={(e) => patch({ contactPhone2: e.target.value })} placeholder="Autre numéro (optionnel) — +224 …" className="mt-2" />
+              <Input value={settings.contactPhone3} onChange={(e) => patch({ contactPhone3: e.target.value })} placeholder="Encore un numéro (optionnel)" className="mt-2" />
             </Field>
           </div>
           <Field label="Adresse">
@@ -220,7 +222,9 @@ export function SettingsAdmin() {
             { key: 'twitter', label: 'Twitter / X', icon: Twitter, placeholder: 'https://x.com/reussitemagazine' },
             { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, placeholder: 'https://linkedin.com/company/reussite-magazine' },
             { key: 'youtube', label: 'YouTube', icon: Youtube, placeholder: 'https://youtube.com/@reussitemagazine' },
-            { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, placeholder: 'https://wa.me/33612345678' },
+            { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, placeholder: 'https://wa.me/22612345678' },
+            { key: 'instagram', label: 'Instagram', icon: AtSign, placeholder: 'https://instagram.com/reussitemagazine' },
+            { key: 'tiktok', label: 'TikTok', icon: Music2, placeholder: 'https://tiktok.com/@reussitemagazine' },
           ] as const).map(({ key, label, icon: Icon, placeholder }) => (
             <Field key={key} label={label} hint="Laissez vide pour masquer le lien.">
               <div className="relative">

@@ -18,8 +18,7 @@ import {
   Phone,
   Send,
   Twitter,
-  Youtube,
-} from 'lucide-react';
+  Youtube, AtSign, Music2, MessageCircle} from 'lucide-react';
 import { publicApi } from '@/lib/api';
 import { navigate, useMagazineStore } from '@/lib/store';
 import { useDocumentTitle } from '@/hooks/use-document-title';
@@ -62,11 +61,14 @@ export function ContactPage() {
     { key: 'twitter', url: settings?.twitter, Icon: Twitter, label: 'X (Twitter)' },
     { key: 'linkedin', url: settings?.linkedin, Icon: Linkedin, label: 'LinkedIn' },
     { key: 'youtube', url: settings?.youtube, Icon: Youtube, label: 'YouTube' },
+    { key: 'instagram', url: settings?.instagram, Icon: AtSign, label: 'Instagram' },
+    { key: 'tiktok', url: settings?.tiktok, Icon: Music2, label: 'TikTok' },
+    { key: 'whatsapp', url: settings?.whatsapp, Icon: MessageCircle, label: 'WhatsApp' },
   ].filter((s) => s.url);
 
   const infoRows = [
     { Icon: Mail, value: settings?.contactEmail, label: t('footer.email'), key: 'Email' },
-    { Icon: Phone, value: settings?.contactPhone, label: t('footer.phone'), key: 'Téléphone' },
+    { Icon: Phone, value: [settings?.contactPhone, settings?.contactPhone2, settings?.contactPhone3].filter(Boolean).join(' · '), label: t('footer.phone'), key: 'Téléphone' },
     { Icon: MapPin, value: settings?.contactAddress, label: t('footer.address'), key: 'Adresse' },
     { Icon: Clock, value: settings?.contactHours, label: t('footer.hours'), key: 'Horaires' },
   ].filter((r): r is { Icon: typeof Mail; value: string; label: string; key: string } => Boolean(r.value));

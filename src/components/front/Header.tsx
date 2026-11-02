@@ -21,8 +21,7 @@ import {
   Sun,
   Thermometer,
   Twitter,
-  Youtube,
-} from 'lucide-react';
+  Youtube, AtSign, Music2, MessageCircle} from 'lucide-react';
 import { navigate, useMagazineStore } from '@/lib/store';
 import { LOCALES, useFormatDate, useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -101,6 +100,9 @@ export function Header() {  const bootstrap = useMagazineStore((s) => s.bootstra
     { key: 'twitter', url: settings?.twitter, Icon: Twitter, label: 'X (Twitter)' },
     { key: 'linkedin', url: settings?.linkedin, Icon: Linkedin, label: 'LinkedIn' },
     { key: 'youtube', url: settings?.youtube, Icon: Youtube, label: 'YouTube' },
+    { key: 'instagram', url: settings?.instagram, Icon: AtSign, label: 'Instagram' },
+    { key: 'tiktok', url: settings?.tiktok, Icon: Music2, label: 'TikTok' },
+    { key: 'whatsapp', url: settings?.whatsapp, Icon: MessageCircle, label: 'WhatsApp' },
   ].filter((s) => s.url);
 
   return (

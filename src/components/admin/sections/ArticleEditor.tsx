@@ -154,7 +154,7 @@ Un simple paragraphe : sélectionnez du texte puis utilisez la barre (gras, ital
 ![légende](image) · vidéo YouTube · !!! À retenir :: message clé · --- séparateur.`}
         aria-label="Contenu de l'article"
         spellCheck
-        className="block-editor-textarea custom-scrollbar min-h-[440px] w-full resize-y px-4 py-4 font-editorial text-[15px] leading-[1.9] outline-none"
+        className="block-editor-textarea custom-scrollbar h-[calc(100vh-420px)] min-h-[520px] w-full resize-y px-4 py-4 font-editorial text-[15px] leading-[1.9] outline-none"
       />
 
       {/* Aide-mémoire dépliable */}

@@ -380,11 +380,11 @@ function PartnerMarquee({ partners }: {
             target="_blank"
             rel="sponsored noopener noreferrer"
             onClick={() => publicApi.adClick(p.id).catch(() => {})}
-            className="flex h-24 w-52 shrink-0 items-center gap-3.5 rounded-xl border bg-card px-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+            className="flex h-28 w-64 shrink-0 items-center gap-4 rounded-xl border-2 border-border/60 bg-card px-5 shadow-md transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/15"
             aria-label={`${t('home.partner')} ${p.advertiser || ''}`}
           >
             {p.imageUrl ? (
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/60">
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/70 p-1">
                 <img
                   src={p.imageUrl}
                   alt={p.advertiser || 'Partenaire'}
@@ -394,7 +394,7 @@ function PartnerMarquee({ partners }: {
               </span>
             ) : p.htmlCode ? (
               <span
-                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/60 [&_img]:max-h-12 [&_img]:max-w-12 [&_img]:object-contain"
+                className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/70 p-1 [&_img]:max-h-12 [&_img]:max-w-12 [&_img]:object-contain"
                 dangerouslySetInnerHTML={{ __html: p.htmlCode }}
               />
             ) : (

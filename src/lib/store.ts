@@ -160,7 +160,22 @@ export function initClient() {
   const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
   store.setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
 
-  const applyRoute = () => store.setRoute(parseHash(window.location.hash));
+  // Routage DUAL : les liens internes utilisent toujours #/chemin,
+  // mais la barre d'adresse est nettoyée en chemin réel (/chemin) —
+  // URL partageable telle quelle (les réseaux lisent ses méta OG).
+  const applyRoute = () => {
+    const hash = window.location.hash;
+    const hashRoute = hash && hash.length > 1;
+    const path = hashRoute
+      ? hash.slice(1)
+      : window.location.pathname + window.location.search;
+    store.setRoute(parseHash('#' + path));
+    // Nettoyage de l'URL affichée (sans rechargement ni entrée d'historique)
+    if (hashRoute || path !== window.location.pathname + window.location.search) {
+      window.history.replaceState(null, '', path);
+    }
+  };
   applyRoute();
   window.addEventListener('hashchange', applyRoute);
+  window.addEventListener('popstate', applyRoute);
 }

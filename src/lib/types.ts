@@ -308,6 +308,11 @@ export interface SiteSettings {
   linkedin: string;
   youtube: string;
   whatsapp: string;
+  instagram: string;
+  tiktok: string;
+  /** Téléphones additionnels (champ libre). */
+  contactPhone2: string;
+  contactPhone3: string;
   seoTitle: string;
   seoDescription: string;
   ogImage: string;
